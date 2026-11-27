@@ -26,3 +26,21 @@ export function expireUnpaidOrdersJob(db: SqlRunner, intervalMs = 30_000): Job {
     },
   };
 }
+
+/**
+ * Expires booking holds whose 10 minutes are up, freeing the staff member's time
+ * (docs/05-workflows.md, appointment step 3). The rule is the database function
+ * `expire_booking_holds` (migration 0005), which the API also runs before allocating a hold.
+ */
+export function expireBookingHoldsJob(db: SqlRunner, intervalMs = 30_000): Job {
+  return {
+    name: 'expire-booking-holds',
+    intervalMs,
+    async run() {
+      const { rows } = await db.query<{ n: number }>(
+        'SELECT expire_booking_holds(now(), 200) AS n',
+      );
+      return Number(rows[0]?.n ?? 0);
+    },
+  };
+}

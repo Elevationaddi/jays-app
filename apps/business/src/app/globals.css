@@ -148,6 +148,8 @@ input[type='email'],
 input[type='tel'],
 input[type='password'],
 input[type='number'],
+input[type='time'],
+input[type='datetime-local'],
 select {
   min-height: 44px;
   padding: 8px 12px;
@@ -615,4 +617,22 @@ details.variant form {
 .inline-form select,
 .inline-form input {
   width: auto;
+}
+
+/* Booking statuses (phase 4). */
+.badge.confirmed,
+.badge.checked_in,
+.badge.completed {
+  color: var(--success);
+}
+.badge.held {
+  color: #8a5a00;
+}
+.badge.canceled,
+.badge.no_show {
+  color: var(--danger);
+}
+.badge.expired,
+.badge.archived {
+  color: var(--text-muted);
 }

@@ -1,4 +1,4 @@
-import type { PublicProductListItem, PublicStore } from '@jays/contracts';
+import type { PublicProductListItem, PublicStore, PublicVenue } from '@jays/contracts';
 import { colors, radius, spacing } from '@jays/ui';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
@@ -6,6 +6,7 @@ import { ModeSwitch } from '../components/ModeSwitch';
 import { ProductCard, gridStyle } from '../components/ProductCard';
 import { Tabs } from '../components/Tabs';
 import { Banner, Body, Button, Screen, Title } from '../components/ui';
+import { VenueServices } from '../components/VenueServices';
 import { useApp } from '../context';
 
 /**
@@ -18,10 +19,12 @@ export function StoreScreen() {
   const storeId = state.storeByMode[mode];
   const [store, setStore] = useState<PublicStore | 'loading' | 'error'>('loading');
   const [products, setProducts] = useState<PublicProductListItem[]>([]);
+  const [venue, setVenue] = useState<PublicVenue | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setStore('loading');
+    setVenue(null);
     if (!storeId) {
       setStore('error');
       return;
@@ -34,6 +37,11 @@ export function StoreScreen() {
       .then(() => (mode === 'shop' ? api.products({ store: storeId, limit: 50 }) : null))
       .then((p) => {
         if (!cancelled && p) setProducts(p.items);
+      })
+      // A venue without bookable services answers 404; the store page still shows.
+      .then(() => (mode === 'services' ? api.venue(storeId).catch(() => null) : null))
+      .then((v) => {
+        if (!cancelled) setVenue(v);
       })
       .catch(() => {
         if (!cancelled) setStore('error');
@@ -77,7 +85,9 @@ export function StoreScreen() {
           </View>
           <Title>{store.name[state.locale]}</Title>
           <Body>{store.description[state.locale]}</Body>
-          {products.length > 0 ? (
+          {venue && venue.services.length > 0 ? (
+            <VenueServices venue={venue} />
+          ) : products.length > 0 ? (
             <View style={gridStyle}>
               {products.map((p) => (
                 <ProductCard key={p.id} product={p} />
@@ -92,7 +102,7 @@ export function StoreScreen() {
               >
                 {mode === 'shop' ? '🛍' : '📅'}
               </Text>
-              <Body muted>{tr(mode === 'shop' ? 'shop.noProducts' : 'store.servicesLater')}</Body>
+              <Body muted>{tr(mode === 'shop' ? 'shop.noProducts' : 'venue.none')}</Body>
             </View>
           )}
         </>

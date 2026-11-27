@@ -13,7 +13,8 @@ export function Shell({
 }: {
   locale: Locale;
   admin: AdminView;
-  current: 'dashboard' | 'businesses' | 'products' | 'content' | 'security';
+  current:
+    'dashboard' | 'businesses' | 'products' | 'services' | 'bookings' | 'content' | 'security';
   children: ReactNode;
 }) {
   const items = [
@@ -34,6 +35,18 @@ export function Shell({
       href: '/admin/products',
       label: t(locale, 'admin.nav.products'),
       show: admin.capabilities.includes('products.view'),
+    },
+    {
+      key: 'services',
+      href: '/admin/services',
+      label: t(locale, 'admin.nav.services'),
+      show: admin.capabilities.includes('services.takedown'),
+    },
+    {
+      key: 'bookings',
+      href: '/admin/bookings',
+      label: t(locale, 'admin.nav.bookings'),
+      show: admin.capabilities.includes('bookings.view'),
     },
     {
       key: 'content',

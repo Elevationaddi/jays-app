@@ -6,6 +6,12 @@ import { AdminBusinessesController } from './admin/admin-businesses.controller.j
 import { AdminBusinessesService } from './admin/admin-businesses.service.js';
 import { AdminProductsController } from './admin/admin-products.controller.js';
 import { AdminProductsService } from './admin/admin-products.service.js';
+import { AdminBookingsController } from './booking/admin-bookings.controller.js';
+import { AdminBookingsService } from './booking/admin-bookings.service.js';
+import { BookingsController } from './booking/bookings.controller.js';
+import { BookingsService } from './booking/bookings.service.js';
+import { BusinessScheduleController } from './booking/business-schedule.controller.js';
+import { ScheduleService } from './booking/schedule.service.js';
 import { AdminTaxonomyController } from './catalog/admin-taxonomy.controller.js';
 import { BusinessCatalogController } from './catalog/business-catalog.controller.js';
 import { InventoryService } from './catalog/inventory.service.js';
@@ -156,6 +162,9 @@ export class AppModule {
         BusinessCatalogController,
         AdminProductsController,
         CommerceController,
+        BookingsController,
+        BusinessScheduleController,
+        AdminBookingsController,
         WebhooksController,
         // The mock provider's hosted payment step. Production cannot run the mock (ADR-0006).
         ...(env.PSP_PROVIDER === 'mock' ? [MockPspController] : []),
@@ -214,6 +223,9 @@ export class AppModule {
         CheckoutService,
         OrdersService,
         PaymentsService,
+        ScheduleService,
+        BookingsService,
+        AdminBookingsService,
         UserAuthGuard,
         OptionalUserAuthGuard,
         BusinessAccessGuard,

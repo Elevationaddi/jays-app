@@ -1,7 +1,7 @@
 import { parseEnv, workerEnvSchema } from '@jays/config';
 import { pino } from 'pino';
 import { describe, expect, it, vi } from 'vitest';
-import { expireUnpaidOrdersJob } from './jobs.js';
+import { expireBookingHoldsJob, expireUnpaidOrdersJob } from './jobs.js';
 import { Worker, type QueueConnection } from './worker.js';
 
 const env = parseEnv(workerEnvSchema, {
@@ -51,5 +51,12 @@ describe('jobs', () => {
     const job = expireUnpaidOrdersJob({ query } as never, 1000);
     await expect(job.run()).resolves.toBe(3);
     expect(query).toHaveBeenCalledWith('SELECT expire_unpaid_orders(now(), 200) AS n');
+  });
+
+  it('expires booking holds through the shared database function', async () => {
+    const query = vi.fn(async () => ({ rows: [{ n: 2 }] }));
+    const job = expireBookingHoldsJob({ query } as never, 1000);
+    await expect(job.run()).resolves.toBe(2);
+    expect(query).toHaveBeenCalledWith('SELECT expire_booking_holds(now(), 200) AS n');
   });
 });

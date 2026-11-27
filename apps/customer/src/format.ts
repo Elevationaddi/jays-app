@@ -17,3 +17,19 @@ export function newIdempotencyKey(prefix: string): string {
   globalThis.crypto.getRandomValues(bytes);
   return `${prefix}-${Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')}`;
 }
+
+/** A date in the UAE, e.g. "Mon, 7 Dec". */
+export const shortDate = (iso: string, locale: Locale, timeZone = 'Asia/Dubai') =>
+  new Intl.DateTimeFormat(locale === 'ar' ? 'ar-AE' : 'en-AE', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    timeZone,
+  }).format(new Date(iso));
+
+/** A time of day in a branch's timezone. */
+export const timeIn = (iso: string, locale: Locale, timeZone: string) =>
+  new Intl.DateTimeFormat(locale === 'ar' ? 'ar-AE' : 'en-AE', {
+    timeStyle: 'short',
+    timeZone,
+  }).format(new Date(iso));

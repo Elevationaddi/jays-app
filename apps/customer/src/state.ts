@@ -9,6 +9,9 @@ export type Route =
   | '/services'
   | '/shop/store'
   | '/services/store'
+  | '/services/book'
+  | '/appointments'
+  | '/appointments/detail'
   | '/shop/product'
   | '/cart'
   | '/checkout'
@@ -33,6 +36,10 @@ export interface AppState {
   productId: string | null;
   /** The order open in /orders/detail. */
   orderId: string | null;
+  /** The service being booked in /services/book (at the venue open in services mode). */
+  bookServiceId: string | null;
+  /** The appointment open in /appointments/detail. */
+  bookingId: string | null;
   /** A guest cart's token, merged into the account cart after sign-in. */
   cartToken: string | null;
   /** Items in the cart, for the tab badge. */
@@ -49,6 +56,8 @@ export type Action =
   | { type: 'openStore'; mode: Mode; storeId: string }
   | { type: 'openProduct'; productId: string }
   | { type: 'openOrder'; orderId: string }
+  | { type: 'startBooking'; serviceId: string }
+  | { type: 'openBooking'; bookingId: string }
   | { type: 'cart'; cartToken: string | null; count: number }
   | { type: 'requireSignIn'; returnTo: Route }
   | { type: 'challenge'; challenge: Challenge }
@@ -70,6 +79,8 @@ export function initialState(locale: Locale): AppState {
     session: null,
     productId: null,
     orderId: null,
+    bookServiceId: null,
+    bookingId: null,
     cartToken: null,
     cartCount: 0,
     auth: { returnTo: '/welcome', challenge: null },
@@ -85,7 +96,8 @@ export function modeOf(route: Route): Mode | null {
     route === '/checkout'
   )
     return 'shop';
-  if (route === '/services' || route === '/services/store') return 'services';
+  if (route === '/services' || route === '/services/store' || route === '/services/book')
+    return 'services';
   return null;
 }
 
@@ -131,6 +143,16 @@ export function reducer(state: AppState, action: Action): AppState {
       };
     case 'openOrder':
       return { ...state, route: '/orders/detail', orderId: action.orderId };
+    case 'startBooking':
+      return {
+        ...state,
+        mode: 'services',
+        route: '/services/book',
+        bookServiceId: action.serviceId,
+        routeByMode: { ...state.routeByMode, services: '/services/book' },
+      };
+    case 'openBooking':
+      return { ...state, route: '/appointments/detail', bookingId: action.bookingId };
     case 'cart':
       return { ...state, cartToken: action.cartToken, cartCount: action.count };
     case 'requireSignIn':

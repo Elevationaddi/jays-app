@@ -487,3 +487,165 @@ export const SEED_CUSTOMER_ADDRESS = {
   building: 'Tower 9',
   unit: '1204',
 };
+
+/** Phase 4: branches, services, staff and weekly shifts for the services businesses. */
+export interface SeedVenue {
+  business: string;
+  branch: {
+    name: Localized;
+    emirate: string;
+    area: string;
+    street: string;
+    building: string;
+    /** Weekday (0 = Sunday) to [opens, closes], local time. */
+    hours: Record<number, [string, string]>;
+  };
+  services: {
+    key: string;
+    category: string;
+    title: Localized;
+    description: Localized;
+    priceFils: number;
+    durationMin: number;
+    bufferBeforeMin: number;
+    bufferAfterMin: number;
+    cancelCutoffHours: number;
+    lateCancelRefundBps: number;
+  }[];
+  staff: {
+    name: string;
+    /** A member of the business whose account this profile belongs to. */
+    member?: string;
+    services: string[];
+    shifts: Record<number, [string, string]>;
+  }[];
+}
+
+const every = (from: string, to: string, days = [0, 1, 2, 3, 4, 5, 6]) =>
+  Object.fromEntries(days.map((d) => [d, [from, to]])) as Record<number, [string, string]>;
+
+export const SEED_VENUES: SeedVenue[] = [
+  {
+    business: 'lumiere',
+    branch: {
+      name: { en: 'Jumeirah', ar: 'جميرا' },
+      emirate: 'DXB',
+      area: 'Jumeirah 1',
+      street: 'Beach Road (fictional)',
+      building: 'Villa 12',
+      hours: { ...every('10:00', '21:00', [0, 1, 2, 3, 4, 6]), 5: ['14:00', '22:00'] },
+    },
+    services: [
+      {
+        key: 'cut',
+        category: 'hair',
+        title: { en: 'Haircut and blow-dry', ar: 'قص وتجفيف الشعر' },
+        description: {
+          en: 'A consultation, wash, precision cut and blow-dry finish.',
+          ar: 'استشارة وغسيل وقص دقيق مع تجفيف وتصفيف.',
+        },
+        priceFils: 15_000,
+        durationMin: 60,
+        bufferBeforeMin: 0,
+        bufferAfterMin: 15,
+        cancelCutoffHours: 24,
+        lateCancelRefundBps: 5_000,
+      },
+      {
+        key: 'gel',
+        category: 'nails',
+        title: { en: 'Gel manicure', ar: 'مانيكير جل' },
+        description: {
+          en: 'Shaping, cuticle care and a long-lasting gel colour of your choice.',
+          ar: 'تشكيل الأظافر والعناية بالجلد ولون جل يدوم طويلًا من اختيارك.',
+        },
+        priceFils: 12_000,
+        durationMin: 45,
+        bufferBeforeMin: 0,
+        bufferAfterMin: 10,
+        cancelCutoffHours: 12,
+        lateCancelRefundBps: 0,
+      },
+      {
+        key: 'brows',
+        category: 'brows-lashes',
+        title: { en: 'Brow shaping', ar: 'تشكيل الحواجب' },
+        description: {
+          en: 'Threading and tidy-up to frame your face, with a soothing finish.',
+          ar: 'تشكيل بالخيط وتهذيب لإبراز ملامح الوجه مع لمسة مهدئة.',
+        },
+        priceFils: 6_000,
+        durationMin: 20,
+        bufferBeforeMin: 0,
+        bufferAfterMin: 5,
+        cancelCutoffHours: 6,
+        lateCancelRefundBps: 0,
+      },
+    ],
+    staff: [
+      {
+        name: 'Sara',
+        member: 'staff.pro',
+        services: ['cut', 'brows'],
+        shifts: every('10:00', '18:00', [0, 1, 2, 3, 6]),
+      },
+      {
+        name: 'Mariam',
+        services: ['gel', 'brows'],
+        shifts: { ...every('12:00', '21:00', [1, 2, 3, 4]), 5: ['14:00', '22:00'] },
+      },
+      {
+        name: 'Joy',
+        services: ['cut', 'gel'],
+        shifts: { ...every('10:00', '19:00', [0, 1, 2, 3, 6]), 5: ['14:00', '21:00'] },
+      },
+    ],
+  },
+  {
+    business: 'oud',
+    branch: {
+      name: { en: 'Al Khalidiyah spa', ar: 'سبا الخالدية' },
+      emirate: 'AUH',
+      area: 'Al Khalidiyah',
+      street: 'Corniche Road (fictional)',
+      building: 'Bloom Tower, ground floor',
+      hours: every('10:00', '22:00'),
+    },
+    services: [
+      {
+        key: 'massage',
+        category: 'spa',
+        title: { en: 'Signature oud massage', ar: 'مساج العود المميز' },
+        description: {
+          en: 'A full-body relaxing massage with warm oud-infused oil.',
+          ar: 'مساج مريح لكامل الجسم بزيت دافئ معطر بالعود.',
+        },
+        priceFils: 35_000,
+        durationMin: 60,
+        bufferBeforeMin: 0,
+        bufferAfterMin: 15,
+        cancelCutoffHours: 24,
+        lateCancelRefundBps: 5_000,
+      },
+      {
+        key: 'hammam',
+        category: 'spa',
+        title: { en: 'Moroccan hammam ritual', ar: 'طقوس الحمام المغربي' },
+        description: {
+          en: 'Steam, black soap, a full scrub and a hydrating rose wrap.',
+          ar: 'بخار وصابون أسود وتقشير كامل ولفافة ورد مرطبة.',
+        },
+        priceFils: 28_000,
+        durationMin: 90,
+        bufferBeforeMin: 10,
+        bufferAfterMin: 20,
+        cancelCutoffHours: 24,
+        lateCancelRefundBps: 2_500,
+      },
+    ],
+    staff: [
+      { name: 'Leila', services: ['massage', 'hammam'], shifts: every('10:00', '18:00') },
+      { name: 'Hana', services: ['massage', 'hammam'], shifts: every('14:00', '22:00') },
+    ],
+  },
+];

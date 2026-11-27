@@ -45,6 +45,7 @@ Every seeded account uses the password `Local-Dev-Passw0rd!`. All names, emails 
 | Services owner (Lumière Salon)                  | `owner.lumiere@example.test`                                             | business portal |
 | Hybrid owner (Oud & Bloom), with staff          | `owner.oud@example.test`                                                 | business portal |
 | Shop owner waiting for review (Saffron)         | `owner.saffron@example.test`                                             | business portal |
+| Professional at Lumière (sees own bookings)     | `staff.pro@example.test`                                                 | business portal |
 | Draft business to try the forms (Amber Atelier) | `customer.both@example.test`                                             | business portal |
 | One admin per platform role                     | `<role>@admin.example.test`, for example `superadmin@admin.example.test` | admin console   |
 
@@ -54,7 +55,9 @@ Noor, Lumière and Oud & Bloom are approved and public. Saffron Skin Co. waits i
 
 Noor and Oud & Bloom sell 5 live fictional products, some with low or no stock, and deliver to Dubai, Abu Dhabi and (Noor) Sharjah. Noor also has one product waiting in the listing queue (sign in as `catalog@admin.example.test`) and one draft. `customer.en` has a saved Dubai address, so you can go from the shop to a paid order in the app.
 
-Payments use the mock provider ([ADR-0013](docs/adr/0013-catalog-inventory-checkout-and-mock-payments.md)). The app's checkout shows a test payment page; the result reaches the API as a signed webhook at `API_PUBLIC_URL/webhooks/payments`, so the API must be able to reach its own public URL. With `MOCK_PAYMENT_OUTCOMES=true` the page can also simulate a declined payment. Run the worker to expire unpaid orders and release held stock. Production refuses `PSP_PROVIDER=mock`.
+Lumière Salon (Jumeirah branch: haircut, gel manicure, brows; staff Sara, Mariam and Joy) and Oud & Bloom (Al Khalidiyah spa: massage and hammam; staff Leila and Hana) take bookings. In the app, choose Book Services, open a venue, pick a service, professional, day and time, then hold and pay. Each service has its own cancellation policy, shown before payment. The owners manage branches, services, staff shifts and the day calendar in the business portal; `staff.pro` sees only Sara's bookings. See [ADR-0014](docs/adr/0014-services-staff-availability-and-booking.md).
+
+Payments use the mock provider ([ADR-0013](docs/adr/0013-catalog-inventory-checkout-and-mock-payments.md)). The app's checkout shows a test payment page; the result reaches the API as a signed webhook at `API_PUBLIC_URL/webhooks/payments`, so the API must be able to reach its own public URL. With `MOCK_PAYMENT_OUTCOMES=true` the page can also simulate a declined payment. Run the worker to expire unpaid orders and booking holds and release held stock and times. Production refuses `PSP_PROVIDER=mock`.
 
 Uploaded files are stored on disk under `STORAGE_LOCAL_DIR` (default `.local-storage`, relative to the API's working directory) and served through signed links at `API_PUBLIC_URL`. The mock malware scanner refuses files containing the EICAR test string. Production refuses to start with `STORAGE_PROVIDER=local` or `MALWARE_SCANNER=mock` ([ADR-0012](docs/adr/0012-merchant-onboarding-storage-and-review.md)).
 
@@ -90,7 +93,11 @@ Integration tests use the separate `jays_test` database, created automatically t
 
 ## Screenshots
 
-Screens in English and Arabic (RTL) are in [`docs/screenshots/phase-1/`](docs/screenshots/phase-1/), [`docs/screenshots/phase-2/`](docs/screenshots/phase-2/) and [`docs/screenshots/phase-3/`](docs/screenshots/phase-3/). Arabic copy still needs review by a native speaker.
+Screens in English and Arabic (RTL) are in [`docs/screenshots/phase-1/`](docs/screenshots/phase-1/), [`docs/screenshots/phase-2/`](docs/screenshots/phase-2/), [`docs/screenshots/phase-3/`](docs/screenshots/phase-3/) and [`docs/screenshots/phase-4/`](docs/screenshots/phase-4/). Arabic copy still needs review by a native speaker.
+
+| Customer app (phase 4)                                                          | Business portal (phase 4)                                                      | Admin console (phase 4)                                                     |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| <img src="docs/screenshots/phase-4/customer-22-pick-time-en.png" width="220" /> | <img src="docs/screenshots/phase-4/business-22-calendar-en.png" width="360" /> | <img src="docs/screenshots/phase-4/admin-13-bookings-en.png" width="360" /> |
 
 | Customer app (phase 3)                                                                | Business portal (phase 3)                                                          | Admin console (phase 3)                                                           |
 | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |

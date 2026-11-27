@@ -28,6 +28,8 @@ export const BUSINESS_CAPABILITIES = [
   'onboarding.manage',
   // Storefront content and its media.
   'storefront.manage',
+  // Phase 4. Branches, services, staff profiles, shifts and schedule blocks.
+  'services.manage',
 ] as const;
 export type BusinessCapability = (typeof BUSINESS_CAPABILITIES)[number];
 
@@ -43,6 +45,7 @@ const MANAGER: readonly BusinessCapability[] = [
   'appointments.view_all',
   'appointments.view_own',
   'storefront.manage',
+  'services.manage',
 ];
 
 export const BUSINESS_GRANTS: Record<BusinessPermission, readonly BusinessCapability[]> = {
@@ -125,6 +128,9 @@ export const PLATFORM_CAPABILITIES = [
   'products.view',
   'products.review',
   'products.takedown',
+  // Phase 4 (ADR-0014): booking monitoring and service takedowns.
+  'bookings.view',
+  'services.takedown',
 ] as const;
 export type PlatformCapability = (typeof PLATFORM_CAPABILITIES)[number];
 
@@ -139,6 +145,8 @@ export const PLATFORM_GRANTS: Record<PlatformRole, readonly PlatformCapability[]
     'storefronts.review',
     'products.view',
     'products.takedown',
+    'bookings.view',
+    'services.takedown',
   ],
   catalog: [
     'businesses.view',
@@ -147,10 +155,17 @@ export const PLATFORM_GRANTS: Record<PlatformRole, readonly PlatformCapability[]
     'products.view',
     'products.review',
     'products.takedown',
+    'services.takedown',
   ],
-  operations: ['businesses.view', 'businesses.suspend', 'products.view'],
+  operations: [
+    'businesses.view',
+    'businesses.suspend',
+    'products.view',
+    'bookings.view',
+    'services.takedown',
+  ],
   finance: [],
-  support: ['businesses.view', 'products.view'],
+  support: ['businesses.view', 'products.view', 'bookings.view'],
   analyst: [],
 };
 

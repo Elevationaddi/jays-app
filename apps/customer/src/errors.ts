@@ -22,6 +22,12 @@ export function errorKey(error: unknown): { key: MessageKey; seconds: number } {
     NO_DELIVERY_ZONE: 'error.deliveryUnavailable',
     CART_NOT_READY: 'error.cartNotReady',
     PAYMENT_PROVIDER_UNAVAILABLE: 'error.paymentUnavailable',
+    SLOT_UNAVAILABLE: 'error.slotUnavailable',
+    HOLD_LIMIT: 'error.holdLimit',
+    HOLD_EXPIRED: 'error.holdExpired',
+    CANCEL_TOO_LATE: 'error.cancelTooLate',
+    RESCHEDULE_NOT_ALLOWED: 'error.rescheduleNotAllowed',
+    OUTSIDE_BOOKING_WINDOW: 'error.outsideWindow',
   };
   return { key: map[error.code] ?? 'common.error', seconds };
 }

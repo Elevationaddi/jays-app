@@ -527,11 +527,17 @@ export interface ReservationsTable {
 }
 
 export type PaymentStatus =
-  'requires_payment' | 'succeeded' | 'failed' | 'refund_pending' | 'refunded' | 'refund_failed';
+  | 'requires_payment'
+  | 'succeeded'
+  | 'failed'
+  | 'refund_pending'
+  | 'partially_refunded'
+  | 'refunded'
+  | 'refund_failed';
 
 export interface PaymentsTable {
   id: Id;
-  target_type: 'order';
+  target_type: 'order' | 'booking';
   order_id: string | null;
   provider: 'mock';
   provider_intent_id: string | null;
@@ -545,13 +551,16 @@ export interface PaymentsTable {
   succeeded_at: Timestamp | null;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+  booking_id: string | null;
 }
+
+export type RefundReason = 'late_payment' | 'customer_cancellation' | 'business_cancellation';
 
 export interface RefundsTable {
   id: Id;
   payment_id: string;
   amount_fils: number;
-  reason: 'late_payment';
+  reason: RefundReason;
   status: Generated<'pending' | 'succeeded' | 'failed'>;
   provider_ref: string | null;
   failure_code: string | null;
@@ -579,6 +588,160 @@ export interface IdempotencyKeysTable {
   status: Generated<'in_progress' | 'completed'>;
   response_status: number | null;
   response_body: Json | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+// Phase 4: services and booking ---------------------------------------------------------------
+
+export interface BranchesTable {
+  id: Id;
+  business_id: string;
+  name: Localized;
+  emirate_code: string;
+  area: string;
+  street: string;
+  building: string;
+  latitude: ColumnType<string | null, number | null | undefined, number | null>;
+  longitude: ColumnType<string | null, number | null | undefined, number | null>;
+  timezone: Generated<string>;
+  status: Generated<'active' | 'archived'>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface BranchHoursTable {
+  branch_id: string;
+  weekday: number;
+  opens_at: string;
+  closes_at: string;
+}
+
+export interface BranchClosuresTable {
+  id: Id;
+  branch_id: string;
+  starts_at: Timestamp;
+  ends_at: Timestamp;
+  reason: string | null;
+  created_by: string;
+  created_at: CreatedAt;
+}
+
+export type ServiceStatus = 'active' | 'suspended' | 'archived';
+
+export interface ServicesTable {
+  id: Id;
+  business_id: string;
+  mode: Generated<'services'>;
+  category_id: string;
+  title: Localized;
+  description: Localized;
+  price_fils: number;
+  tax_class: Generated<TaxClass>;
+  duration_min: number;
+  buffer_before_min: Generated<number>;
+  buffer_after_min: Generated<number>;
+  cancel_cutoff_hours: Generated<number>;
+  late_cancel_refund_bps: Generated<number>;
+  status: Generated<ServiceStatus>;
+  suspension_reason: string | null;
+  version: Generated<number>;
+  created_by: string;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface BranchServicesTable {
+  branch_id: string;
+  service_id: string;
+  business_id: string;
+}
+
+export interface StaffTable {
+  id: Id;
+  business_id: string;
+  membership_id: string | null;
+  display_name: string;
+  status: Generated<'active' | 'archived'>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface StaffBranchesTable {
+  staff_id: string;
+  branch_id: string;
+  business_id: string;
+}
+
+export interface StaffServicesTable {
+  staff_id: string;
+  service_id: string;
+  business_id: string;
+}
+
+export interface ShiftsTable {
+  id: Id;
+  staff_id: string;
+  branch_id: string;
+  business_id: string;
+  weekday: number;
+  starts_at: string;
+  ends_at: string;
+  created_at: CreatedAt;
+}
+
+export type BlockKind = 'break' | 'leave' | 'other';
+
+export interface ScheduleBlocksTable {
+  id: Id;
+  staff_id: string;
+  business_id: string;
+  starts_at: Timestamp;
+  ends_at: Timestamp;
+  kind: BlockKind;
+  reason: string | null;
+  created_by: string;
+  created_at: CreatedAt;
+}
+
+export type BookingStatus =
+  'held' | 'confirmed' | 'checked_in' | 'completed' | 'canceled' | 'no_show' | 'expired';
+
+export interface BookingsTable {
+  id: Id;
+  user_id: string | null;
+  business_id: string;
+  branch_id: string;
+  service_id: string;
+  staff_id: string;
+  start_at: Timestamp;
+  end_at: Timestamp;
+  occupied_start: Timestamp;
+  occupied_end: Timestamp;
+  status: BookingStatus;
+  hold_expires_at: Timestamp | null;
+  source: 'customer' | 'manual';
+  payment_mode: 'prepaid' | 'pay_at_venue';
+  price_fils: number;
+  tax_fils: number;
+  currency: Generated<'AED'>;
+  snapshot: Json;
+  policy_snapshot: Json;
+  customer_name: string | null;
+  customer_phone: string | null;
+  note: string | null;
+  canceled_by: 'customer' | 'business' | 'system' | null;
+  cancel_reason: string | null;
+  refund_fils: number | null;
+  created_by: string | null;
+  confirmed_at: Timestamp | null;
+  checked_in_at: Timestamp | null;
+  completed_at: Timestamp | null;
+  canceled_at: Timestamp | null;
+  no_show_at: Timestamp | null;
+  expired_at: Timestamp | null;
+  rescheduled_count: Generated<number>;
+  version: Generated<number>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
 }
@@ -619,6 +782,17 @@ export interface Database {
   refunds: RefundsTable;
   webhook_events: WebhookEventsTable;
   idempotency_keys: IdempotencyKeysTable;
+  branches: BranchesTable;
+  branch_hours: BranchHoursTable;
+  branch_closures: BranchClosuresTable;
+  services: ServicesTable;
+  branch_services: BranchServicesTable;
+  staff: StaffTable;
+  staff_branches: StaffBranchesTable;
+  staff_services: StaffServicesTable;
+  shifts: ShiftsTable;
+  schedule_blocks: ScheduleBlocksTable;
+  bookings: BookingsTable;
 }
 
 /** Every column of every table, used by the drift test. Keep in the same order as above. */
@@ -1038,6 +1212,7 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'succeeded_at',
     'created_at',
     'updated_at',
+    'booking_id',
   ],
   refunds: [
     'id',
@@ -1069,6 +1244,123 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'status',
     'response_status',
     'response_body',
+    'created_at',
+    'updated_at',
+  ],
+  branches: [
+    'id',
+    'business_id',
+    'name',
+    'emirate_code',
+    'area',
+    'street',
+    'building',
+    'latitude',
+    'longitude',
+    'timezone',
+    'status',
+    'created_at',
+    'updated_at',
+  ],
+  branch_hours: ['branch_id', 'weekday', 'opens_at', 'closes_at'],
+  branch_closures: [
+    'id',
+    'branch_id',
+    'starts_at',
+    'ends_at',
+    'reason',
+    'created_by',
+    'created_at',
+  ],
+  services: [
+    'id',
+    'business_id',
+    'mode',
+    'category_id',
+    'title',
+    'description',
+    'price_fils',
+    'tax_class',
+    'duration_min',
+    'buffer_before_min',
+    'buffer_after_min',
+    'cancel_cutoff_hours',
+    'late_cancel_refund_bps',
+    'status',
+    'suspension_reason',
+    'version',
+    'created_by',
+    'created_at',
+    'updated_at',
+  ],
+  branch_services: ['branch_id', 'service_id', 'business_id'],
+  staff: [
+    'id',
+    'business_id',
+    'membership_id',
+    'display_name',
+    'status',
+    'created_at',
+    'updated_at',
+  ],
+  staff_branches: ['staff_id', 'branch_id', 'business_id'],
+  staff_services: ['staff_id', 'service_id', 'business_id'],
+  shifts: [
+    'id',
+    'staff_id',
+    'branch_id',
+    'business_id',
+    'weekday',
+    'starts_at',
+    'ends_at',
+    'created_at',
+  ],
+  schedule_blocks: [
+    'id',
+    'staff_id',
+    'business_id',
+    'starts_at',
+    'ends_at',
+    'kind',
+    'reason',
+    'created_by',
+    'created_at',
+  ],
+  bookings: [
+    'id',
+    'user_id',
+    'business_id',
+    'branch_id',
+    'service_id',
+    'staff_id',
+    'start_at',
+    'end_at',
+    'occupied_start',
+    'occupied_end',
+    'status',
+    'hold_expires_at',
+    'source',
+    'payment_mode',
+    'price_fils',
+    'tax_fils',
+    'currency',
+    'snapshot',
+    'policy_snapshot',
+    'customer_name',
+    'customer_phone',
+    'note',
+    'canceled_by',
+    'cancel_reason',
+    'refund_fils',
+    'created_by',
+    'confirmed_at',
+    'checked_in_at',
+    'completed_at',
+    'canceled_at',
+    'no_show_at',
+    'expired_at',
+    'rescheduled_count',
+    'version',
     'created_at',
     'updated_at',
   ],

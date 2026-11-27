@@ -19,3 +19,4 @@ Status values: **Accepted** (engineering decision, in force), **Proposed** (need
 | [0011](0011-web-sessions-bff-cookies.md)                     | Web sessions through server-side cookies, and CSRF    | Accepted |
 | [0012](0012-merchant-onboarding-storage-and-review.md)       | Merchant onboarding, private files and admin review   | Accepted |
 | [0013](0013-catalog-inventory-checkout-and-mock-payments.md) | Catalog, inventory, checkout and mock payments        | Accepted |
+| [0014](0014-services-staff-availability-and-booking.md)      | Services, staff, availability and booking             | Accepted |

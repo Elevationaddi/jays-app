@@ -104,10 +104,20 @@ Acceptance coverage: T04, T05, T06 (mock), T13 (products) and T01 (cart kept on 
 
 ### Phase 4: Services, branches, staff, availability, booking holds
 
-- Services, branches, hours, closures, staff, shifts, blocks, staff-service/branch assignment.
-- Availability engine (15-minute grid, buffers, UTC storage, Asia/Dubai display) and exclusion constraint on staff intervals for held/confirmed/checked_in.
-- Hold (10 minutes), pay via mock PSP, confirm on verified webhook, any-staff deterministic allocation, atomic reschedule, cancellation policy snapshot, merchant calendar with manual bookings.
-- Tests: T07, T08, T14, T13 for services, T09 cancellation boundaries.
+Delivered on branch `claude/project-thread-qyds1l`. Decision: [ADR-0014](adr/0014-services-staff-availability-and-booking.md).
+
+| Deliverable                                                                                                                                                                             | Where                                            |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Migration `0005_services_booking.sql`: branches, hours, closures, services, staff, shifts, blocks, bookings with the `bookings_no_overlap` exclusion constraint, `expire_booking_holds` | `packages/db/migrations`                         |
+| Time zone helpers, availability grid, staff ranking, cancellation refunds, booking transitions, schedule fit checks                                                                     | `packages/domain/src/booking.ts`                 |
+| Branches, closures, services, staff, shifts and blocks with booking conflict checks                                                                                                     | `apps/api/src/booking/schedule.service.ts`       |
+| Public venue and availability; customer hold, pay, cancel, reschedule; merchant calendar, actions and manual bookings                                                                   | `apps/api/src/booking/bookings.service.ts`       |
+| Admin booking monitoring and service suspension                                                                                                                                         | `apps/api/src/booking/admin-bookings.service.ts` |
+| Refund requests shared by orders and bookings                                                                                                                                           | `apps/api/src/payments`                          |
+| Hold expiry job                                                                                                                                                                         | `apps/worker/src/jobs.ts`                        |
+| Business Calendar, Services (with branches) and Staff; admin Services and Bookings; customer venue, booking and appointments                                                            | `apps/business`, `apps/admin`, `apps/customer`   |
+
+Acceptance coverage: T07, T08, T09, T13 (services), T14 and T06 (mock, bookings). See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
 
 ### Phase 5: Real PSP sandbox, ledger, refunds, payouts, reconciliation
 
@@ -128,4 +138,4 @@ Acceptance coverage: T04, T05, T06 (mock), T13 (products) and T01 (cart kept on 
 
 ## Founder decisions that block later phases
 
-See [ADR-0007](adr/0007-founder-decisions-and-mvp-defaults.md). None block phases 0–4; the PSP and merchant-of-record decisions block phase 5, and all of them block production.
+See [ADR-0007](adr/0007-founder-decisions-and-mvp-defaults.md). None block phases 0–4 (phase 4 assumptions are listed in ADR-0014); the PSP and merchant-of-record decisions block phase 5, and all of them block production.
