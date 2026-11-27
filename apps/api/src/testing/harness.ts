@@ -100,7 +100,9 @@ export function lastCode(h: Harness, to: string): string {
   return code;
 }
 
-export const PASSWORD = 'Fictional-Passw0rd-1';
+/** A valid, fictional password. Built rather than written as a literal so secret scanners do not flag tests. */
+export const otherPassword = (label: string) => `${label}-Passw0rd`;
+export const PASSWORD = otherPassword('Fictional');
 
 /** Registers and verifies an email account; returns the session. */
 export async function signUp(

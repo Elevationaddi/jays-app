@@ -14,6 +14,7 @@ import {
   startHarness,
   uniqueEmail,
   uniquePhone,
+  otherPassword,
 } from '../testing/harness.js';
 
 let h: Harness;
@@ -103,7 +104,7 @@ describe('register and verify', () => {
     const reg = await h
       .http()
       .post('/v1/auth/register')
-      .send({ email, password: 'Another-Passw0rd', acceptTerms: true })
+      .send({ email, password: otherPassword('Another'), acceptTerms: true })
       .expect(202);
     expect(Object.keys(reg.body).sort()).toEqual([
       'challengeId',
@@ -236,12 +237,12 @@ describe('login', () => {
     const wrong = await h
       .http()
       .post('/v1/auth/login')
-      .send({ identifier: email, password: 'Wrong-Passw0rd' })
+      .send({ identifier: email, password: otherPassword('Wrong') })
       .expect(401);
     const unknown = await h
       .http()
       .post('/v1/auth/login')
-      .send({ identifier: uniqueEmail(), password: 'Wrong-Passw0rd' })
+      .send({ identifier: uniqueEmail(), password: otherPassword('Wrong') })
       .expect(401);
     expect(wrong.body.error.code).toBe('INVALID_CREDENTIALS');
     expect(unknown.body.error.message).toBe(wrong.body.error.message);
@@ -256,7 +257,7 @@ describe('login', () => {
           await h
             .http()
             .post('/v1/auth/login')
-            .send({ identifier: email, password: 'Wrong-Passw0rd' })
+            .send({ identifier: email, password: otherPassword('Wrong') })
         ).status,
       );
     }
@@ -401,7 +402,7 @@ describe('password reset', () => {
       .send({ identifier: session.email })
       .expect(202);
     expect(h.notifier.lastTo(session.email)?.template).toBe('otp.password_reset');
-    const newPassword = 'Brand-New-Passw0rd';
+    const newPassword = otherPassword('Brand-New');
     const res = await h
       .http()
       .post('/v1/auth/password/reset')

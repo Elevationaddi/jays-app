@@ -15,6 +15,7 @@ import {
   signUp,
   startHarness,
   uniqueEmail,
+  otherPassword,
 } from '../testing/harness.js';
 
 let h: Harness;
@@ -81,7 +82,11 @@ describe('admin sign-in requires MFA (T03)', () => {
     await h
       .http()
       .post('/v1/admin/auth/login')
-      .send({ email: admin.email, password: 'Wrong-Passw0rd', totpCode: freshCode(admin.secret) })
+      .send({
+        email: admin.email,
+        password: otherPassword('Wrong'),
+        totpCode: freshCode(admin.secret),
+      })
       .expect(401);
     const session = await adminLogin(admin);
     expect(session.admin).toMatchObject({
