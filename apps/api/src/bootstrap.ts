@@ -15,6 +15,8 @@ export async function createApp(options: AppModuleOptions): Promise<INestApplica
   const app = await NestFactory.create(AppModule.forRoot(options), { bufferLogs: true });
   app.useLogger(app.get(Logger));
   app.use(helmet());
+  // Client IPs feed the rate limiters; only trust X-Forwarded-For from configured proxies.
+  app.getHttpAdapter().getInstance().set('trust proxy', options.env.TRUST_PROXY_HOPS);
   app.enableCors({
     origin: options.env.CORS_ORIGINS,
     credentials: true,
@@ -31,10 +33,13 @@ export function buildOpenApi(app: INestApplication): OpenAPIObject {
     .setTitle('UAE marketplace API')
     .setDescription(
       'REST API v1. Errors use the envelope in components.schemas.ErrorEnvelopeDto. ' +
+        'User endpoints take a user access token; /admin endpoints (except auth and invites) take an admin access token. ' +
+        'Business context always comes from verified membership, never from the request. ' +
         'Generated from code: run `pnpm openapi`.',
     )
     .setOpenAPIVersion('3.1.0')
-    .setVersion('0.0.0')
+    .setVersion('0.1.0')
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })
     .build();
   return SwaggerModule.createDocument(app, config, { extraModels: [ErrorEnvelopeDto] });
 }

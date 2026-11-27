@@ -25,7 +25,7 @@ export const REDACT_PATHS = [
 export function loggerParams(env: Pick<ApiEnv, 'LOG_LEVEL' | 'APP_ENV'>): Params {
   return {
     pinoHttp: {
-      level: env.APP_ENV === 'test' ? 'silent' : env.LOG_LEVEL,
+      level: env.APP_ENV === 'test' && !process.env['TEST_LOGS'] ? 'silent' : env.LOG_LEVEL,
       redact: { paths: REDACT_PATHS, censor: '[redacted]' },
       genReqId: (req, res) => {
         const id = resolveRequestId(req);

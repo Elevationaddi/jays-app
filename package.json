@@ -21,7 +21,7 @@
     "dev:deps": "docker compose up -d --wait postgres redis",
     "dev:deps:down": "docker compose down",
     "db:migrate": "pnpm --filter @jays/db migrate",
-    "db:seed": "echo \"No seed data yet: seeds start with the identity tables in phase 1.\""
+    "db:seed": "pnpm --filter @jays/api build && pnpm --filter @jays/api seed"
   },
   "devDependencies": {
     "@types/node": "^22.19.0",

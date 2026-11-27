@@ -1,20 +1,17 @@
 import type { INestApplication } from '@nestjs/common';
-import { apiEnvSchema, parseEnv } from '@jays/config';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../bootstrap.js';
+import { testEnv } from '../testing/test-env.js';
 
 // Real PostgreSQL and Redis (pnpm dev:deps locally; service containers in CI).
 describe('readiness against real dependencies', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    const env = parseEnv(apiEnvSchema, {
-      ...process.env,
-      APP_ENV: 'test',
-      JWT_KEYS: process.env['JWT_KEYS'] ?? 'local-dev-only-test-000000000000000000000',
-      STORAGE_BUCKET: process.env['STORAGE_BUCKET'] ?? 'jays-test',
-      PSP_WEBHOOK_SECRET: process.env['PSP_WEBHOOK_SECRET'] ?? 'local-dev-only-test-secret',
+    const env = testEnv({
+      DATABASE_URL: process.env['DATABASE_URL'],
+      REDIS_URL: process.env['REDIS_URL'],
     });
     app = await createApp({ env });
     await app.init();

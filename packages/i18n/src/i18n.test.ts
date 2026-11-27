@@ -35,3 +35,14 @@ describe('direction and negotiation', () => {
     expect(negotiateLocale(header)).toBe(expected);
   });
 });
+
+describe('interpolation', () => {
+  it('fills placeholders in both languages and keeps the same placeholders', () => {
+    expect(t('en', 'gateway.greeting', { name: 'Layla' })).toBe('Hello, Layla');
+    expect(t('ar', 'gateway.greeting', { name: 'ليلى' })).toContain('ليلى');
+    const placeholders = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
+    for (const key of Object.keys(catalogs.en) as (keyof typeof catalogs.en)[]) {
+      expect(placeholders(catalogs.ar[key])).toEqual(placeholders(catalogs.en[key]));
+    }
+  });
+});

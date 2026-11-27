@@ -5,7 +5,9 @@ const local = {
   APP_ENV: 'local',
   DATABASE_URL: 'postgresql://jays:jays@localhost:5432/jays',
   REDIS_URL: 'redis://localhost:6379',
-  JWT_KEYS: 'local-dev-only-0000000000000000000000000000',
+  JWT_KEYS: 'k1:local-dev-only-0000000000000000000000000000',
+  OTP_SECRET: 'local-dev-only-otp-0000000000000000000000',
+  MFA_ENCRYPTION_KEY: 'local-dev-only-mfa-0000000000000000000000',
   STORAGE_BUCKET: 'jays-local',
   PSP_WEBHOOK_SECRET: 'local-dev-only-webhook-secret',
 };
@@ -74,9 +76,41 @@ describe('apiEnvSchema', () => {
         'EMAIL_KEY',
         'JWT_KEYS',
         'PSP_WEBHOOK_SECRET',
+        'OTP_SECRET',
+        'MFA_ENCRYPTION_KEY',
+        'NOTIFY_PROVIDER',
+        'ADMIN_WEB_URL',
         'CORS_ORIGINS',
       ]),
     );
+  });
+});
+
+describe('JWT_KEYS', () => {
+  it('parses an ordered key set; the first key signs', () => {
+    const env = parseEnv(apiEnvSchema, {
+      ...local,
+      JWT_KEYS:
+        'new:local-dev-only-new-0000000000000000000000, old:local-dev-only-old-00000000000000000000000',
+    });
+    expect(env.JWT_KEYS.map((k) => k.kid)).toEqual(['new', 'old']);
+  });
+
+  it.each([
+    ['no key id', 'local-dev-only-0000000000000000000000000000'],
+    ['short secret', 'k1:short'],
+    [
+      'duplicate key ids',
+      'a:local-dev-only-0000000000000000000000,a:local-dev-only-1111111111111111111111',
+    ],
+  ])('rejects %s without echoing it', (_label, value) => {
+    try {
+      parseEnv(apiEnvSchema, { ...local, JWT_KEYS: value });
+      throw new Error('expected failure');
+    } catch (error) {
+      expect((error as EnvValidationError).issues.map((i) => i.path)).toEqual(['JWT_KEYS']);
+      expect((error as Error).message).not.toContain('0000');
+    }
   });
 });
 

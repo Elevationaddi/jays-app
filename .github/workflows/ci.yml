@@ -58,6 +58,7 @@ jobs:
       APP_ENV: test
       DATABASE_URL: postgresql://jays:jays@localhost:5432/jays_test
       REDIS_URL: redis://localhost:6379
+      MFA_ENCRYPTION_KEY: local-dev-only-ci-mfa-key-000000000000000
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -71,6 +72,8 @@ jobs:
       - name: Re-running migrations is a no-op
         run: pnpm db:migrate
       - run: pnpm test:integration
+      - name: Seed data applies and is idempotent
+        run: pnpm db:seed && pnpm db:seed
 
   security:
     name: Secret scan and dependency audit

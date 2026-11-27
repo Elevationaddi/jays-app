@@ -13,6 +13,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@jays/api-client": "workspace:*",
+    "@jays/contracts": "workspace:*",
+    "@jays/domain": "workspace:*",
     "@jays/i18n": "workspace:*",
     "@jays/ui": "workspace:*",
     "next": "^16.4.6",

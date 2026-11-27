@@ -23,6 +23,9 @@
 | D10 | Regulated service categories                                                   | Phase 2 taxonomy                     | Medical procedures excluded                                                                      |
 | D11 | Operating emirates                                                             | Phase 1 welcome screen               | All seven emirates selectable, controlled by admin settings                                      |
 | D12 | Support hours                                                                  | Phase 6                              | Configurable; not displayed until set                                                            |
+| D13 | Terms of use and privacy notice text and version                               | Launch (accounts store the version)  | Placeholder version `draft-2026-11` stored at registration; no legal text shown as final         |
+| D14 | Email and SMS providers (UAE sender ID registration)                           | Launch                               | Mock notifier only (`NOTIFY_PROVIDER=mock`); production refuses mock (ADR-0009)                  |
+| D15 | Marketing consent wording                                                      | Launch                               | Opt-in, off by default, timestamped and audited; wording placeholder                             |
 
 ## MVP defaults assumed (from the spec, also unapproved)
 
