@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "Marketplace",
+    "slug": "jays-customer",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": { "supportsTablet": false },
+    "android": {},
+    "extra": { "supportsRTL": true }
+  }
+}

@@ -1,0 +1,16 @@
+# Architecture decision records
+
+Each record states one decision, why it was made and what it costs. Records are numbered and never rewritten; a changed decision gets a new record that supersedes the old one.
+
+Status values: **Accepted** (engineering decision, in force), **Proposed** (needs founder approval before production), **Superseded**.
+
+| ADR                                                 | Title                                                 | Status   |
+| --------------------------------------------------- | ----------------------------------------------------- | -------- |
+| [0001](0001-record-architecture-decisions.md)       | Record architecture decisions                         | Accepted |
+| [0002](0002-monorepo-and-toolchain.md)              | Monorepo and toolchain                                | Accepted |
+| [0003](0003-application-stack.md)                   | Application stack and modular monolith                | Accepted |
+| [0004](0004-database-migrations-and-query-layer.md) | Plain SQL migrations; Kysely instead of Prisma        | Accepted |
+| [0005](0005-money-time-and-localization.md)         | Money, time and localization conventions              | Accepted |
+| [0006](0006-environment-and-secrets.md)             | Environment configuration, secrets and mock providers | Accepted |
+| [0007](0007-founder-decisions-and-mvp-defaults.md)  | Founder decisions and MVP defaults                    | Proposed |
+| [0008](0008-api-conventions.md)                     | API conventions: errors, request IDs, OpenAPI         | Accepted |

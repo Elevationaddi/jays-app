@@ -1,0 +1,11 @@
+{
+  "extends": "@jays/config/tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "sourceMap": true,
+    "exactOptionalPropertyTypes": false
+  },
+  "include": ["src", "scripts", "*.config.ts"]
+}

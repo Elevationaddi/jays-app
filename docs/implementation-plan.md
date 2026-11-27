@@ -1,0 +1,91 @@
+# Phased implementation plan
+
+Status: proposed, 27 November 2026. Source: `docs/10-build-plan.md`, with acceptance tests T01–T16 from `docs/09-security-testing.md`.
+Progress is recorded in [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md). Decisions and assumptions are in [`adr/`](adr/).
+
+## Starting point
+
+The repository was empty apart from the specification package. There was no existing code to preserve.
+The spec files are committed unchanged; the combined specification and storyboard PDF live in `reference/` so that
+`docs/*.md` stays the numbered source of truth.
+
+## Rules that apply to every phase
+
+- A phase is done only when its gate passes: SQL migrations, seed data, unit and integration tests (integration tests use a real PostgreSQL), screenshots for any UI, green CI, regenerated OpenAPI, and an updated README and status file.
+- No later phase is started to hide a failing earlier gate.
+- Payment, availability, authorization and fulfillment are never faked. Local development uses mock provider adapters that behave like the real ones (asynchronous webhooks, failures, duplicates). Mock adapters refuse to start in production.
+- Every proposed default that is really a commercial or legal decision stays configurable and is listed in [ADR-0007](adr/0007-founder-decisions-and-mvp-defaults.md) until the founder approves it.
+
+## Phases
+
+### Phase 0: Foundation (this PR)
+
+Monorepo scaffold, local Docker, environment schema, lint/typecheck/test CI, ADRs.
+
+| Deliverable                                                                                                                                                                                                                | Where                        |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| pnpm workspace, strict TypeScript, ESLint, Prettier, Vitest                                                                                                                                                                | repo root, `packages/config` |
+| Apps: `api` (NestJS, `/v1/health`, `/v1/health/ready`), `worker`, `business` and `admin` (Next.js), `customer` (Expo)                                                                                                      | `apps/*`                     |
+| Shared packages: `config` (env schema), `domain` (money, modes, roles, time), `contracts` (error envelope, pagination, health), `i18n` (en/ar, RTL), `ui` (design tokens with contrast tests), `db` (SQL migration runner) | `packages/*`                 |
+| Local PostgreSQL 17 and Redis via Docker Compose                                                                                                                                                                           | `docker-compose.yml`         |
+| Baseline migration: `pgcrypto`, `citext`, `btree_gist`; integration test proving a staff-overlap exclusion constraint works                                                                                                | `packages/db`                |
+| Request IDs, structured logs with secret redaction, standard error envelope                                                                                                                                                | `apps/api`                   |
+| OpenAPI generated from code and checked for drift in CI                                                                                                                                                                    | `apps/api/openapi.json`      |
+| CI: format, lint, typecheck, unit tests, build, OpenAPI drift; migrations and integration tests on PostgreSQL + Redis; secret scan and dependency audit                                                                    | `.github/workflows/ci.yml`   |
+
+Gate: all CI jobs green; `docker compose up` gives healthy Postgres and Redis; `pnpm db:migrate` applies to an empty database; `/v1/health/ready` reports both dependencies.
+No seed data yet, because there are no domain tables. Seeds begin in phase 1.
+
+### Phase 1: Identity, roles, memberships, bilingual gateway
+
+- Tables: `users`, `sessions`, `addresses`, `businesses` (shell), `memberships`, `business_modes`, `admin_accounts`, `audit_logs`, `outbox`.
+- Email/phone OTP verification with expiry and throttling (mock email/SMS adapter locally), short access token plus rotating refresh token with reuse detection, logout and revocation.
+- Admin accounts are invite-only and require MFA (TOTP); platform roles from `docs/04-admin.md`.
+- Business permissions (owner, manager, fulfillment, scheduler, finance, professional); default deny; business context resolved from DB membership, never from client claims.
+- Bilingual gateway: customer `/welcome` with Shop Products / Book Services cards and manual emirate choice; business `/business/gateway` with mode cards and onboarding state; persistent mode switch.
+- Seeds: test customers, one admin per platform role, business owners (fictional data).
+- Tests: T03 (role boundaries for identity endpoints), auth expiry and rate limits, part of T01 (mode switch keeps state), T11 smoke for RTL.
+
+### Phase 2: Merchant onboarding, approval, categories, media, storefront
+
+- Business onboarding draft → submitted → under_review → approved/rejected, resubmission with reason; suspension.
+- Private verification documents via signed upload URLs (content type/size checks; malware scan adapter).
+- Admin review queue with reasoned actions and audit log; category taxonomy (both modes), brands, media, bilingual storefront.
+- Public read endpoints only return approved data.
+- Seeds: 2 product sellers, 1 salon, 1 hybrid, with English/Arabic listings.
+- Tests: T02 (pending invisible, approved visible, suspension), audit entries.
+
+### Phase 3: Catalog, inventory, cart, multi-seller checkout (mock PSP)
+
+- Products, variants (unique SKU per business), stock movements, CHECK constraints `stock_on_hand >= stock_reserved >= 0`.
+- Cart (survives login and mode switch), server-priced expiring quote, `POST /orders` locking variant rows in stable ID order, reservations with expiry worker.
+- Mock PSP adapter with success, fail, timeout, duplicate outcomes delivered as signed webhooks; idempotency keys.
+- Tests: T04, T05, T06 (mock), T13 for products, T01 (cart kept on login).
+
+### Phase 4: Services, branches, staff, availability, booking holds
+
+- Services, branches, hours, closures, staff, shifts, blocks, staff-service/branch assignment.
+- Availability engine (15-minute grid, buffers, UTC storage, Asia/Dubai display) and exclusion constraint on staff intervals for held/confirmed/checked_in.
+- Hold (10 minutes), pay via mock PSP, confirm on verified webhook, any-staff deterministic allocation, atomic reschedule, cancellation policy snapshot, merchant calendar with manual bookings.
+- Tests: T07, T08, T14, T13 for services, T09 cancellation boundaries.
+
+### Phase 5: Real PSP sandbox, ledger, refunds, payouts, reconciliation
+
+- PSP adapter for the founder-chosen provider in sandbox, raw-body webhook signature verification, replay protection.
+- Balanced immutable ledger, effective-dated fee rules, refunds (partial, two-approver threshold), payout eligibility and holds, daily reconciliation job.
+- Blocked until the founder picks the PSP and merchant-of-record model (ADR-0007).
+- Tests: T06 (real sandbox), T09, T15, T16.
+
+### Phase 6: Fulfillment, reviews, support, notifications, dashboards, exports
+
+- Shipments and tracking, returns workflow, reviews with moderation, support tickets with internal notes, notification templates and outbox delivery with retry, admin/business dashboards and logged exports.
+- Tests: T10, T12 (notification retry), dashboard metric definitions.
+
+### Phase 7: Hardening and pilot
+
+- RTL and accessibility audit, concurrency and security tests, load test (p95 read < 500 ms target), backups with tested restore, observability (request IDs, error rates, p95, queue lag, expired holds, reconciliation mismatches, alerts), staging environment and pilot.
+- Tests: T11, T12, full regression of T01–T16.
+
+## Founder decisions that block later phases
+
+See [ADR-0007](adr/0007-founder-decisions-and-mvp-defaults.md). None block phases 0–4; the PSP and merchant-of-record decisions block phase 5, and all of them block production.

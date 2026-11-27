@@ -1,0 +1,5 @@
+{
+  "extends": "@jays/config/tsconfig.base.json",
+  "compilerOptions": { "types": ["node"], "sourceMap": true },
+  "include": ["src"]
+}

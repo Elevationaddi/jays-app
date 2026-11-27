@@ -1,0 +1,9 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# Dependencies allowed to run install scripts. Everything else is blocked by default.
+onlyBuiltDependencies:
+  - '@swc/core'
+ignoredBuiltDependencies:
+  - '@scarf/scarf'

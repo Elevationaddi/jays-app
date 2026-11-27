@@ -1,0 +1,25 @@
+{
+  "name": "@jays/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Locales, text direction and message catalogs (English and Arabic).",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@jays/config": "workspace:*"
+  }
+}
