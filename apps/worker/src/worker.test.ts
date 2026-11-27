@@ -1,7 +1,12 @@
 import { parseEnv, workerEnvSchema } from '@jays/config';
 import { pino } from 'pino';
 import { describe, expect, it, vi } from 'vitest';
-import { expireBookingHoldsJob, expireUnpaidOrdersJob } from './jobs.js';
+import {
+  expireBookingHoldsJob,
+  expireUnpaidOrdersJob,
+  MARK_EARNINGS_ELIGIBLE_SQL,
+  markEarningsEligibleJob,
+} from './jobs.js';
 import { Worker, type QueueConnection } from './worker.js';
 
 const env = parseEnv(workerEnvSchema, {
@@ -58,5 +63,13 @@ describe('jobs', () => {
     const job = expireBookingHoldsJob({ query } as never, 1000);
     await expect(job.run()).resolves.toBe(2);
     expect(query).toHaveBeenCalledWith('SELECT expire_booking_holds(now(), 200) AS n');
+  });
+
+  it('marks earnings eligible with the dispute window in force', async () => {
+    const query = vi.fn(async () => ({ rows: [{ n: 3 }] }));
+    const job = markEarningsEligibleJob({ query } as never, 1000);
+    await expect(job.run()).resolves.toBe(3);
+    expect(query).toHaveBeenCalledWith(MARK_EARNINGS_ELIGIBLE_SQL);
+    expect(MARK_EARNINGS_ELIGIBLE_SQL).toContain('payout_dispute_window_days');
   });
 });

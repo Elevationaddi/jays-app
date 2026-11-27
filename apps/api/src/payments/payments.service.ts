@@ -6,6 +6,15 @@ import { writeAudit } from '../common/audit.js';
 import { CLOCK, type Clock } from '../common/clock.js';
 import { ApiError } from '../common/error.filter.js';
 import { DB } from '../common/tokens.js';
+import { paymentStatusAfterRefunds, postings } from '@jays/domain';
+import {
+  earningForRefund,
+  post,
+  recordBookingCapture,
+  recordOrderCapture,
+  reverseEarning,
+} from '../finance/ledger.js';
+import { applyPayoutEvent } from '../finance/payout-events.js';
 import { PAYMENT_PROVIDER, type PaymentProvider, type ProviderEvent } from './provider.js';
 
 type Trx = Transaction<Database>;
@@ -18,6 +27,9 @@ export interface RefundJob {
   amountFils: number;
   target: { type: 'order' | 'booking'; id: string };
 }
+
+export type RefundReason =
+  'late_payment' | 'customer_cancellation' | 'business_cancellation' | 'admin';
 
 type LateRefund = RefundJob;
 
@@ -58,6 +70,14 @@ export class PaymentsService {
       );
     }
     const payloadHash = createHash('sha256').update(rawBody).digest('hex');
+    return this.ingest(event, payloadHash, now);
+  }
+
+  /**
+   * Records and applies one provider event exactly once. Used by the webhook endpoint and by
+   * reconciliation, which replays an event the provider recorded but never delivered (T15).
+   */
+  async ingest(event: ProviderEvent, payloadHash: string, now = this.clock.now()) {
     let lateRefund: LateRefund | null = null;
     const duplicate = await this.db.transaction().execute(async (trx) => {
       const recorded = await trx
@@ -91,7 +111,10 @@ export class PaymentsService {
     now: Date,
   ): Promise<{ result: string; lateRefund?: LateRefund }> {
     if (event.type === 'refund.succeeded' || event.type === 'refund.failed') {
-      return this.applyRefund(trx, event);
+      return this.applyRefund(trx, event, now);
+    }
+    if (event.type === 'payout.paid' || event.type === 'payout.failed') {
+      return applyPayoutEvent(trx, event, now);
     }
     if (
       event.type !== 'payment_intent.succeeded' &&
@@ -183,6 +206,17 @@ export class PaymentsService {
         .set({ status: 'refund_pending' })
         .where('id', '=', payment.id)
         .execute();
+      await post(
+        trx,
+        {
+          kind: 'late_capture',
+          sourceType: 'payment',
+          sourceId: payment.id,
+          businessId: null,
+          occurredAt: now,
+        },
+        postings.lateCapture(payment.amount_fils),
+      );
       await this.outbox(
         trx,
         'payment.late_payment_refund_requested',
@@ -270,6 +304,7 @@ export class PaymentsService {
         eb.selectFrom('order_items').select('variant_id').where('order_id', '=', order.id),
       )
       .execute();
+    await recordOrderCapture(trx, order.id, payment.id, now);
     await this.outbox(trx, 'order.paid', { orderId: order.id, userId: order.user_id }, now);
     for (const m of merchants) {
       await this.outbox(
@@ -282,16 +317,26 @@ export class PaymentsService {
     return { result: 'paid' };
   }
 
-  private async applyRefund(trx: Trx, event: ProviderEvent): Promise<{ result: string }> {
+  private async applyRefund(
+    trx: Trx,
+    event: ProviderEvent,
+    now: Date,
+  ): Promise<{ result: string }> {
     if (!event.refundId) return { result: 'unknown_refund' };
     const refund = await trx
       .selectFrom('refunds')
-      .select(['id', 'payment_id', 'status'])
+      .select(['id', 'payment_id', 'status', 'amount_fils', 'reason', 'merchant_order_id'])
       .where('provider_ref', '=', event.refundId)
       .forUpdate()
       .executeTakeFirst();
     if (!refund) return { result: 'unknown_refund' };
     if (refund.status !== 'pending') return { result: 'already_settled' };
+    const payment = await trx
+      .selectFrom('payments')
+      .select(['id', 'booking_id'])
+      .where('id', '=', refund.payment_id)
+      .forUpdate()
+      .executeTakeFirstOrThrow();
     const ok = event.type === 'refund.succeeded';
     await trx
       .updateTable('refunds')
@@ -301,33 +346,76 @@ export class PaymentsService {
       })
       .where('id', '=', refund.id)
       .execute();
-    if (!ok) {
+    if (ok) {
+      // The ledger moves only when the provider confirms (docs/05-workflows.md).
+      if (refund.reason === 'late_payment') {
+        await post(
+          trx,
+          {
+            kind: 'late_refund',
+            sourceType: 'refund',
+            sourceId: refund.id,
+            businessId: null,
+            occurredAt: now,
+          },
+          postings.lateRefund(refund.amount_fils),
+        );
+      } else {
+        const earning = await earningForRefund(trx, {
+          bookingId: payment.booking_id,
+          merchantOrderId: refund.merchant_order_id,
+        });
+        if (earning) {
+          await reverseEarning(
+            trx,
+            earning,
+            refund.amount_fils,
+            { kind: 'refund', type: 'refund', id: refund.id },
+            now,
+          );
+        } else {
+          // A refund we cannot attribute to a seller must not vanish from the books.
+          await trx
+            .updateTable('payments')
+            .set({ needs_attention: true })
+            .where('id', '=', payment.id)
+            .execute();
+        }
+      }
+    } else {
       await trx
         .updateTable('payments')
-        .set({ status: 'refund_failed', needs_attention: true })
-        .where('id', '=', refund.payment_id)
+        .set({ needs_attention: true })
+        .where('id', '=', payment.id)
         .execute();
-      return { result: 'refund_failed' };
     }
+    const status = await this.refreshStatus(trx, payment.id);
+    return { result: ok ? status : 'refund_failed' };
+  }
+
+  /** Recomputes a settled payment's status from its refunds. The payment row must be locked. */
+  private async refreshStatus(trx: Trx, paymentId: string) {
     const payment = await trx
       .selectFrom('payments')
-      .select('amount_fils')
-      .where('id', '=', refund.payment_id)
-      .forUpdate()
+      .select(['amount_fils'])
+      .where('id', '=', paymentId)
       .executeTakeFirstOrThrow();
-    const refunded = await trx
+    const rows = await trx
       .selectFrom('refunds')
-      .select((eb) => eb.fn.coalesce(eb.fn.sum<string>('amount_fils'), eb.lit(0)).as('total'))
-      .where('payment_id', '=', refund.payment_id)
-      .where('status', '=', 'succeeded')
-      .executeTakeFirstOrThrow();
-    const full = Number(refunded.total) >= payment.amount_fils;
-    await trx
-      .updateTable('payments')
-      .set({ status: full ? 'refunded' : 'partially_refunded' })
-      .where('id', '=', refund.payment_id)
+      .select(['status', 'amount_fils'])
+      .where('payment_id', '=', paymentId)
       .execute();
-    return { result: full ? 'refunded' : 'partially_refunded' };
+    const status = paymentStatusAfterRefunds({
+      capturedFils: payment.amount_fils,
+      succeededFils: rows
+        .filter((r) => r.status === 'succeeded')
+        .reduce((total, r) => total + r.amount_fils, 0),
+      pendingCount: rows.filter((r) => r.status === 'pending').length,
+      failedWithoutSuccess:
+        rows.some((r) => r.status === 'failed') && !rows.some((r) => r.status === 'succeeded'),
+    });
+    await trx.updateTable('payments').set({ status }).where('id', '=', paymentId).execute();
+    return status;
   }
 
   /**
@@ -339,8 +427,10 @@ export class PaymentsService {
     input: {
       paymentId: string;
       amountFils: number;
-      reason: 'late_payment' | 'customer_cancellation' | 'business_cancellation';
+      reason: RefundReason;
       target: RefundJob['target'];
+      merchantOrderId?: string | null;
+      refundRequestId?: string | null;
     },
     now: Date,
   ): Promise<RefundJob | null> {
@@ -351,12 +441,31 @@ export class PaymentsService {
       .where('id', '=', input.paymentId)
       .forUpdate()
       .executeTakeFirstOrThrow();
-    if (payment.status !== 'succeeded' || !payment.provider_intent_id) return null;
-    const refund = await trx
-      .insertInto('refunds')
-      .values({ payment_id: payment.id, amount_fils: input.amountFils, reason: input.reason })
-      .returning('id')
-      .executeTakeFirstOrThrow();
+    const refundable = ['succeeded', 'refund_pending', 'partially_refunded', 'refund_failed'];
+    if (!refundable.includes(payment.status) || !payment.provider_intent_id) return null;
+    let refund: { id: string };
+    try {
+      refund = await trx
+        .insertInto('refunds')
+        .values({
+          payment_id: payment.id,
+          amount_fils: input.amountFils,
+          reason: input.reason,
+          merchant_order_id: input.merchantOrderId ?? null,
+          refund_request_id: input.refundRequestId ?? null,
+        })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+    } catch (error) {
+      if ((error as { constraint?: string }).constraint === 'refunds_within_capture') {
+        throw new ApiError(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'REFUND_EXCEEDS_CAPTURE',
+          'Refunds cannot add up to more than was paid.',
+        );
+      }
+      throw error;
+    }
     await trx
       .updateTable('payments')
       .set({ status: 'refund_pending' })
@@ -396,7 +505,7 @@ export class PaymentsService {
   ): Promise<{ result: string; lateRefund?: LateRefund }> {
     const booking = await trx
       .selectFrom('bookings')
-      .select(['id', 'status', 'hold_expires_at', 'user_id', 'business_id'])
+      .select(['id', 'status', 'hold_expires_at', 'user_id', 'business_id', 'price_fils'])
       .where('id', '=', payment.booking_id)
       .forUpdate()
       .executeTakeFirstOrThrow();
@@ -453,6 +562,17 @@ export class PaymentsService {
           .where('id', '=', booking.id)
           .execute();
       }
+      await post(
+        trx,
+        {
+          kind: 'late_capture',
+          sourceType: 'payment',
+          sourceId: payment.id,
+          businessId: null,
+          occurredAt: now,
+        },
+        postings.lateCapture(payment.amount_fils),
+      );
       const job = await this.requestRefund(
         trx,
         {
@@ -472,6 +592,12 @@ export class PaymentsService {
       .set({ status: 'confirmed', confirmed_at: now, version: (eb) => eb('version', '+', 1) })
       .where('id', '=', booking.id)
       .execute();
+    await recordBookingCapture(
+      trx,
+      { id: booking.id, businessId: booking.business_id, priceFils: booking.price_fils },
+      payment.id,
+      now,
+    );
     await this.outbox(
       trx,
       'booking.confirmed',
@@ -505,10 +631,17 @@ export class PaymentsService {
           .where('status', '=', 'pending')
           .execute();
         await trx
+          .selectFrom('payments')
+          .select('id')
+          .where('id', '=', r.paymentId)
+          .forUpdate()
+          .execute();
+        await trx
           .updateTable('payments')
-          .set({ status: 'refund_failed', needs_attention: true })
+          .set({ needs_attention: true })
           .where('id', '=', r.paymentId)
           .execute();
+        await this.refreshStatus(trx, r.paymentId);
         await this.outbox(
           trx,
           'payment.manual_exception',

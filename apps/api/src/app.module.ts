@@ -29,6 +29,13 @@ import {
 import { MockPspController, WebhooksController } from './payments/payments.controller.js';
 import { PaymentsService } from './payments/payments.service.js';
 import { PAYMENT_PROVIDER, type PaymentProvider } from './payments/provider.js';
+import { AdminFinanceController } from './finance/admin-finance.controller.js';
+import { AdminFinanceService } from './finance/admin-finance.service.js';
+import { BusinessFinanceController } from './finance/business-finance.controller.js';
+import { FinanceScheduler } from './finance/finance-scheduler.js';
+import { FinanceService } from './finance/finance.service.js';
+import { PayoutsService } from './finance/payouts.service.js';
+import { ReconciliationService } from './finance/reconciliation.service.js';
 import { CatalogController } from './catalog/catalog.controller.js';
 import { StoresService } from './catalog/stores.service.js';
 import { TaxonomyService } from './catalog/taxonomy.service.js';
@@ -165,6 +172,8 @@ export class AppModule {
         BookingsController,
         BusinessScheduleController,
         AdminBookingsController,
+        BusinessFinanceController,
+        AdminFinanceController,
         WebhooksController,
         // The mock provider's hosted payment step. Production cannot run the mock (ADR-0006).
         ...(env.PSP_PROVIDER === 'mock' ? [MockPspController] : []),
@@ -226,6 +235,11 @@ export class AppModule {
         ScheduleService,
         BookingsService,
         AdminBookingsService,
+        FinanceService,
+        AdminFinanceService,
+        PayoutsService,
+        ReconciliationService,
+        FinanceScheduler,
         UserAuthGuard,
         OptionalUserAuthGuard,
         BusinessAccessGuard,

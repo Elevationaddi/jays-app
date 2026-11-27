@@ -493,6 +493,7 @@ export interface MerchantOrdersTable extends Totals {
   delivery_snapshot: Json;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+  delivered_at: Timestamp | null;
 }
 
 export interface OrderItemsTable {
@@ -552,9 +553,11 @@ export interface PaymentsTable {
   created_at: CreatedAt;
   updated_at: UpdatedAt;
   booking_id: string | null;
+  reconciled_at: Timestamp | null;
 }
 
-export type RefundReason = 'late_payment' | 'customer_cancellation' | 'business_cancellation';
+export type RefundReason =
+  'late_payment' | 'customer_cancellation' | 'business_cancellation' | 'admin';
 
 export interface RefundsTable {
   id: Id;
@@ -566,6 +569,8 @@ export interface RefundsTable {
   failure_code: string | null;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+  merchant_order_id: string | null;
+  refund_request_id: string | null;
 }
 
 export interface WebhookEventsTable {
@@ -746,6 +751,199 @@ export interface BookingsTable {
   updated_at: UpdatedAt;
 }
 
+// Phase 5: finance (ADR-0015) -------------------------------------------------------------------
+
+export type FinanceMode = 'shop' | 'services';
+
+export interface FeeRulesTable {
+  id: Id;
+  mode: FinanceMode;
+  business_id: string | null;
+  commission_bps: number;
+  effective_at: Timestamp;
+  reason: string;
+  created_by: string | null;
+  created_at: CreatedAt;
+}
+
+export type FinanceSettingKey =
+  'refund_approval_threshold_fils' | 'payout_dispute_window_days' | 'payout_minimum_fils';
+
+export interface FinanceSettingsTable {
+  id: Id;
+  key: FinanceSettingKey;
+  value: number;
+  effective_at: Timestamp;
+  reason: string;
+  created_by: string | null;
+  created_at: CreatedAt;
+}
+
+export type PayoutStatus = 'pending' | 'paid' | 'failed';
+
+export interface PayoutsTable {
+  id: Id;
+  business_id: string;
+  amount_fils: number;
+  currency: Generated<'AED'>;
+  status: Generated<PayoutStatus>;
+  provider: 'mock';
+  provider_ref: string | null;
+  failure_code: string | null;
+  needs_attention: Generated<boolean>;
+  created_by: string | null;
+  paid_at: Timestamp | null;
+  failed_at: Timestamp | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export type EarningStatus = 'pending' | 'eligible' | 'in_payout' | 'paid_out';
+
+export interface MerchantEarningsTable {
+  id: Id;
+  business_id: string;
+  source_type: 'merchant_order' | 'booking';
+  merchant_order_id: string | null;
+  booking_id: string | null;
+  payment_id: string;
+  mode: FinanceMode;
+  gross_fils: number;
+  commission_base_fils: number;
+  commission_bps: number;
+  fee_rule_id: string | null;
+  commission_fils: number;
+  refunded_fils: Generated<number>;
+  commission_refunded_fils: Generated<number>;
+  status: Generated<EarningStatus>;
+  eligible_at: Timestamp | null;
+  payout_id: string | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export type LedgerKind =
+  | 'capture'
+  | 'late_capture'
+  | 'refund'
+  | 'late_refund'
+  | 'chargeback'
+  | 'payout_initiated'
+  | 'payout_paid'
+  | 'payout_failed';
+export type LedgerSourceType = 'merchant_earning' | 'payment' | 'refund' | 'dispute' | 'payout';
+export type LedgerAccount =
+  | 'psp_clearing'
+  | 'merchant_payable'
+  | 'payouts_in_transit'
+  | 'platform_commission'
+  | 'unallocated_receipts';
+
+export interface LedgerTransactionsTable {
+  id: Id;
+  kind: LedgerKind;
+  source_type: LedgerSourceType;
+  source_id: string;
+  business_id: string | null;
+  memo: string | null;
+  occurred_at: Timestamp;
+  created_at: CreatedAt;
+}
+
+export interface LedgerEntriesTable {
+  id: Id;
+  transaction_id: string;
+  account: LedgerAccount;
+  business_id: string | null;
+  debit_fils: Generated<number>;
+  credit_fils: Generated<number>;
+  currency: Generated<'AED'>;
+  created_at: CreatedAt;
+}
+
+export interface RefundRequestsTable {
+  id: Id;
+  payment_id: string;
+  merchant_order_id: string | null;
+  amount_fils: number;
+  reason: string;
+  threshold_fils: number;
+  needs_second_approval: boolean;
+  status: Generated<'pending_approval' | 'approved' | 'rejected'>;
+  requested_by: string;
+  decided_by: string | null;
+  decision_note: string | null;
+  decided_at: Timestamp | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface DisputesTable {
+  id: Id;
+  earning_id: string;
+  business_id: string;
+  amount_fils: number;
+  status: Generated<'open' | 'won' | 'lost'>;
+  reason: string;
+  resolution_note: string | null;
+  opened_by: string;
+  resolved_by: string | null;
+  resolved_at: Timestamp | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface PayoutHoldsTable {
+  id: Id;
+  business_id: string;
+  reason: string;
+  placed_by: string;
+  released_by: string | null;
+  released_at: Timestamp | null;
+  created_at: CreatedAt;
+}
+
+export interface ReconciliationRunsTable {
+  id: Id;
+  provider: 'mock';
+  period_start: Timestamp;
+  period_end: Timestamp;
+  status: Generated<'running' | 'completed' | 'failed'>;
+  checked_count: Generated<number>;
+  recovered_count: Generated<number>;
+  mismatch_count: Generated<number>;
+  started_by: string | null;
+  started_at: CreatedAt;
+  finished_at: Timestamp | null;
+  failure: string | null;
+}
+
+export type ReconciliationItemKind =
+  | 'recovered_missing_webhook'
+  | 'amount_mismatch'
+  | 'status_mismatch'
+  | 'unknown_at_provider'
+  | 'unknown_locally';
+
+export interface ReconciliationItemsTable {
+  id: Id;
+  run_id: string;
+  kind: ReconciliationItemKind;
+  object_type: 'payment' | 'refund' | 'payout';
+  provider_ref: string | null;
+  payment_id: string | null;
+  refund_id: string | null;
+  payout_id: string | null;
+  local_amount_fils: number | null;
+  provider_amount_fils: number | null;
+  local_status: string | null;
+  provider_status: string | null;
+  resolved_at: Timestamp | null;
+  resolved_by: string | null;
+  resolution_note: string | null;
+  created_at: CreatedAt;
+}
+
 export interface Database {
   emirates: EmiratesTable;
   users: UsersTable;
@@ -793,6 +991,17 @@ export interface Database {
   shifts: ShiftsTable;
   schedule_blocks: ScheduleBlocksTable;
   bookings: BookingsTable;
+  fee_rules: FeeRulesTable;
+  finance_settings: FinanceSettingsTable;
+  payouts: PayoutsTable;
+  merchant_earnings: MerchantEarningsTable;
+  ledger_transactions: LedgerTransactionsTable;
+  ledger_entries: LedgerEntriesTable;
+  refund_requests: RefundRequestsTable;
+  disputes: DisputesTable;
+  payout_holds: PayoutHoldsTable;
+  reconciliation_runs: ReconciliationRunsTable;
+  reconciliation_items: ReconciliationItemsTable;
 }
 
 /** Every column of every table, used by the drift test. Keep in the same order as above. */
@@ -1166,6 +1375,7 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'delivery_snapshot',
     'created_at',
     'updated_at',
+    'delivered_at',
   ],
   order_items: [
     'id',
@@ -1213,6 +1423,7 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'created_at',
     'updated_at',
     'booking_id',
+    'reconciled_at',
   ],
   refunds: [
     'id',
@@ -1224,6 +1435,8 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'failure_code',
     'created_at',
     'updated_at',
+    'merchant_order_id',
+    'refund_request_id',
   ],
   webhook_events: [
     'id',
@@ -1363,6 +1576,145 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'version',
     'created_at',
     'updated_at',
+  ],
+  fee_rules: [
+    'id',
+    'mode',
+    'business_id',
+    'commission_bps',
+    'effective_at',
+    'reason',
+    'created_by',
+    'created_at',
+  ],
+  finance_settings: ['id', 'key', 'value', 'effective_at', 'reason', 'created_by', 'created_at'],
+  payouts: [
+    'id',
+    'business_id',
+    'amount_fils',
+    'currency',
+    'status',
+    'provider',
+    'provider_ref',
+    'failure_code',
+    'needs_attention',
+    'created_by',
+    'paid_at',
+    'failed_at',
+    'created_at',
+    'updated_at',
+  ],
+  merchant_earnings: [
+    'id',
+    'business_id',
+    'source_type',
+    'merchant_order_id',
+    'booking_id',
+    'payment_id',
+    'mode',
+    'gross_fils',
+    'commission_base_fils',
+    'commission_bps',
+    'fee_rule_id',
+    'commission_fils',
+    'refunded_fils',
+    'commission_refunded_fils',
+    'status',
+    'eligible_at',
+    'payout_id',
+    'created_at',
+    'updated_at',
+  ],
+  ledger_transactions: [
+    'id',
+    'kind',
+    'source_type',
+    'source_id',
+    'business_id',
+    'memo',
+    'occurred_at',
+    'created_at',
+  ],
+  ledger_entries: [
+    'id',
+    'transaction_id',
+    'account',
+    'business_id',
+    'debit_fils',
+    'credit_fils',
+    'currency',
+    'created_at',
+  ],
+  refund_requests: [
+    'id',
+    'payment_id',
+    'merchant_order_id',
+    'amount_fils',
+    'reason',
+    'threshold_fils',
+    'needs_second_approval',
+    'status',
+    'requested_by',
+    'decided_by',
+    'decision_note',
+    'decided_at',
+    'created_at',
+    'updated_at',
+  ],
+  disputes: [
+    'id',
+    'earning_id',
+    'business_id',
+    'amount_fils',
+    'status',
+    'reason',
+    'resolution_note',
+    'opened_by',
+    'resolved_by',
+    'resolved_at',
+    'created_at',
+    'updated_at',
+  ],
+  payout_holds: [
+    'id',
+    'business_id',
+    'reason',
+    'placed_by',
+    'released_by',
+    'released_at',
+    'created_at',
+  ],
+  reconciliation_runs: [
+    'id',
+    'provider',
+    'period_start',
+    'period_end',
+    'status',
+    'checked_count',
+    'recovered_count',
+    'mismatch_count',
+    'started_by',
+    'started_at',
+    'finished_at',
+    'failure',
+  ],
+  reconciliation_items: [
+    'id',
+    'run_id',
+    'kind',
+    'object_type',
+    'provider_ref',
+    'payment_id',
+    'refund_id',
+    'payout_id',
+    'local_amount_fils',
+    'provider_amount_fils',
+    'local_status',
+    'provider_status',
+    'resolved_at',
+    'resolved_by',
+    'resolution_note',
+    'created_at',
   ],
 };
 

@@ -8,3 +8,4 @@ export * from './onboarding.js';
 export * from './pagination.js';
 export * from './commerce.js';
 export * from './booking.js';
+export * from './finance.js';

@@ -107,6 +107,27 @@ describe('phase 4 platform capabilities', () => {
     expect(hasPlatformCapability(['support'], 'bookings.view')).toBe(true);
     expect(hasPlatformCapability(['support'], 'services.takedown')).toBe(false);
     expect(hasPlatformCapability(['catalog'], 'services.takedown')).toBe(true);
-    expect(hasPlatformCapability(['finance'], 'bookings.view')).toBe(false);
+    expect(hasPlatformCapability(['analyst'], 'bookings.view')).toBe(false);
+  });
+});
+
+describe('phase 5 platform capabilities', () => {
+  it('lets finance manage money, support request refunds, and nobody else change finance', () => {
+    expect(hasPlatformCapability(['finance'], 'finance.manage')).toBe(true);
+    expect(hasPlatformCapability(['finance'], 'finance.refund')).toBe(true);
+    expect(hasPlatformCapability(['support'], 'finance.refund')).toBe(true);
+    expect(hasPlatformCapability(['support'], 'finance.manage')).toBe(false);
+    expect(hasPlatformCapability(['analyst'], 'finance.view')).toBe(true);
+    expect(hasPlatformCapability(['analyst'], 'finance.refund')).toBe(false);
+    for (const role of ['catalog', 'operations', 'compliance']) {
+      expect(hasPlatformCapability([role], 'finance.refund')).toBe(false);
+      expect(hasPlatformCapability([role], 'finance.manage')).toBe(false);
+    }
+  });
+
+  it('never lets business staff move payouts (T03)', () => {
+    for (const p of ['manager', 'fulfillment', 'scheduler', 'finance', 'professional']) {
+      expect(hasBusinessCapability([p], 'payouts.manage')).toBe(false);
+    }
   });
 });
