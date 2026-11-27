@@ -6,3 +6,4 @@ export * from './health.js';
 export * from './identity.js';
 export * from './onboarding.js';
 export * from './pagination.js';
+export * from './commerce.js';

@@ -17,6 +17,7 @@ import { hashPassword, SecretBox } from '../auth/crypto.js';
 import { MockNotifier } from '../auth/notifier.js';
 import { generateTotpSecret, totpAt } from '../auth/totp.js';
 import type { Clock } from '../common/clock.js';
+import { MockPaymentProvider, type WebhookDelivery } from '../payments/mock-provider.js';
 import { testEnv } from './test-env.js';
 
 /** Clock that tests can move forward. Starts at real time so database defaults line up. */
@@ -39,6 +40,11 @@ export interface Harness {
   db: Db;
   /** Directory of the local storage adapter for this run. */
   storageDir: string;
+  /** The mock payment provider; its webhooks are captured in `webhooks` instead of being sent. */
+  psp: MockPaymentProvider;
+  webhooks: WebhookDelivery[];
+  /** POSTs every captured webhook to the API (in order) and clears the queue; returns responses. */
+  deliverWebhooks: () => Promise<{ status: number; body: unknown }[]>;
   close: () => Promise<void>;
 }
 
@@ -82,13 +88,17 @@ export async function startHarness(): Promise<Harness> {
     REDIS_URL: process.env['REDIS_URL'],
     TRUST_PROXY_HOPS: '1',
     STORAGE_LOCAL_DIR: storageDir,
+    MOCK_PAYMENT_OUTCOMES: 'true',
   });
   const notifier = new MockNotifier(false);
   const clock = new TestClock();
+  const webhooks: WebhookDelivery[] = [];
+  const psp = new MockPaymentProvider(env.PSP_WEBHOOK_SECRET, (d) => webhooks.push(d), clock);
   const app = await createApp({
     env,
     notifier,
     clock,
+    paymentProvider: psp,
     rateLimitNamespace: `it-${process.pid}-${Date.now()}`,
   });
   await app.init();
@@ -102,6 +112,17 @@ export async function startHarness(): Promise<Harness> {
     clock,
     db,
     storageDir,
+    psp,
+    webhooks,
+    deliverWebhooks: async () => {
+      const queued = webhooks.splice(0, webhooks.length);
+      const results: { status: number; body: unknown }[] = [];
+      for (const d of queued) {
+        const res = await request(server).post('/v1/webhooks/payments').set(d.headers).send(d.body);
+        results.push({ status: res.status, body: res.body as unknown });
+      }
+      return results;
+    },
     close: async () => {
       await app.close();
       await db.destroy();

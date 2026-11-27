@@ -90,3 +90,38 @@ export function formatAed(amount: Fils, locale: 'en' | 'ar'): string {
     maximumFractionDigits: 2,
   }).format(amount / FILS_PER_AED);
 }
+
+/**
+ * The tax contained in a tax-inclusive amount: `amount * bps / (10000 + bps)`, rounded to whole
+ * fils with the given mode. Integer arithmetic only.
+ */
+export function extractInclusiveTax(amount: Fils, bps: number, rounding: RoundingMode): Fils {
+  if (!Number.isSafeInteger(bps) || bps < 0) {
+    throw new MoneyError(`Basis points must be a non-negative integer, got ${bps}`);
+  }
+  if (bps === 0) return fils(0);
+  const numerator = BigInt(amount) * BigInt(bps);
+  const denominator = 10_000n + BigInt(bps);
+  const quotient = numerator / denominator;
+  const remainder = numerator % denominator;
+  let result = quotient;
+  switch (rounding) {
+    case 'down':
+      break;
+    case 'up':
+      if (remainder > 0n) result += 1n;
+      break;
+    case 'half_up':
+      if (remainder * 2n >= denominator) result += 1n;
+      break;
+    case 'half_even':
+      if (
+        remainder * 2n > denominator ||
+        (remainder * 2n === denominator && quotient % 2n === 1n)
+      ) {
+        result += 1n;
+      }
+      break;
+  }
+  return fils(Number(result));
+}

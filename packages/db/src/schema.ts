@@ -251,7 +251,7 @@ export interface VerificationDocumentsTable {
   updated_at: UpdatedAt;
 }
 
-export type MediaPurpose = 'storefront_logo' | 'storefront_banner';
+export type MediaPurpose = 'storefront_logo' | 'storefront_banner' | 'product_image';
 
 export interface MediaTable {
   id: Id;
@@ -320,6 +320,269 @@ export interface BrandsTable {
   updated_at: UpdatedAt;
 }
 
+export type TaxClass = 'standard' | 'zero_rated' | 'exempt';
+
+export interface TaxRatesTable {
+  id: Id;
+  tax_class: TaxClass;
+  rate_bps: number;
+  effective_at: Timestamp;
+  created_at: CreatedAt;
+}
+
+export type ProductStatus =
+  'draft' | 'submitted' | 'active' | 'rejected' | 'suspended' | 'archived';
+
+export interface ProductsTable {
+  id: Id;
+  business_id: string;
+  mode: Generated<'shop'>;
+  category_id: string;
+  brand_id: string | null;
+  title: Localized;
+  description: Localized;
+  details: LocalizedOrNull;
+  return_eligible: Generated<boolean>;
+  status: Generated<ProductStatus>;
+  live_title: LocalizedOrNull;
+  live_description: LocalizedOrNull;
+  live_details: LocalizedOrNull;
+  live_category_id: string | null;
+  live_brand_id: string | null;
+  live_return_eligible: boolean | null;
+  live_media_ids: ColumnType<string[], string[] | undefined, string[]>;
+  published_at: Timestamp | null;
+  submitted_at: Timestamp | null;
+  changes_submitted_at: Timestamp | null;
+  reviewed_at: Timestamp | null;
+  reviewed_by: string | null;
+  review_reason: string | null;
+  suspension_reason: string | null;
+  archived_at: Timestamp | null;
+  version: Generated<number>;
+  created_by: string;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface ProductMediaTable {
+  product_id: string;
+  business_id: string;
+  media_id: string;
+  sort_order: number;
+  created_at: CreatedAt;
+}
+
+export interface VariantsTable {
+  id: Id;
+  product_id: string;
+  business_id: string;
+  sku: string;
+  name: Localized;
+  barcode: string | null;
+  price_fils: number;
+  tax_class: Generated<TaxClass>;
+  stock_on_hand: Generated<number>;
+  stock_reserved: Generated<number>;
+  low_stock_threshold: Generated<number>;
+  weight_grams: number | null;
+  sort_order: Generated<number>;
+  status: Generated<'active' | 'archived'>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export type StockReason =
+  'initial_stock' | 'restock' | 'damaged' | 'lost' | 'correction' | 'return_restock' | 'sale';
+
+export interface StockMovementsTable {
+  id: Id;
+  variant_id: string;
+  business_id: string;
+  delta: number;
+  reason: StockReason;
+  note: string | null;
+  order_id: string | null;
+  actor_type: 'user' | 'admin' | 'system';
+  actor_id: string | null;
+  on_hand_after: number;
+  created_at: CreatedAt;
+}
+
+export interface DeliveryZonesTable {
+  id: Id;
+  business_id: string;
+  emirate_code: string;
+  fee_fils: number;
+  free_over_fils: number | null;
+  min_days: number;
+  max_days: number;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface CartsTable {
+  id: Id;
+  user_id: string | null;
+  guest_token_hash: string | null;
+  status: Generated<'active' | 'merged'>;
+  merged_into: string | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface CartItemsTable {
+  id: Id;
+  cart_id: string;
+  variant_id: string;
+  qty: number;
+  price_seen_fils: number;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+interface Totals {
+  subtotal_fils: number;
+  delivery_fils: number;
+  discount_fils: Generated<number>;
+  tax_fils: number;
+  total_fils: number;
+}
+
+export interface QuotesTable extends Totals {
+  id: Id;
+  user_id: string;
+  cart_id: string;
+  address_id: string;
+  address_snapshot: Json;
+  breakdown: Json;
+  currency: Generated<'AED'>;
+  expires_at: Timestamp;
+  created_at: CreatedAt;
+}
+
+export type OrderStatus =
+  'pending_payment' | 'paid' | 'failed' | 'expired' | 'partially_refunded' | 'refunded';
+
+export interface OrdersTable extends Totals {
+  id: Id;
+  user_id: string;
+  quote_id: string;
+  cart_id: string;
+  status: Generated<OrderStatus>;
+  currency: Generated<'AED'>;
+  address_snapshot: Json;
+  payment_expires_at: Timestamp;
+  paid_at: Timestamp | null;
+  failed_at: Timestamp | null;
+  expired_at: Timestamp | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export type MerchantOrderStatus =
+  'pending_payment' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'canceled';
+
+export interface MerchantOrdersTable extends Totals {
+  id: Id;
+  order_id: string;
+  business_id: string;
+  status: Generated<MerchantOrderStatus>;
+  cancel_reason:
+    'payment_failed' | 'payment_expired' | 'customer_request' | 'merchant_request' | null;
+  delivery_snapshot: Json;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface OrderItemsTable {
+  id: Id;
+  order_id: string;
+  merchant_order_id: string;
+  business_id: string;
+  product_id: string;
+  variant_id: string;
+  qty: number;
+  unit_price_fils: number;
+  line_total_fils: number;
+  discount_fils: Generated<number>;
+  tax_class: TaxClass;
+  tax_rate_bps: number;
+  tax_fils: number;
+  snapshot: Json;
+  created_at: CreatedAt;
+}
+
+export interface ReservationsTable {
+  id: Id;
+  order_id: string;
+  variant_id: string;
+  business_id: string;
+  qty: number;
+  expires_at: Timestamp;
+  status: Generated<'active' | 'converted' | 'released'>;
+  released_reason: 'payment_failed' | 'expired' | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export type PaymentStatus =
+  'requires_payment' | 'succeeded' | 'failed' | 'refund_pending' | 'refunded' | 'refund_failed';
+
+export interface PaymentsTable {
+  id: Id;
+  target_type: 'order';
+  order_id: string | null;
+  provider: 'mock';
+  provider_intent_id: string | null;
+  idempotency_key: string;
+  amount_fils: number;
+  currency: Generated<'AED'>;
+  status: Generated<PaymentStatus>;
+  client_secret: string | null;
+  failure_code: string | null;
+  needs_attention: Generated<boolean>;
+  succeeded_at: Timestamp | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface RefundsTable {
+  id: Id;
+  payment_id: string;
+  amount_fils: number;
+  reason: 'late_payment';
+  status: Generated<'pending' | 'succeeded' | 'failed'>;
+  provider_ref: string | null;
+  failure_code: string | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface WebhookEventsTable {
+  id: Id;
+  provider: 'mock';
+  event_id: string;
+  event_type: string;
+  payload_hash: string;
+  outcome: Generated<string>;
+  received_at: CreatedAt;
+}
+
+export interface IdempotencyKeysTable {
+  id: Id;
+  actor_type: 'user' | 'admin';
+  actor_id: string;
+  route: string;
+  key: string;
+  request_hash: string;
+  status: Generated<'in_progress' | 'completed'>;
+  response_status: number | null;
+  response_body: Json | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
 export interface Database {
   emirates: EmiratesTable;
   users: UsersTable;
@@ -339,6 +602,23 @@ export interface Database {
   storefronts: StorefrontsTable;
   categories: CategoriesTable;
   brands: BrandsTable;
+  tax_rates: TaxRatesTable;
+  products: ProductsTable;
+  product_media: ProductMediaTable;
+  variants: VariantsTable;
+  stock_movements: StockMovementsTable;
+  delivery_zones: DeliveryZonesTable;
+  carts: CartsTable;
+  cart_items: CartItemsTable;
+  quotes: QuotesTable;
+  orders: OrdersTable;
+  merchant_orders: MerchantOrdersTable;
+  order_items: OrderItemsTable;
+  reservations: ReservationsTable;
+  payments: PaymentsTable;
+  refunds: RefundsTable;
+  webhook_events: WebhookEventsTable;
+  idempotency_keys: IdempotencyKeysTable;
 }
 
 /** Every column of every table, used by the drift test. Keep in the same order as above. */
@@ -585,6 +865,213 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'updated_at',
   ],
   brands: ['id', 'slug', 'name', 'status', 'created_by', 'created_at', 'updated_at'],
+  tax_rates: ['id', 'tax_class', 'rate_bps', 'effective_at', 'created_at'],
+  products: [
+    'id',
+    'business_id',
+    'mode',
+    'category_id',
+    'brand_id',
+    'title',
+    'description',
+    'details',
+    'return_eligible',
+    'status',
+    'live_title',
+    'live_description',
+    'live_details',
+    'live_category_id',
+    'live_brand_id',
+    'live_return_eligible',
+    'live_media_ids',
+    'published_at',
+    'submitted_at',
+    'changes_submitted_at',
+    'reviewed_at',
+    'reviewed_by',
+    'review_reason',
+    'suspension_reason',
+    'archived_at',
+    'version',
+    'created_by',
+    'created_at',
+    'updated_at',
+  ],
+  product_media: ['product_id', 'business_id', 'media_id', 'sort_order', 'created_at'],
+  variants: [
+    'id',
+    'product_id',
+    'business_id',
+    'sku',
+    'name',
+    'barcode',
+    'price_fils',
+    'tax_class',
+    'stock_on_hand',
+    'stock_reserved',
+    'low_stock_threshold',
+    'weight_grams',
+    'sort_order',
+    'status',
+    'created_at',
+    'updated_at',
+  ],
+  stock_movements: [
+    'id',
+    'variant_id',
+    'business_id',
+    'delta',
+    'reason',
+    'note',
+    'order_id',
+    'actor_type',
+    'actor_id',
+    'on_hand_after',
+    'created_at',
+  ],
+  delivery_zones: [
+    'id',
+    'business_id',
+    'emirate_code',
+    'fee_fils',
+    'free_over_fils',
+    'min_days',
+    'max_days',
+    'created_at',
+    'updated_at',
+  ],
+  carts: ['id', 'user_id', 'guest_token_hash', 'status', 'merged_into', 'created_at', 'updated_at'],
+  cart_items: ['id', 'cart_id', 'variant_id', 'qty', 'price_seen_fils', 'created_at', 'updated_at'],
+  quotes: [
+    'id',
+    'user_id',
+    'cart_id',
+    'address_id',
+    'address_snapshot',
+    'breakdown',
+    'subtotal_fils',
+    'delivery_fils',
+    'discount_fils',
+    'tax_fils',
+    'total_fils',
+    'currency',
+    'expires_at',
+    'created_at',
+  ],
+  orders: [
+    'id',
+    'user_id',
+    'quote_id',
+    'cart_id',
+    'status',
+    'subtotal_fils',
+    'delivery_fils',
+    'discount_fils',
+    'tax_fils',
+    'total_fils',
+    'currency',
+    'address_snapshot',
+    'payment_expires_at',
+    'paid_at',
+    'failed_at',
+    'expired_at',
+    'created_at',
+    'updated_at',
+  ],
+  merchant_orders: [
+    'id',
+    'order_id',
+    'business_id',
+    'status',
+    'cancel_reason',
+    'subtotal_fils',
+    'delivery_fils',
+    'discount_fils',
+    'tax_fils',
+    'total_fils',
+    'delivery_snapshot',
+    'created_at',
+    'updated_at',
+  ],
+  order_items: [
+    'id',
+    'order_id',
+    'merchant_order_id',
+    'business_id',
+    'product_id',
+    'variant_id',
+    'qty',
+    'unit_price_fils',
+    'line_total_fils',
+    'discount_fils',
+    'tax_class',
+    'tax_rate_bps',
+    'tax_fils',
+    'snapshot',
+    'created_at',
+  ],
+  reservations: [
+    'id',
+    'order_id',
+    'variant_id',
+    'business_id',
+    'qty',
+    'expires_at',
+    'status',
+    'released_reason',
+    'created_at',
+    'updated_at',
+  ],
+  payments: [
+    'id',
+    'target_type',
+    'order_id',
+    'provider',
+    'provider_intent_id',
+    'idempotency_key',
+    'amount_fils',
+    'currency',
+    'status',
+    'client_secret',
+    'failure_code',
+    'needs_attention',
+    'succeeded_at',
+    'created_at',
+    'updated_at',
+  ],
+  refunds: [
+    'id',
+    'payment_id',
+    'amount_fils',
+    'reason',
+    'status',
+    'provider_ref',
+    'failure_code',
+    'created_at',
+    'updated_at',
+  ],
+  webhook_events: [
+    'id',
+    'provider',
+    'event_id',
+    'event_type',
+    'payload_hash',
+    'outcome',
+    'received_at',
+  ],
+  idempotency_keys: [
+    'id',
+    'actor_type',
+    'actor_id',
+    'route',
+    'key',
+    'request_hash',
+    'status',
+    'response_status',
+    'response_body',
+    'created_at',
+    'updated_at',
+  ],
 };
 
 export type User = Selectable<UsersTable>;

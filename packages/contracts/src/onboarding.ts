@@ -7,6 +7,7 @@ import {
   IMAGE_CONTENT_TYPES,
   IMAGE_MAX_BYTES,
   MEDIA_PURPOSES,
+  STOREFRONT_MEDIA_PURPOSES,
   ONBOARDING_ITEMS,
 } from '@jays/domain';
 import { z } from 'zod';
@@ -107,7 +108,7 @@ export const signedUrlSchema = z.object({ url: z.url(), expiresAt: isoDateTime }
 
 export const mediaPurposeSchema = z.enum(MEDIA_PURPOSES);
 export const createMediaUploadRequestSchema = z.strictObject({
-  purpose: mediaPurposeSchema,
+  purpose: z.enum(STOREFRONT_MEDIA_PURPOSES),
   contentType: z.enum(IMAGE_CONTENT_TYPES),
   sizeBytes: z.number().int().min(1).max(IMAGE_MAX_BYTES),
 });

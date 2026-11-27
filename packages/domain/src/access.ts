@@ -121,6 +121,10 @@ export const PLATFORM_CAPABILITIES = [
   'documents.view',
   'storefronts.review',
   'taxonomy.manage',
+  // Phase 3 (ADR-0013): listing review and takedowns.
+  'products.view',
+  'products.review',
+  'products.takedown',
 ] as const;
 export type PlatformCapability = (typeof PLATFORM_CAPABILITIES)[number];
 
@@ -133,11 +137,20 @@ export const PLATFORM_GRANTS: Record<PlatformRole, readonly PlatformCapability[]
     'businesses.suspend',
     'documents.view',
     'storefronts.review',
+    'products.view',
+    'products.takedown',
   ],
-  catalog: ['businesses.view', 'storefronts.review', 'taxonomy.manage'],
-  operations: ['businesses.view', 'businesses.suspend'],
+  catalog: [
+    'businesses.view',
+    'storefronts.review',
+    'taxonomy.manage',
+    'products.view',
+    'products.review',
+    'products.takedown',
+  ],
+  operations: ['businesses.view', 'businesses.suspend', 'products.view'],
   finance: [],
-  support: ['businesses.view'],
+  support: ['businesses.view', 'products.view'],
   analyst: [],
 };
 
