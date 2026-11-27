@@ -27,6 +27,37 @@ import type {
   registerRequestSchema,
   updateMeRequestSchema,
 } from '@jays/contracts';
+import type {
+  blockInputSchema,
+  bookingActionRequestSchema,
+  branchInputSchema,
+  closureInputSchema,
+  holdRequestSchema,
+  manualBookingRequestSchema,
+  putShiftsRequestSchema,
+  serviceInputSchema,
+  staffInputSchema,
+  updateBranchRequestSchema,
+  updateServiceRequestSchema,
+  updateStaffRequestSchema,
+  adminServiceActionRequestSchema,
+  merchantBookingListQuerySchema,
+  bookingStatusSchema,
+} from '@jays/contracts';
+import {
+  adminBookingSchema,
+  adminServiceSchema,
+  availabilitySchema,
+  blockSchema,
+  bookingSchema,
+  branchSchema,
+  closureSchema,
+  merchantBookingSchema,
+  payBookingResponseSchema,
+  publicVenueSchema,
+  serviceSchema,
+  staffSchema,
+} from '@jays/contracts';
 import {
   adminProductDetailSchema,
   adminProductListItemSchema,
@@ -369,6 +400,32 @@ export function createApiClient(options: ApiClientOptions) {
     orders: (params?: { cursor?: string; limit?: number }) =>
       call('GET', `/orders${q(params)}`, pageSchema(orderListItemSchema)),
     order: (id: string) => call('GET', `/orders/${encodeURIComponent(id)}`, orderSchema),
+    // Bookings (phase 4)
+    venue: (businessId: string) =>
+      call('GET', `/venues/${encodeURIComponent(businessId)}`, publicVenueSchema),
+    availability: (params: {
+      branchId: string;
+      serviceId: string;
+      date: string;
+      staffId?: string;
+    }) => call('GET', `/availability${query(params)}`, availabilitySchema),
+    /** Send the same idempotency key when retrying, so a lost response never holds twice. */
+    holdBooking: (body: z.input<typeof holdRequestSchema>, idempotencyKey: string) =>
+      call('POST', '/bookings/hold', bookingSchema, body, idem(idempotencyKey)),
+    payBooking: (id: string) =>
+      call('POST', `/bookings/${encodeURIComponent(id)}/pay`, payBookingResponseSchema),
+    bookings: (params: { scope?: 'upcoming' | 'past'; cursor?: string; limit?: number } = {}) =>
+      call('GET', `/bookings${query(params)}`, pageSchema(bookingSchema)),
+    booking: (id: string) => call('GET', `/bookings/${encodeURIComponent(id)}`, bookingSchema),
+    cancelBooking: (id: string, reason?: string) =>
+      call('POST', `/bookings/${encodeURIComponent(id)}/cancel`, bookingSchema, {
+        reason: reason ?? null,
+      }),
+    rescheduleBooking: (id: string, startAt: string, staffId?: string | null) =>
+      call('POST', `/bookings/${encodeURIComponent(id)}/reschedule`, bookingSchema, {
+        startAt,
+        staffId: staffId ?? null,
+      }),
     /** The mock provider's hosted payment step (local development only). */
     mockConfirmPayment: (
       intentId: string,
@@ -470,6 +527,80 @@ export function createApiClient(options: ApiClientOptions) {
     merchantOrder: (id: string, merchantOrderId: string) =>
       call('GET', `${biz(id)}/orders/${encodeURIComponent(merchantOrderId)}`, merchantOrderSchema),
 
+    // Business: branches, services, staff, blocks, calendar (phase 4)
+    branches: (id: string) => call('GET', `${biz(id)}/branches`, z.array(branchSchema)),
+    branch: (id: string, branchId: string) =>
+      call('GET', `${biz(id)}/branches/${encodeURIComponent(branchId)}`, branchSchema),
+    createBranch: (id: string, body: z.input<typeof branchInputSchema>) =>
+      call('POST', `${biz(id)}/branches`, branchSchema, body),
+    updateBranch: (id: string, branchId: string, body: z.input<typeof updateBranchRequestSchema>) =>
+      call('PATCH', `${biz(id)}/branches/${encodeURIComponent(branchId)}`, branchSchema, body),
+    closures: (id: string, branchId: string) =>
+      call(
+        'GET',
+        `${biz(id)}/branches/${encodeURIComponent(branchId)}/closures`,
+        z.array(closureSchema),
+      ),
+    addClosure: (id: string, branchId: string, body: z.input<typeof closureInputSchema>) =>
+      call(
+        'POST',
+        `${biz(id)}/branches/${encodeURIComponent(branchId)}/closures`,
+        closureSchema,
+        body,
+      ),
+    removeClosure: (id: string, branchId: string, closureId: string) =>
+      call(
+        'DELETE',
+        `${biz(id)}/branches/${encodeURIComponent(branchId)}/closures/${encodeURIComponent(closureId)}`,
+        none,
+      ),
+    services: (id: string) => call('GET', `${biz(id)}/services`, z.array(serviceSchema)),
+    service: (id: string, serviceId: string) =>
+      call('GET', `${biz(id)}/services/${encodeURIComponent(serviceId)}`, serviceSchema),
+    createService: (id: string, body: z.input<typeof serviceInputSchema>) =>
+      call('POST', `${biz(id)}/services`, serviceSchema, body),
+    updateService: (
+      id: string,
+      serviceId: string,
+      body: z.input<typeof updateServiceRequestSchema>,
+    ) => call('PATCH', `${biz(id)}/services/${encodeURIComponent(serviceId)}`, serviceSchema, body),
+    staff: (id: string) => call('GET', `${biz(id)}/staff`, z.array(staffSchema)),
+    staffMember: (id: string, staffId: string) =>
+      call('GET', `${biz(id)}/staff/${encodeURIComponent(staffId)}`, staffSchema),
+    createStaff: (id: string, body: z.input<typeof staffInputSchema>) =>
+      call('POST', `${biz(id)}/staff`, staffSchema, body),
+    updateStaff: (id: string, staffId: string, body: z.input<typeof updateStaffRequestSchema>) =>
+      call('PATCH', `${biz(id)}/staff/${encodeURIComponent(staffId)}`, staffSchema, body),
+    putShifts: (id: string, staffId: string, body: z.input<typeof putShiftsRequestSchema>) =>
+      call('PUT', `${biz(id)}/staff/${encodeURIComponent(staffId)}/shifts`, staffSchema, body),
+    blocks: (
+      id: string,
+      params: { staffId?: string; from?: string; cursor?: string; limit?: number } = {},
+    ) => call('GET', `${biz(id)}/blocks${query(params)}`, pageSchema(blockSchema)),
+    addBlock: (id: string, body: z.input<typeof blockInputSchema>) =>
+      call('POST', `${biz(id)}/blocks`, blockSchema, body),
+    removeBlock: (id: string, blockId: string) =>
+      call('DELETE', `${biz(id)}/blocks/${encodeURIComponent(blockId)}`, none),
+    calendar: (
+      id: string,
+      params: Omit<z.input<typeof merchantBookingListQuerySchema>, 'limit'> & { limit?: number },
+    ) => call('GET', `${biz(id)}/bookings${query(params)}`, pageSchema(merchantBookingSchema)),
+    merchantBooking: (id: string, bookingId: string) =>
+      call('GET', `${biz(id)}/bookings/${encodeURIComponent(bookingId)}`, merchantBookingSchema),
+    createManualBooking: (id: string, body: z.input<typeof manualBookingRequestSchema>) =>
+      call('POST', `${biz(id)}/bookings`, merchantBookingSchema, body),
+    bookingAction: (
+      id: string,
+      bookingId: string,
+      body: z.input<typeof bookingActionRequestSchema>,
+    ) =>
+      call(
+        'POST',
+        `${biz(id)}/bookings/${encodeURIComponent(bookingId)}/actions`,
+        merchantBookingSchema,
+        body,
+      ),
+
     // Admin
     adminLogin: (email: string, password: string, totpCode: string) =>
       call('POST', '/admin/auth/login', adminSessionSchema, { email, password, totpCode }),
@@ -527,6 +658,18 @@ export function createApiClient(options: ApiClientOptions) {
         adminProductDetailSchema,
         body,
       ),
+    adminBookings: (
+      params: {
+        status?: z.output<typeof bookingStatusSchema>;
+        businessId?: string;
+        cursor?: string;
+        limit?: number;
+      } = {},
+    ) => call('GET', `/admin/bookings${query(params)}`, pageSchema(adminBookingSchema)),
+    adminServices: (params: { status?: string; cursor?: string; limit?: number } = {}) =>
+      call('GET', `/admin/services${query(params)}`, pageSchema(adminServiceSchema)),
+    adminServiceAction: (id: string, body: z.input<typeof adminServiceActionRequestSchema>) =>
+      call('POST', `/admin/services/${encodeURIComponent(id)}/actions`, adminServiceSchema, body),
     adminBrands: () => call('GET', '/admin/brands', brandListSchema),
     createBrand: (body: z.input<typeof createBrandRequestSchema>) =>
       call('POST', '/admin/brands', brandSchema, body),

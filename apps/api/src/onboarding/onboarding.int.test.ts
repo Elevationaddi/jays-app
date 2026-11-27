@@ -211,11 +211,18 @@ async function approvedBusiness(
   return { owner, business, ...media };
 }
 
+/** Every public store id, across pages (the shared test database keeps growing). */
 const publicStoreIds = async (query = '') => {
-  const res = await h.http().get(`/v1/stores?limit=100${query}`).expect(200);
-  return pageSchema(publicStoreSchema)
-    .parse(res.body)
-    .items.map((s) => s.id);
+  const ids: string[] = [];
+  let cursor: string | null = null;
+  do {
+    const after: string = cursor ? `&cursor=${encodeURIComponent(cursor)}` : '';
+    const res = await h.http().get(`/v1/stores?limit=100${query}${after}`).expect(200);
+    const page = pageSchema(publicStoreSchema).parse(res.body);
+    ids.push(...page.items.map((s) => s.id));
+    cursor = page.nextCursor;
+  } while (cursor);
+  return ids;
 };
 
 describe('onboarding to approval (T02)', () => {

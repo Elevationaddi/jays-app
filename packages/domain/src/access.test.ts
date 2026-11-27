@@ -90,3 +90,23 @@ describe('phase 2 capabilities', () => {
     expect(hasPlatformCapability(['support'], 'businesses.suspend')).toBe(false);
   });
 });
+
+describe('phase 4 capabilities', () => {
+  it('lets owners and managers manage services, and schedulers only schedule', () => {
+    expect(hasBusinessCapability(['owner'], 'services.manage')).toBe(true);
+    expect(hasBusinessCapability(['manager'], 'services.manage')).toBe(true);
+    expect(hasBusinessCapability(['scheduler'], 'services.manage')).toBe(false);
+    expect(hasBusinessCapability(['scheduler'], 'bookings.schedule')).toBe(true);
+    expect(hasBusinessCapability(['professional'], 'services.manage')).toBe(false);
+  });
+});
+
+describe('phase 4 platform capabilities', () => {
+  it('lets operations and support monitor bookings, and catalog take services down', () => {
+    expect(hasPlatformCapability(['operations'], 'bookings.view')).toBe(true);
+    expect(hasPlatformCapability(['support'], 'bookings.view')).toBe(true);
+    expect(hasPlatformCapability(['support'], 'services.takedown')).toBe(false);
+    expect(hasPlatformCapability(['catalog'], 'services.takedown')).toBe(true);
+    expect(hasPlatformCapability(['finance'], 'bookings.view')).toBe(false);
+  });
+});

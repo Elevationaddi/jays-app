@@ -10,13 +10,16 @@ import { PAYMENT_PROVIDER, type PaymentProvider, type ProviderEvent } from './pr
 
 type Trx = Transaction<Database>;
 
-interface LateRefund {
+/** A refund recorded in the database, to be sent to the provider once the transaction commits. */
+export interface RefundJob {
   paymentId: string;
   refundId: string;
   intentId: string;
   amountFils: number;
-  orderId: string;
+  target: { type: 'order' | 'booking'; id: string };
 }
+
+type LateRefund = RefundJob;
 
 /**
  * Applies verified provider webhooks (docs/05-workflows.md, product checkout steps 4 and the
@@ -28,6 +31,10 @@ interface LateRefund {
  * - succeeded, order already expired or failed (late payment): the money is refunded
  *   automatically; if the refund cannot be made the payment is flagged for operations.
  * - failed: reservations are released and the order fails.
+ *
+ * Bookings (docs/05-workflows.md, appointment steps 3-4): a success while the hold is still valid
+ * confirms the booking; a success after the hold ended is refunded in full; a failure ends the
+ * hold so the time is free again. Refunds for cancellations go through `requestRefund`.
  */
 @Injectable()
 export class PaymentsService {
@@ -74,7 +81,7 @@ export class PaymentsService {
         .execute();
       return false;
     });
-    if (lateRefund) await this.issueLateRefund(lateRefund);
+    if (lateRefund) await this.issueRefund(lateRefund);
     return { received: true as const, duplicate };
   }
 
@@ -94,10 +101,13 @@ export class PaymentsService {
     }
     const payment = await trx
       .selectFrom('payments')
-      .select(['id', 'order_id', 'amount_fils', 'currency', 'status'])
+      .select(['id', 'order_id', 'booking_id', 'amount_fils', 'currency', 'status'])
       .where('provider', '=', this.provider.name)
       .where('provider_intent_id', '=', event.intentId)
       .executeTakeFirst();
+    if (payment?.booking_id) {
+      return this.applyBooking(trx, { ...payment, booking_id: payment.booking_id }, event, now);
+    }
     if (!payment || !payment.order_id) return { result: 'unknown_intent' };
     const order = await trx
       .selectFrom('orders')
@@ -186,7 +196,7 @@ export class PaymentsService {
           refundId: refund.id,
           intentId: event.intentId,
           amountFils: payment.amount_fils,
-          orderId: order.id,
+          target: { type: 'order', id: order.id },
         },
       };
     }
@@ -291,16 +301,188 @@ export class PaymentsService {
       })
       .where('id', '=', refund.id)
       .execute();
+    if (!ok) {
+      await trx
+        .updateTable('payments')
+        .set({ status: 'refund_failed', needs_attention: true })
+        .where('id', '=', refund.payment_id)
+        .execute();
+      return { result: 'refund_failed' };
+    }
+    const payment = await trx
+      .selectFrom('payments')
+      .select('amount_fils')
+      .where('id', '=', refund.payment_id)
+      .forUpdate()
+      .executeTakeFirstOrThrow();
+    const refunded = await trx
+      .selectFrom('refunds')
+      .select((eb) => eb.fn.coalesce(eb.fn.sum<string>('amount_fils'), eb.lit(0)).as('total'))
+      .where('payment_id', '=', refund.payment_id)
+      .where('status', '=', 'succeeded')
+      .executeTakeFirstOrThrow();
+    const full = Number(refunded.total) >= payment.amount_fils;
     await trx
       .updateTable('payments')
-      .set(ok ? { status: 'refunded' } : { status: 'refund_failed', needs_attention: true })
+      .set({ status: full ? 'refunded' : 'partially_refunded' })
       .where('id', '=', refund.payment_id)
       .execute();
-    return { result: ok ? 'refunded' : 'refund_failed' };
+    return { result: full ? 'refunded' : 'partially_refunded' };
   }
 
-  /** Calls the provider outside the webhook transaction; failures are flagged, never hidden. */
-  private async issueLateRefund(r: LateRefund) {
+  /**
+   * Records a refund of a settled payment inside the caller's transaction (the payment row must
+   * already be locked). Returns the job to pass to `issueRefund` after the transaction commits.
+   */
+  async requestRefund(
+    trx: Trx,
+    input: {
+      paymentId: string;
+      amountFils: number;
+      reason: 'late_payment' | 'customer_cancellation' | 'business_cancellation';
+      target: RefundJob['target'];
+    },
+    now: Date,
+  ): Promise<RefundJob | null> {
+    if (input.amountFils <= 0) return null;
+    const payment = await trx
+      .selectFrom('payments')
+      .select(['id', 'status', 'provider_intent_id'])
+      .where('id', '=', input.paymentId)
+      .forUpdate()
+      .executeTakeFirstOrThrow();
+    if (payment.status !== 'succeeded' || !payment.provider_intent_id) return null;
+    const refund = await trx
+      .insertInto('refunds')
+      .values({ payment_id: payment.id, amount_fils: input.amountFils, reason: input.reason })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    await trx
+      .updateTable('payments')
+      .set({ status: 'refund_pending' })
+      .where('id', '=', payment.id)
+      .execute();
+    await this.outbox(
+      trx,
+      'payment.refund_requested',
+      {
+        paymentId: payment.id,
+        refundId: refund.id,
+        reason: input.reason,
+        [`${input.target.type}Id`]: input.target.id,
+      },
+      now,
+    );
+    return {
+      paymentId: payment.id,
+      refundId: refund.id,
+      intentId: payment.provider_intent_id,
+      amountFils: input.amountFils,
+      target: input.target,
+    };
+  }
+
+  private async applyBooking(
+    trx: Trx,
+    payment: {
+      id: string;
+      booking_id: string;
+      amount_fils: number;
+      currency: string;
+      status: string;
+    },
+    event: ProviderEvent,
+    now: Date,
+  ): Promise<{ result: string; lateRefund?: LateRefund }> {
+    const booking = await trx
+      .selectFrom('bookings')
+      .select(['id', 'status', 'hold_expires_at', 'user_id', 'business_id'])
+      .where('id', '=', payment.booking_id)
+      .forUpdate()
+      .executeTakeFirstOrThrow();
+    await trx
+      .selectFrom('payments')
+      .select('id')
+      .where('id', '=', payment.id)
+      .forUpdate()
+      .execute();
+    if (event.amountFils !== payment.amount_fils || event.currency !== payment.currency) {
+      await trx
+        .updateTable('payments')
+        .set({ needs_attention: true })
+        .where('id', '=', payment.id)
+        .execute();
+      return { result: 'amount_mismatch' };
+    }
+    const holdValid =
+      booking.status === 'held' && !!booking.hold_expires_at && booking.hold_expires_at > now;
+
+    if (event.type === 'payment_intent.payment_failed') {
+      if (payment.status !== 'requires_payment') return { result: 'already_settled' };
+      await trx
+        .updateTable('payments')
+        .set({ status: 'failed', failure_code: event.failureCode ?? 'failed' })
+        .where('id', '=', payment.id)
+        .execute();
+      if (booking.status === 'held') {
+        // The time goes back on sale; the customer can pick it again if it is still free.
+        await trx
+          .updateTable('bookings')
+          .set({ status: 'expired', expired_at: now, version: (eb) => eb('version', '+', 1) })
+          .where('id', '=', booking.id)
+          .execute();
+        await this.outbox(trx, 'booking.payment_failed', { bookingId: booking.id }, now);
+      }
+      return { result: 'payment_failed' };
+    }
+
+    if (payment.status !== 'requires_payment' && payment.status !== 'failed') {
+      return { result: 'already_settled' };
+    }
+    await trx
+      .updateTable('payments')
+      .set({ status: 'succeeded', succeeded_at: now, failure_code: null })
+      .where('id', '=', payment.id)
+      .execute();
+    if (!holdValid) {
+      // Late payment: the hold ended, so the time may belong to someone else. Refund in full.
+      if (booking.status === 'held') {
+        await trx
+          .updateTable('bookings')
+          .set({ status: 'expired', expired_at: now, version: (eb) => eb('version', '+', 1) })
+          .where('id', '=', booking.id)
+          .execute();
+      }
+      const job = await this.requestRefund(
+        trx,
+        {
+          paymentId: payment.id,
+          amountFils: payment.amount_fils,
+          reason: 'late_payment',
+          target: { type: 'booking', id: booking.id },
+        },
+        now,
+      );
+      return job
+        ? { result: 'late_payment_refund_requested', lateRefund: job }
+        : { result: 'late_payment' };
+    }
+    await trx
+      .updateTable('bookings')
+      .set({ status: 'confirmed', confirmed_at: now, version: (eb) => eb('version', '+', 1) })
+      .where('id', '=', booking.id)
+      .execute();
+    await this.outbox(
+      trx,
+      'booking.confirmed',
+      { bookingId: booking.id, userId: booking.user_id, businessId: booking.business_id },
+      now,
+    );
+    return { result: 'confirmed' };
+  }
+
+  /** Calls the provider outside the database transaction; failures are flagged, never hidden. */
+  async issueRefund(r: RefundJob) {
     try {
       const { refundId } = await this.provider.refund({
         intentId: r.intentId,
@@ -314,10 +496,7 @@ export class PaymentsService {
         .where('provider_ref', 'is', null)
         .execute();
     } catch (error) {
-      this.log.error(
-        { err: error, orderId: r.orderId },
-        'automatic refund of a late payment failed',
-      );
+      this.log.error({ err: error, target: r.target }, 'automatic refund failed');
       await this.db.transaction().execute(async (trx) => {
         await trx
           .updateTable('refunds')
@@ -333,16 +512,16 @@ export class PaymentsService {
         await this.outbox(
           trx,
           'payment.manual_exception',
-          { orderId: r.orderId, paymentId: r.paymentId },
+          { [`${r.target.type}Id`]: r.target.id, paymentId: r.paymentId },
           this.clock.now(),
         );
         await writeAudit(trx, {
           actorType: 'system',
           actorId: null,
-          action: 'payment.late_refund_failed',
+          action: 'payment.refund_failed',
           targetType: 'payment',
           targetId: r.paymentId,
-          diff: { orderId: r.orderId, amountFils: r.amountFils },
+          diff: { [`${r.target.type}Id`]: r.target.id, amountFils: r.amountFils },
         });
       });
     }
