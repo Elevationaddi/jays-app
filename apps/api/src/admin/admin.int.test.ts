@@ -92,7 +92,8 @@ describe('admin sign-in requires MFA (T03)', () => {
     expect(session.admin).toMatchObject({
       email: admin.email,
       roles: ['support'],
-      capabilities: [],
+      // Support can read merchant records (phase 2) but holds no admin or audit capability.
+      capabilities: ['businesses.view'],
     });
     await h.http().get('/v1/admin/me').set('Authorization', bearer(session)).expect(200);
   });

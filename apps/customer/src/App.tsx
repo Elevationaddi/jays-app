@@ -8,6 +8,7 @@ import { AccountScreen } from './screens/AccountScreen';
 import { AuthScreen } from './screens/AuthScreen';
 import { ModeHome } from './screens/ModeHome';
 import { ResetScreen } from './screens/ResetScreen';
+import { StoreScreen } from './screens/StoreScreen';
 import { VerifyScreen } from './screens/VerifyScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { loadRefreshToken, saveRefreshToken } from './secure-session';
@@ -74,6 +75,9 @@ export function App() {
         return <ResetScreen />;
       case '/account':
         return <AccountScreen />;
+      case '/shop/store':
+      case '/services/store':
+        return <StoreScreen />;
       default:
         return <ModeHome />;
     }

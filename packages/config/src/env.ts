@@ -20,6 +20,16 @@ export const PSP_PROVIDERS = ['mock'] as const;
 /** Email/SMS providers with an adapter. Only the mock exists until a provider is chosen (ADR-0007). */
 export const NOTIFY_PROVIDERS = ['mock'] as const;
 
+/**
+ * Object storage adapters. `local` keeps files on disk and serves HMAC-signed URLs from the API
+ * itself, so uploads behave like signed S3 URLs locally. A real S3-compatible adapter is required
+ * before production (ADR-0012), so production refuses `local`.
+ */
+export const STORAGE_PROVIDERS = ['local'] as const;
+
+/** Malware scanners. The mock flags the EICAR test file; production refuses it (ADR-0012). */
+export const MALWARE_SCANNERS = ['mock'] as const;
+
 /** Marker that every committed example secret carries, so production can reject copied examples. */
 export const LOCAL_SECRET_MARKER = 'local-dev-only';
 
@@ -95,6 +105,14 @@ const apiShape = {
   /** Number of reverse proxies in front of the API, so client IPs for rate limits are correct. */
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
   STORAGE_BUCKET: z.string().min(3).max(63),
+  STORAGE_PROVIDER: z.enum(STORAGE_PROVIDERS).default('local'),
+  /** Directory for the local storage adapter, relative to the working directory. */
+  STORAGE_LOCAL_DIR: z.string().min(1).default('.local-storage'),
+  /** HMAC key that signs upload and download URLs. */
+  STORAGE_SIGNING_SECRET: z.string().min(32, 'must be at least 32 characters'),
+  /** Public base URL of this API (with /v1), used to build signed storage URLs. */
+  API_PUBLIC_URL: z.url().default('http://localhost:3000/v1'),
+  MALWARE_SCANNER: z.enum(MALWARE_SCANNERS).default('mock'),
   PSP_PROVIDER: z.enum(PSP_PROVIDERS).default('mock'),
   PSP_API_KEY: z.string().min(1).optional(),
   PSP_WEBHOOK_SECRET: z.string().min(16, 'must be at least 16 characters'),
@@ -119,6 +137,22 @@ function productionIssues(env: Record<string, unknown>, shape: z.ZodRawShape): I
       path: 'NOTIFY_PROVIDER',
       message: 'mock email/SMS provider is not allowed in production',
     });
+  }
+  if (env['STORAGE_PROVIDER'] === 'local') {
+    issues.push({
+      path: 'STORAGE_PROVIDER',
+      message: 'local file storage is not allowed in production',
+    });
+  }
+  if (env['MALWARE_SCANNER'] === 'mock') {
+    issues.push({
+      path: 'MALWARE_SCANNER',
+      message: 'mock malware scanner is not allowed in production',
+    });
+  }
+  const publicUrl = env['API_PUBLIC_URL'];
+  if (typeof publicUrl === 'string' && !publicUrl.startsWith('https://')) {
+    issues.push({ path: 'API_PUBLIC_URL', message: 'must be https:// in production' });
   }
   if (env['MOCK_PAYMENT_OUTCOMES'] === true) {
     issues.push({

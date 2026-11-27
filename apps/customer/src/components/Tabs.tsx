@@ -7,7 +7,7 @@ export function Tabs() {
   const { state, dispatch, tr } = useApp();
   const home = state.mode === 'services' ? '/services' : '/shop';
   const tab = (route: '/shop' | '/services' | '/account', label: string) => {
-    const selected = state.route === route;
+    const selected = state.route === route || state.route === `${route}/store`;
     return (
       <Pressable
         key={route}

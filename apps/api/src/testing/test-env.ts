@@ -10,6 +10,7 @@ export function testEnv(overrides: Record<string, string | undefined> = {}): Api
     OTP_SECRET: 'local-dev-only-test-otp-0000000000000000',
     MFA_ENCRYPTION_KEY: 'local-dev-only-test-mfa-0000000000000000',
     STORAGE_BUCKET: 'jays-test',
+    STORAGE_SIGNING_SECRET: 'local-dev-only-test-storage-00000000000000',
     PSP_WEBHOOK_SECRET: 'local-dev-only-test-secret',
     CORS_ORIGINS: 'http://localhost:3001',
     ...overrides,

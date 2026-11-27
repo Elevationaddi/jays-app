@@ -13,7 +13,7 @@ export function Shell({
 }: {
   locale: Locale;
   admin: AdminView;
-  current: 'dashboard' | 'security';
+  current: 'dashboard' | 'businesses' | 'content' | 'security';
   children: ReactNode;
 }) {
   const items = [
@@ -24,10 +24,23 @@ export function Shell({
       show: true,
     },
     {
+      key: 'businesses',
+      href: '/admin/businesses',
+      label: t(locale, 'admin.nav.businesses'),
+      show: admin.capabilities.includes('businesses.view'),
+    },
+    {
+      key: 'content',
+      href: '/admin/content',
+      label: t(locale, 'admin.nav.content'),
+      show: admin.capabilities.includes('taxonomy.manage'),
+    },
+    {
       key: 'security',
       href: '/admin/security',
       label: t(locale, 'admin.nav.security'),
-      show: admin.capabilities.length > 0,
+      show:
+        admin.capabilities.includes('admins.manage') || admin.capabilities.includes('audit.view'),
     },
   ] as const;
   return (

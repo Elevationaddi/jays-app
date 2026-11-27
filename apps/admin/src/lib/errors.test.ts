@@ -8,6 +8,12 @@ describe('admin console helpers', () => {
     expect(errorMessageKey('RATE_LIMITED')).toBe('auth.error.rateLimited');
   });
 
+  it('tells a reviewer when someone else acted first or the action does not apply', () => {
+    expect(errorMessageKey('VERSION_CONFLICT')).toBe('error.versionConflict');
+    expect(errorMessageKey('INVALID_TRANSITION')).toBe('error.invalidTransition');
+    expect(errorMessageKey('SLUG_TAKEN')).toBe('error.slugTaken');
+  });
+
   it('refuses off-site return paths', () => {
     expect(safeReturnTo('//evil.example', '/admin/dashboard')).toBe('/admin/dashboard');
     expect(safeReturnTo('/admin/security')).toBe('/admin/security');

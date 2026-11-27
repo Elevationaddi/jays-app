@@ -123,6 +123,24 @@ export interface BusinessesTable {
   created_by: string;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+  trade_license_number: string | null;
+  license_authority: string | null;
+  tax_registered: Generated<boolean>;
+  address_emirate_code: string | null;
+  address_area: string | null;
+  address_street: string | null;
+  address_building: string | null;
+  address_unit: string | null;
+  agreement_version: string | null;
+  agreement_accepted_at: Timestamp | null;
+  agreement_accepted_by: string | null;
+  submitted_at: Timestamp | null;
+  reviewed_at: Timestamp | null;
+  reviewed_by: string | null;
+  review_reason: string | null;
+  suspended_at: Timestamp | null;
+  suspension_reason: string | null;
+  version: Generated<number>;
 }
 
 export type MembershipStatus = 'invited' | 'active' | 'removed';
@@ -151,6 +169,9 @@ export interface BusinessModesTable {
   activated_by: string;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+  submitted_at: Timestamp | null;
+  reviewed_at: Timestamp | null;
+  review_reason: string | null;
 }
 
 export type AdminStatus = 'invited' | 'active' | 'suspended';
@@ -206,6 +227,99 @@ export interface OutboxTable {
   updated_at: UpdatedAt;
 }
 
+export type DocumentKind = 'trade_license' | 'tax_certificate' | 'owner_identity' | 'other';
+export type DocumentStatus = 'pending_upload' | 'clean' | 'infected' | 'rejected' | 'archived';
+export type UploadRejection = 'type_mismatch' | 'too_large' | 'empty' | 'malware' | 'dimensions';
+
+export interface VerificationDocumentsTable {
+  id: Id;
+  business_id: string;
+  kind: DocumentKind;
+  object_key: string;
+  file_name: string;
+  content_type: string;
+  declared_size_bytes: number;
+  size_bytes: number | null;
+  sha256: string | null;
+  status: Generated<DocumentStatus>;
+  rejection_reason: UploadRejection | null;
+  upload_expires_at: Timestamp;
+  uploaded_at: Timestamp | null;
+  uploaded_by: string;
+  archived_at: Timestamp | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export type MediaPurpose = 'storefront_logo' | 'storefront_banner';
+
+export interface MediaTable {
+  id: Id;
+  business_id: string;
+  purpose: MediaPurpose;
+  object_key: string;
+  content_type: string;
+  declared_size_bytes: number;
+  size_bytes: number | null;
+  width: number | null;
+  height: number | null;
+  status: Generated<'pending_upload' | 'ready' | 'rejected'>;
+  rejection_reason: UploadRejection | null;
+  upload_expires_at: Timestamp;
+  uploaded_at: Timestamp | null;
+  created_by: string;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+type LocalizedOrNull = ColumnType<
+  { en: string; ar: string } | null,
+  string | null | undefined,
+  string | null
+>;
+
+export interface StorefrontsTable {
+  id: Id;
+  business_id: string;
+  name: LocalizedOrNull;
+  description: LocalizedOrNull;
+  logo_media_id: string | null;
+  banner_media_id: string | null;
+  live_name: LocalizedOrNull;
+  live_description: LocalizedOrNull;
+  live_logo_media_id: string | null;
+  live_banner_media_id: string | null;
+  published_at: Timestamp | null;
+  changes_submitted_at: Timestamp | null;
+  changes_review_reason: string | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface CategoriesTable {
+  id: Id;
+  parent_id: string | null;
+  mode: 'shop' | 'services';
+  slug: string;
+  name: Localized;
+  /** Set by trigger from the parent. */
+  depth: Generated<number>;
+  sort_order: Generated<number>;
+  status: Generated<'active' | 'archived'>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface BrandsTable {
+  id: Id;
+  slug: string;
+  name: Localized;
+  status: Generated<'active' | 'archived'>;
+  created_by: string | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
 export interface Database {
   emirates: EmiratesTable;
   users: UsersTable;
@@ -220,6 +334,11 @@ export interface Database {
   admin_sessions: AdminSessionsTable;
   audit_logs: AuditLogsTable;
   outbox: OutboxTable;
+  verification_documents: VerificationDocumentsTable;
+  media: MediaTable;
+  storefronts: StorefrontsTable;
+  categories: CategoriesTable;
+  brands: BrandsTable;
 }
 
 /** Every column of every table, used by the drift test. Keep in the same order as above. */
@@ -302,6 +421,24 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'created_by',
     'created_at',
     'updated_at',
+    'trade_license_number',
+    'license_authority',
+    'tax_registered',
+    'address_emirate_code',
+    'address_area',
+    'address_street',
+    'address_building',
+    'address_unit',
+    'agreement_version',
+    'agreement_accepted_at',
+    'agreement_accepted_by',
+    'submitted_at',
+    'reviewed_at',
+    'reviewed_by',
+    'review_reason',
+    'suspended_at',
+    'suspension_reason',
+    'version',
   ],
   memberships: [
     'id',
@@ -323,6 +460,9 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'activated_by',
     'created_at',
     'updated_at',
+    'submitted_at',
+    'reviewed_at',
+    'review_reason',
   ],
   admin_accounts: [
     'id',
@@ -378,6 +518,73 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'created_at',
     'updated_at',
   ],
+  verification_documents: [
+    'id',
+    'business_id',
+    'kind',
+    'object_key',
+    'file_name',
+    'content_type',
+    'declared_size_bytes',
+    'size_bytes',
+    'sha256',
+    'status',
+    'rejection_reason',
+    'upload_expires_at',
+    'uploaded_at',
+    'uploaded_by',
+    'archived_at',
+    'created_at',
+    'updated_at',
+  ],
+  media: [
+    'id',
+    'business_id',
+    'purpose',
+    'object_key',
+    'content_type',
+    'declared_size_bytes',
+    'size_bytes',
+    'width',
+    'height',
+    'status',
+    'rejection_reason',
+    'upload_expires_at',
+    'uploaded_at',
+    'created_by',
+    'created_at',
+    'updated_at',
+  ],
+  storefronts: [
+    'id',
+    'business_id',
+    'name',
+    'description',
+    'logo_media_id',
+    'banner_media_id',
+    'live_name',
+    'live_description',
+    'live_logo_media_id',
+    'live_banner_media_id',
+    'published_at',
+    'changes_submitted_at',
+    'changes_review_reason',
+    'created_at',
+    'updated_at',
+  ],
+  categories: [
+    'id',
+    'parent_id',
+    'mode',
+    'slug',
+    'name',
+    'depth',
+    'sort_order',
+    'status',
+    'created_at',
+    'updated_at',
+  ],
+  brands: ['id', 'slug', 'name', 'status', 'created_by', 'created_at', 'updated_at'],
 };
 
 export type User = Selectable<UsersTable>;

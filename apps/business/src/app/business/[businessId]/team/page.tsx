@@ -1,7 +1,7 @@
 import { ApiClientError } from '@jays/api-client';
 import { BUSINESS_PERMISSIONS, MANAGER_GRANTABLE } from '@jays/domain';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { BusinessNav } from '../../../../components/BusinessNav';
 import { ErrorAlert } from '../../../../components/ErrorAlert';
 import { TopBar } from '../../../../components/TopBar';
 import { serverApi } from '../../../../lib/api';
@@ -43,12 +43,7 @@ export default async function TeamPage({
         <p className="muted" style={{ marginBottom: 4 }}>
           {business.displayName[locale]}
         </p>
-        <nav className="tabs" style={{ marginBottom: 16 }}>
-          <Link href="/business/gateway">{tr('business.nav.gateway')}</Link>
-          <Link href={`/business/${businessId}/team`} aria-current="page">
-            {tr('business.nav.team')}
-          </Link>
-        </nav>
+        <BusinessNav locale={locale} business={business} current="team" />
         <h1>{tr('business.team.title')}</h1>
         <ErrorAlert locale={locale} code={query['error']} />
         {!canView ? (

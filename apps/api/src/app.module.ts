@@ -2,6 +2,23 @@ import { type DynamicModule, Module } from '@nestjs/common';
 import type { Db } from '@jays/db';
 import { LoggerModule } from 'nestjs-pino';
 import { AdminAuthGuard } from './admin/admin.guard.js';
+import { AdminBusinessesController } from './admin/admin-businesses.controller.js';
+import { AdminBusinessesService } from './admin/admin-businesses.service.js';
+import { AdminTaxonomyController } from './catalog/admin-taxonomy.controller.js';
+import { CatalogController } from './catalog/catalog.controller.js';
+import { StoresService } from './catalog/stores.service.js';
+import { TaxonomyService } from './catalog/taxonomy.service.js';
+import { OnboardingController } from './onboarding/onboarding.controller.js';
+import { OnboardingService } from './onboarding/onboarding.service.js';
+import { LocalObjectStorage } from './storage/local-storage.js';
+import { MockMalwareScanner } from './storage/scanner.js';
+import { LocalStorageController } from './storage/storage.controller.js';
+import {
+  MALWARE_SCANNER,
+  type MalwareScanner,
+  OBJECT_STORAGE,
+  type ObjectStorage,
+} from './storage/storage.js';
 import { AdminAuthController, AdminController } from './admin/admin.controller.js';
 import { AdminService } from './admin/admin.service.js';
 import { AuthController } from './auth/auth.controller.js';
@@ -52,6 +69,10 @@ export interface AppModuleOptions {
   rateLimiter?: RateLimiter;
   /** Redis key namespace for rate limits; tests use a unique one per run. */
   rateLimitNamespace?: string;
+  /** Test seam: replace object storage. */
+  storage?: ObjectStorage;
+  /** Test seam: replace the malware scanner. */
+  scanner?: MalwareScanner;
 }
 
 @Module({})
@@ -63,6 +84,8 @@ export class AppModule {
     notifier,
     rateLimiter,
     rateLimitNamespace,
+    storage,
+    scanner,
   }: AppModuleOptions): DynamicModule {
     const sessionStore = (audience: 'user' | 'admin') => ({
       provide: audience === 'user' ? USER_SESSIONS : ADMIN_SESSIONS,
@@ -91,6 +114,12 @@ export class AppModule {
         BusinessesController,
         AdminAuthController,
         AdminController,
+        OnboardingController,
+        AdminBusinessesController,
+        AdminTaxonomyController,
+        CatalogController,
+        // Signed URLs of the local storage adapter are served by the API itself.
+        ...(env.STORAGE_PROVIDER === 'local' ? [LocalStorageController] : []),
       ],
       providers: [
         { provide: API_ENV, useValue: env },
@@ -114,12 +143,27 @@ export class AppModule {
         },
         { provide: ACCESS_TOKENS, useValue: new AccessTokens(env.JWT_KEYS) },
         { provide: SECRET_BOX, useValue: new SecretBox(env.MFA_ENCRYPTION_KEY) },
+        {
+          provide: OBJECT_STORAGE,
+          useValue:
+            storage ??
+            new LocalObjectStorage(
+              env.STORAGE_LOCAL_DIR,
+              env.STORAGE_SIGNING_SECRET,
+              env.API_PUBLIC_URL,
+            ),
+        },
+        { provide: MALWARE_SCANNER, useValue: scanner ?? new MockMalwareScanner() },
         sessionStore('user'),
         sessionStore('admin'),
         AuthService,
         MeService,
         BusinessesService,
         AdminService,
+        OnboardingService,
+        AdminBusinessesService,
+        TaxonomyService,
+        StoresService,
         UserAuthGuard,
         BusinessAccessGuard,
         AdminAuthGuard,

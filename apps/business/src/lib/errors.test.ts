@@ -8,6 +8,13 @@ describe('errorMessageKey', () => {
     expect(errorMessageKey('SOMETHING_NEW')).toBe('common.error');
     expect(errorMessageKey(undefined)).toBeNull();
   });
+
+  it('explains onboarding and upload refusals instead of a generic error', () => {
+    expect(errorMessageKey('ONBOARDING_INCOMPLETE')).toBe('error.onboardingIncomplete');
+    expect(errorMessageKey('FILE_INFECTED')).toBe('error.fileInfected');
+    expect(errorMessageKey('IMAGE_DIMENSIONS')).toBe('error.imageDimensions');
+    expect(errorMessageKey('IN_REVIEW')).toBe('error.inReview');
+  });
 });
 
 describe('safeReturnTo', () => {

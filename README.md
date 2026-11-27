@@ -22,7 +22,7 @@ Copy these files into repository root. Start Claude Code in that directory and i
 
 ## Local development
 
-Phase 1 is in place: sign-up, verification and sign-in for customers and business users, business teams with permission-scoped staff, invite-only admins with an authenticator app, and the bilingual Shop Products / Book Services gateway in all three apps. Catalog, bookings and payments start in later phases (see [status](docs/IMPLEMENTATION_STATUS.md)).
+Phases 1 and 2 are in place: sign-up and sign-in for customers and business users, business teams with permission-scoped staff, invite-only admins with an authenticator app, the bilingual Shop Products / Book Services gateway, and merchant onboarding. Businesses submit their legal details, documents and a bilingual storefront; compliance admins approve or request changes with a written reason; customers see only approved stores. Products, bookings and payments start in later phases (see [status](docs/IMPLEMENTATION_STATUS.md)).
 
 Requirements: Node.js 22 (`.nvmrc`), pnpm 10 (`corepack enable`), Docker.
 
@@ -38,15 +38,21 @@ pnpm db:seed            # fictional local accounts and businesses (idempotent, r
 
 Every seeded account uses the password `Local-Dev-Passw0rd!`. All names, emails and phone numbers are fictional.
 
-| Who                                    | Sign in as                                                               | Where           |
-| -------------------------------------- | ------------------------------------------------------------------------ | --------------- |
-| Customer                               | `customer.en@example.test` (English), `+971500000101` (Arabic, mobile)   | customer app    |
-| Shop owner (Noor Beauty Supply)        | `owner.noor@example.test`                                                | business portal |
-| Services owner (Lumière Salon)         | `owner.lumiere@example.test`                                             | business portal |
-| Hybrid owner (Oud & Bloom), with staff | `owner.oud@example.test`                                                 | business portal |
-| One admin per platform role            | `<role>@admin.example.test`, for example `superadmin@admin.example.test` | admin console   |
+| Who                                             | Sign in as                                                               | Where           |
+| ----------------------------------------------- | ------------------------------------------------------------------------ | --------------- |
+| Customer                                        | `customer.en@example.test` (English), `+971500000101` (Arabic, mobile)   | customer app    |
+| Shop owner (Noor Beauty Supply)                 | `owner.noor@example.test`                                                | business portal |
+| Services owner (Lumière Salon)                  | `owner.lumiere@example.test`                                             | business portal |
+| Hybrid owner (Oud & Bloom), with staff          | `owner.oud@example.test`                                                 | business portal |
+| Shop owner waiting for review (Saffron)         | `owner.saffron@example.test`                                             | business portal |
+| Draft business to try the forms (Amber Atelier) | `customer.both@example.test`                                             | business portal |
+| One admin per platform role                     | `<role>@admin.example.test`, for example `superadmin@admin.example.test` | admin console   |
 
 Admins also need an authenticator code. For seeded admins, print the current one with `pnpm --filter @jays/api totp superadmin@admin.example.test`.
+
+Noor, Lumière and Oud & Bloom are approved and public. Saffron Skin Co. waits in the admin review queue (sign in as `compliance@admin.example.test` to decide). Amber Atelier is an empty draft.
+
+Uploaded files are stored on disk under `STORAGE_LOCAL_DIR` (default `.local-storage`, relative to the API's working directory) and served through signed links at `API_PUBLIC_URL`. The mock malware scanner refuses files containing the EICAR test string. Production refuses to start with `STORAGE_PROVIDER=local` or `MALWARE_SCANNER=mock` ([ADR-0012](docs/adr/0012-merchant-onboarding-storage-and-review.md)).
 
 Verification codes are not sent anywhere locally. The mock notifier writes them to the API log (lines starting `[mock email]` or `[mock sms]`, with the code in the JSON).
 
@@ -80,7 +86,11 @@ Integration tests use the separate `jays_test` database, created automatically t
 
 ## Screenshots
 
-Phase 1 screens, in English and Arabic (RTL), are in [`docs/screenshots/phase-1/`](docs/screenshots/phase-1/). Arabic copy still needs review by a native speaker.
+Screens in English and Arabic (RTL) are in [`docs/screenshots/phase-1/`](docs/screenshots/phase-1/) and [`docs/screenshots/phase-2/`](docs/screenshots/phase-2/). Arabic copy still needs review by a native speaker.
+
+| Customer app (phase 2)                                                            | Business portal (phase 2)                                                                | Admin console (phase 2)                                                                     |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| <img src="docs/screenshots/phase-2/customer-10-shop-stores-en.png" width="220" /> | <img src="docs/screenshots/phase-2/business-09-verification-draft-en.png" width="360" /> | <img src="docs/screenshots/phase-2/admin-06-business-review-in-progress.png" width="360" /> |
 
 | Customer app                                                                      | Business portal                                                                          | Admin console                                                                      |
 | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |

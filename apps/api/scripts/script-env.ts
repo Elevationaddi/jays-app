@@ -6,6 +6,7 @@ export const scriptEnvSchema = z.object({
   DATABASE_URL: z.string().min(1),
   MFA_ENCRYPTION_KEY: z.string().min(32),
   ADMIN_WEB_URL: z.url().default('http://localhost:3002'),
+  STORAGE_LOCAL_DIR: z.string().min(1).default('.local-storage'),
 });
 
 export function scriptEnv() {

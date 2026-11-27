@@ -2,9 +2,17 @@ import type { Challenge, Me, TokenPair } from '@jays/contracts';
 import type { Mode } from '@jays/domain';
 import type { Locale } from '@jays/i18n';
 
-/** App route identifiers from docs/02-customer.md that exist in phase 1. */
+/** App route identifiers from docs/02-customer.md that exist so far (phase 2 adds store pages). */
 export type Route =
-  '/welcome' | '/shop' | '/services' | '/auth' | '/auth/verify' | '/auth/reset' | '/account';
+  | '/welcome'
+  | '/shop'
+  | '/services'
+  | '/shop/store'
+  | '/services/store'
+  | '/auth'
+  | '/auth/verify'
+  | '/auth/reset'
+  | '/account';
 
 export interface AppState {
   locale: Locale;
@@ -13,6 +21,8 @@ export interface AppState {
   route: Route;
   /** Last route visited in each mode, so switching modes never loses your place (or, later, your cart). */
   routeByMode: Record<Mode, Route>;
+  /** The store open in each mode, kept like the route so switching modes returns to it. */
+  storeByMode: Record<Mode, string | null>;
   session: { user: Me; tokens: TokenPair } | null;
   /** Where to return after sign-in, and the open verification challenge if any. */
   auth: { returnTo: Route; challenge: Challenge | null };
@@ -23,6 +33,7 @@ export type Action =
   | { type: 'setEmirate'; emirate: string }
   | { type: 'chooseMode'; mode: Mode }
   | { type: 'navigate'; route: Route }
+  | { type: 'openStore'; mode: Mode; storeId: string }
   | { type: 'requireSignIn'; returnTo: Route }
   | { type: 'challenge'; challenge: Challenge }
   | { type: 'signedIn'; user: Me; tokens: TokenPair }
@@ -39,14 +50,15 @@ export function initialState(locale: Locale): AppState {
     mode: null,
     route: '/welcome',
     routeByMode: { ...MODE_HOME },
+    storeByMode: { shop: null, services: null },
     session: null,
     auth: { returnTo: '/welcome', challenge: null },
   };
 }
 
-function modeOf(route: Route): Mode | null {
-  if (route === '/shop') return 'shop';
-  if (route === '/services') return 'services';
+export function modeOf(route: Route): Mode | null {
+  if (route === '/shop' || route === '/shop/store') return 'shop';
+  if (route === '/services' || route === '/services/store') return 'services';
   return null;
 }
 
@@ -70,6 +82,16 @@ export function reducer(state: AppState, action: Action): AppState {
         ...state,
         route: action.route,
         ...(mode ? { mode, routeByMode: { ...state.routeByMode, [mode]: action.route } } : {}),
+      };
+    }
+    case 'openStore': {
+      const route: Route = action.mode === 'shop' ? '/shop/store' : '/services/store';
+      return {
+        ...state,
+        mode: action.mode,
+        route,
+        routeByMode: { ...state.routeByMode, [action.mode]: route },
+        storeByMode: { ...state.storeByMode, [action.mode]: action.storeId },
       };
     }
     case 'requireSignIn':
