@@ -6,7 +6,11 @@ import { AppContext } from './context';
 import { deviceLocale } from './locale';
 import { AccountScreen } from './screens/AccountScreen';
 import { AuthScreen } from './screens/AuthScreen';
+import { CartScreen } from './screens/CartScreen';
+import { CheckoutScreen } from './screens/CheckoutScreen';
 import { ModeHome } from './screens/ModeHome';
+import { OrderScreen, OrdersScreen } from './screens/OrdersScreen';
+import { ProductScreen } from './screens/ProductScreen';
 import { ResetScreen } from './screens/ResetScreen';
 import { StoreScreen } from './screens/StoreScreen';
 import { VerifyScreen } from './screens/VerifyScreen';
@@ -56,6 +60,17 @@ export function App() {
     };
   }, [api]);
 
+  // After sign-in, move the guest cart into the account cart (quantities add, capped at stock).
+  const signedInUser = state.session?.user.id;
+  useEffect(() => {
+    const token = stateRef.current.cartToken;
+    if (!signedInUser || !token) return;
+    api
+      .mergeCart(token)
+      .then((cart) => dispatch({ type: 'cart', cartToken: null, count: cart.itemCount }))
+      .catch(() => dispatch({ type: 'cart', cartToken: null, count: 0 }));
+  }, [api, signedInUser]);
+
   const signOut = useCallback(async () => {
     const refresh = stateRef.current.session?.tokens.refreshToken;
     if (refresh) await api.logout(refresh).catch(() => undefined);
@@ -75,6 +90,16 @@ export function App() {
         return <ResetScreen />;
       case '/account':
         return <AccountScreen />;
+      case '/shop/product':
+        return <ProductScreen />;
+      case '/cart':
+        return <CartScreen />;
+      case '/checkout':
+        return <CheckoutScreen />;
+      case '/orders':
+        return <OrdersScreen />;
+      case '/orders/detail':
+        return <OrderScreen />;
       case '/shop/store':
       case '/services/store':
         return <StoreScreen />;

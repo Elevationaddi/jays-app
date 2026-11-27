@@ -1,6 +1,6 @@
 import type { MyMembership } from '@jays/contracts';
 import { describe, expect, it } from 'vitest';
-import { pickWorkspace } from './workspace';
+import { parseAed, pickWorkspace } from './workspace';
 
 const membership = (id: string, status: 'active' | 'invited'): MyMembership => ({
   membershipId: `m-${id}`,
@@ -28,5 +28,21 @@ describe('pickWorkspace', () => {
     expect(pickWorkspace(list, 'gone')?.business.id).toBe('a');
     expect(pickWorkspace(list, 'c')?.business.id).toBe('a');
     expect(pickWorkspace([membership('c', 'invited')], 'c')).toBeUndefined();
+  });
+});
+
+describe('parseAed', () => {
+  it.each([
+    ['12', 1200],
+    ['12.5', 1250],
+    ['12.05', 1205],
+    ['1,250.00', 125000],
+    ['0', 0],
+  ])('%s -> %i fils', (input, expected) => {
+    expect(parseAed(input)).toBe(expected);
+  });
+
+  it.each(['', '-1', '1.234', 'abc', '1e3', '12345678'])('rejects %s', (input) => {
+    expect(parseAed(input)).toBeNull();
   });
 });

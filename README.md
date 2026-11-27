@@ -52,6 +52,10 @@ Admins also need an authenticator code. For seeded admins, print the current one
 
 Noor, Lumière and Oud & Bloom are approved and public. Saffron Skin Co. waits in the admin review queue (sign in as `compliance@admin.example.test` to decide). Amber Atelier is an empty draft.
 
+Noor and Oud & Bloom sell 5 live fictional products, some with low or no stock, and deliver to Dubai, Abu Dhabi and (Noor) Sharjah. Noor also has one product waiting in the listing queue (sign in as `catalog@admin.example.test`) and one draft. `customer.en` has a saved Dubai address, so you can go from the shop to a paid order in the app.
+
+Payments use the mock provider ([ADR-0013](docs/adr/0013-catalog-inventory-checkout-and-mock-payments.md)). The app's checkout shows a test payment page; the result reaches the API as a signed webhook at `API_PUBLIC_URL/webhooks/payments`, so the API must be able to reach its own public URL. With `MOCK_PAYMENT_OUTCOMES=true` the page can also simulate a declined payment. Run the worker to expire unpaid orders and release held stock. Production refuses `PSP_PROVIDER=mock`.
+
 Uploaded files are stored on disk under `STORAGE_LOCAL_DIR` (default `.local-storage`, relative to the API's working directory) and served through signed links at `API_PUBLIC_URL`. The mock malware scanner refuses files containing the EICAR test string. Production refuses to start with `STORAGE_PROVIDER=local` or `MALWARE_SCANNER=mock` ([ADR-0012](docs/adr/0012-merchant-onboarding-storage-and-review.md)).
 
 Verification codes are not sent anywhere locally. The mock notifier writes them to the API log (lines starting `[mock email]` or `[mock sms]`, with the code in the JSON).
@@ -86,7 +90,11 @@ Integration tests use the separate `jays_test` database, created automatically t
 
 ## Screenshots
 
-Screens in English and Arabic (RTL) are in [`docs/screenshots/phase-1/`](docs/screenshots/phase-1/) and [`docs/screenshots/phase-2/`](docs/screenshots/phase-2/). Arabic copy still needs review by a native speaker.
+Screens in English and Arabic (RTL) are in [`docs/screenshots/phase-1/`](docs/screenshots/phase-1/), [`docs/screenshots/phase-2/`](docs/screenshots/phase-2/) and [`docs/screenshots/phase-3/`](docs/screenshots/phase-3/). Arabic copy still needs review by a native speaker.
+
+| Customer app (phase 3)                                                                | Business portal (phase 3)                                                          | Admin console (phase 3)                                                           |
+| ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| <img src="docs/screenshots/phase-3/customer-14-checkout-review-en.png" width="220" /> | <img src="docs/screenshots/phase-3/business-16-product-edit-en.png" width="360" /> | <img src="docs/screenshots/phase-3/admin-11-listing-review-en.png" width="360" /> |
 
 | Customer app (phase 2)                                                            | Business portal (phase 2)                                                                | Admin console (phase 2)                                                                     |
 | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |

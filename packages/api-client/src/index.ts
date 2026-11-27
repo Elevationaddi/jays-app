@@ -1,4 +1,13 @@
 import type {
+  createProductRequestSchema,
+  updateProductRequestSchema,
+  variantInputSchema,
+  updateVariantRequestSchema,
+  productImageUploadRequestSchema,
+  stockAdjustRequestSchema,
+  putDeliveryZonesRequestSchema,
+  productActionRequestSchema,
+  mockPaymentOutcomeSchema,
   acceptInviteRequestSchema,
   adminBusinessListQuerySchema,
   businessActionRequestSchema,
@@ -19,6 +28,24 @@ import type {
   updateMeRequestSchema,
 } from '@jays/contracts';
 import {
+  adminProductDetailSchema,
+  adminProductListItemSchema,
+  cartSchema,
+  createOrderResponseSchema,
+  deliveryZoneListSchema,
+  inventoryItemSchema,
+  merchantOrderListItemSchema,
+  merchantOrderSchema,
+  merchantProductListItemSchema,
+  merchantProductSchema,
+  merchantVariantSchema,
+  mockConfirmResponseSchema,
+  orderListItemSchema,
+  orderSchema,
+  publicProductListItemSchema,
+  publicProductSchema,
+  quoteSchema,
+  stockMovementSchema,
   adminBusinessDetailSchema,
   adminBusinessListItemSchema,
   brandListSchema,
@@ -88,10 +115,10 @@ export const loginResultSchema = z.discriminatedUnion('status', [
 ]);
 export type LoginResult = z.infer<typeof loginResultSchema>;
 
-type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 /** Builds `?a=1&b=2` from defined values only. */
-function query(params: Record<string, string | number | undefined>): string {
+function query(params: Record<string, string | number | boolean | undefined>): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== '') search.set(key, String(value));
@@ -109,8 +136,10 @@ export function createApiClient(options: ApiClientOptions) {
     path: string,
     schema: S,
     body?: unknown,
+    extraHeaders: Record<string, string | null | undefined> = {},
   ): Promise<z.infer<S>> {
     const headers: Record<string, string> = { accept: 'application/json', ...options.headers?.() };
+    for (const [name, value] of Object.entries(extraHeaders)) if (value) headers[name] = value;
     const token = options.accessToken?.();
     if (token) headers['authorization'] = `Bearer ${token}`;
     if (body !== undefined) headers['content-type'] = 'application/json';
@@ -184,6 +213,9 @@ export function createApiClient(options: ApiClientOptions) {
         : new ApiClientError(response.status, 'UPLOAD_FAILED', 'The upload failed.');
     }
   }
+
+  const cartHeaders = (cartToken?: string | null) => ({ 'x-cart-token': cartToken });
+  const idem = (key: string) => ({ 'idempotency-key': key });
 
   return {
     // Public reference data
@@ -292,6 +324,152 @@ export function createApiClient(options: ApiClientOptions) {
     completeMedia: (id: string, mediaId: string) =>
       call('POST', `${biz(id)}/media/${encodeURIComponent(mediaId)}/complete`, mediaSchema),
 
+    // Public catalog
+    products: (
+      params: {
+        q?: string;
+        category?: string;
+        brand?: string;
+        store?: string;
+        minPriceFils?: number;
+        maxPriceFils?: number;
+        availability?: 'in_stock' | 'all';
+        sort?: 'newest' | 'price_asc' | 'price_desc';
+        cursor?: string;
+        limit?: number;
+      } = {},
+    ) => call('GET', `/products${query(params)}`, pageSchema(publicProductListItemSchema)),
+    product: (id: string) =>
+      call('GET', `/products/${encodeURIComponent(id)}`, publicProductSchema),
+
+    // Cart, checkout and orders (customer). Guests pass the cart token the cart response returned.
+    cart: (cartToken?: string | null) =>
+      call('GET', '/cart', cartSchema, undefined, cartHeaders(cartToken)),
+    putCartItem: (variantId: string, qty: number, cartToken?: string | null) =>
+      call(
+        'PUT',
+        `/cart/items/${encodeURIComponent(variantId)}`,
+        cartSchema,
+        { qty },
+        cartHeaders(cartToken),
+      ),
+    removeCartItem: (variantId: string, cartToken?: string | null) =>
+      call(
+        'DELETE',
+        `/cart/items/${encodeURIComponent(variantId)}`,
+        cartSchema,
+        undefined,
+        cartHeaders(cartToken),
+      ),
+    mergeCart: (cartToken: string) => call('POST', '/cart/merge', cartSchema, { cartToken }),
+    quote: (addressId: string) => call('POST', '/checkout/quote', quoteSchema, { addressId }),
+    /** Send the same idempotency key when retrying, so a lost response never creates two orders. */
+    createOrder: (quoteId: string, idempotencyKey: string) =>
+      call('POST', '/orders', createOrderResponseSchema, { quoteId }, idem(idempotencyKey)),
+    orders: (params?: { cursor?: string; limit?: number }) =>
+      call('GET', `/orders${q(params)}`, pageSchema(orderListItemSchema)),
+    order: (id: string) => call('GET', `/orders/${encodeURIComponent(id)}`, orderSchema),
+    /** The mock provider's hosted payment step (local development only). */
+    mockConfirmPayment: (
+      intentId: string,
+      clientSecret: string,
+      outcome: z.input<typeof mockPaymentOutcomeSchema> = 'success',
+    ) =>
+      call(
+        'POST',
+        `/mock-psp/intents/${encodeURIComponent(intentId)}/confirm`,
+        mockConfirmResponseSchema,
+        {
+          clientSecret,
+          outcome,
+        },
+      ),
+
+    // Merchant catalog, inventory, delivery and orders
+    merchantProducts: (
+      id: string,
+      params: { status?: string; q?: string; cursor?: string; limit?: number } = {},
+    ) =>
+      call('GET', `${biz(id)}/products${query(params)}`, pageSchema(merchantProductListItemSchema)),
+    merchantProduct: (id: string, productId: string) =>
+      call('GET', `${biz(id)}/products/${encodeURIComponent(productId)}`, merchantProductSchema),
+    createProduct: (id: string, body: z.input<typeof createProductRequestSchema>) =>
+      call('POST', `${biz(id)}/products`, merchantProductSchema, body),
+    updateProduct: (
+      id: string,
+      productId: string,
+      body: z.input<typeof updateProductRequestSchema>,
+    ) =>
+      call(
+        'PATCH',
+        `${biz(id)}/products/${encodeURIComponent(productId)}`,
+        merchantProductSchema,
+        body,
+      ),
+    submitProduct: (id: string, productId: string) =>
+      call(
+        'POST',
+        `${biz(id)}/products/${encodeURIComponent(productId)}/submit`,
+        merchantProductSchema,
+      ),
+    archiveProduct: (id: string, productId: string) =>
+      call(
+        'POST',
+        `${biz(id)}/products/${encodeURIComponent(productId)}/archive`,
+        merchantProductSchema,
+      ),
+    addVariant: (id: string, productId: string, body: z.input<typeof variantInputSchema>) =>
+      call(
+        'POST',
+        `${biz(id)}/products/${encodeURIComponent(productId)}/variants`,
+        merchantVariantSchema,
+        body,
+      ),
+    updateVariant: (
+      id: string,
+      variantId: string,
+      body: z.input<typeof updateVariantRequestSchema>,
+    ) =>
+      call(
+        'PATCH',
+        `${biz(id)}/variants/${encodeURIComponent(variantId)}`,
+        merchantVariantSchema,
+        body,
+      ),
+    createProductImageUpload: (id: string, body: z.input<typeof productImageUploadRequestSchema>) =>
+      call('POST', `${biz(id)}/product-images`, uploadTicketSchema, body),
+    completeProductImage: (id: string, mediaId: string) =>
+      call(
+        'POST',
+        `${biz(id)}/product-images/${encodeURIComponent(mediaId)}/complete`,
+        mediaSchema,
+      ),
+    inventory: (
+      id: string,
+      params: { lowStock?: 'true' | 'false'; q?: string; cursor?: string; limit?: number } = {},
+    ) => call('GET', `${biz(id)}/inventory${query(params)}`, pageSchema(inventoryItemSchema)),
+    adjustStock: (
+      id: string,
+      body: z.input<typeof stockAdjustRequestSchema>,
+      idempotencyKey: string,
+    ) =>
+      call('POST', `${biz(id)}/inventory/adjust`, inventoryItemSchema, body, idem(idempotencyKey)),
+    stockMovements: (id: string, variantId: string, params?: { cursor?: string; limit?: number }) =>
+      call(
+        'GET',
+        `${biz(id)}/inventory/${encodeURIComponent(variantId)}/movements${q(params)}`,
+        pageSchema(stockMovementSchema),
+      ),
+    deliveryZones: (id: string) => call('GET', `${biz(id)}/delivery-zones`, deliveryZoneListSchema),
+    putDeliveryZones: (id: string, body: z.input<typeof putDeliveryZonesRequestSchema>) =>
+      call('PUT', `${biz(id)}/delivery-zones`, deliveryZoneListSchema, body),
+    merchantOrders: (
+      id: string,
+      params: { status?: string; cursor?: string; limit?: number } = {},
+    ) => call('GET', `${biz(id)}/orders${query(params)}`, pageSchema(merchantOrderListItemSchema)),
+    merchantOrder: (id: string, merchantOrderId: string) =>
+      call('GET', `${biz(id)}/orders/${encodeURIComponent(merchantOrderId)}`, merchantOrderSchema),
+
     // Admin
     adminLogin: (email: string, password: string, totpCode: string) =>
       call('POST', '/admin/auth/login', adminSessionSchema, { email, password, totpCode }),
@@ -338,6 +516,17 @@ export function createApiClient(options: ApiClientOptions) {
       call('POST', '/admin/categories', categorySchema, body),
     updateCategory: (id: string, body: z.input<typeof updateCategoryRequestSchema>) =>
       call('PATCH', `/admin/categories/${encodeURIComponent(id)}`, categorySchema, body),
+    adminProducts: (params: { status?: string; cursor?: string; limit?: number } = {}) =>
+      call('GET', `/admin/products${query(params)}`, pageSchema(adminProductListItemSchema)),
+    adminProduct: (id: string) =>
+      call('GET', `/admin/products/${encodeURIComponent(id)}`, adminProductDetailSchema),
+    adminProductAction: (id: string, body: z.input<typeof productActionRequestSchema>) =>
+      call(
+        'POST',
+        `/admin/products/${encodeURIComponent(id)}/actions`,
+        adminProductDetailSchema,
+        body,
+      ),
     adminBrands: () => call('GET', '/admin/brands', brandListSchema),
     createBrand: (body: z.input<typeof createBrandRequestSchema>) =>
       call('POST', '/admin/brands', brandSchema, body),

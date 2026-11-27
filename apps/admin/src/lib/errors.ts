@@ -65,6 +65,30 @@ export function errorMessageKey(code: string | undefined): MessageKey | null {
       return 'error.modeNotPending';
     case 'FORBIDDEN':
       return 'error.forbidden';
+    case 'SKU_TAKEN':
+    case 'DUPLICATE_SKU':
+      return 'error.skuTaken';
+    case 'PRODUCT_INCOMPLETE':
+      return 'error.productIncomplete';
+    case 'PRODUCT_IN_REVIEW':
+      return 'error.productInReview';
+    case 'INSUFFICIENT_STOCK':
+      return 'error.insufficientStock';
+    case 'LAST_VARIANT':
+      return 'error.lastVariant';
+    case 'OUT_OF_STOCK':
+      return 'error.outOfStock';
+    case 'QUOTE_STALE':
+      return 'error.quoteStale';
+    case 'QUOTE_EXPIRED':
+      return 'error.quoteExpired';
+    case 'DELIVERY_UNAVAILABLE':
+    case 'NO_DELIVERY_ZONE':
+      return 'error.deliveryUnavailable';
+    case 'CART_NOT_READY':
+      return 'error.cartNotReady';
+    case 'PAYMENT_PROVIDER_UNAVAILABLE':
+      return 'error.paymentUnavailable';
     default:
       return 'common.error';
   }

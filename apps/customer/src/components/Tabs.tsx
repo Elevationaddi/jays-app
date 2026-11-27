@@ -2,12 +2,15 @@ import { colors, minTouchTarget } from '@jays/ui';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useApp } from '../context';
 
-/** Bottom tabs for phase 1: the current mode's home and the shared account. */
+/** Bottom tabs: the current mode's home, the cart (shop), orders and the shared account. */
 export function Tabs() {
   const { state, dispatch, tr } = useApp();
   const home = state.mode === 'services' ? '/services' : '/shop';
-  const tab = (route: '/shop' | '/services' | '/account', label: string) => {
-    const selected = state.route === route || state.route === `${route}/store`;
+  const tab = (route: '/shop' | '/services' | '/account' | '/cart' | '/orders', label: string) => {
+    const selected =
+      state.route === route ||
+      state.route.startsWith(`${route}/`) ||
+      (route === '/cart' && state.route === '/checkout');
     return (
       <Pressable
         key={route}
@@ -23,6 +26,13 @@ export function Tabs() {
   return (
     <View accessibilityRole="tablist" style={styles.bar}>
       {tab(home, tr('tab.home'))}
+      {state.mode !== 'services'
+        ? tab(
+            '/cart',
+            state.cartCount ? `${tr('cart.title')} (${state.cartCount})` : tr('cart.title'),
+          )
+        : null}
+      {tab('/orders', tr('myOrders.title'))}
       {tab('/account', tr('tab.account'))}
     </View>
   );

@@ -147,6 +147,7 @@ input[type='text'],
 input[type='email'],
 input[type='tel'],
 input[type='password'],
+input[type='number'],
 select {
   min-height: 44px;
   padding: 8px 12px;
@@ -544,4 +545,74 @@ fieldset.plain[disabled] {
 .badge.submitted,
 .badge.under_review {
   color: #8a5a00;
+}
+
+/* Phase 3: catalog, inventory and orders */
+.thumb.product {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background: var(--border);
+  flex: none;
+}
+.gallery {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.gallery .thumb.product {
+  width: 96px;
+  height: 96px;
+}
+details.variant {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+}
+details.variant summary {
+  cursor: pointer;
+}
+details.variant form {
+  margin-top: 12px;
+}
+.totals {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 16px;
+  margin: 16px 0 0;
+}
+.totals dd {
+  margin: 0;
+  text-align: end;
+}
+.badge.paid,
+.badge.delivered {
+  color: #1d6b3a;
+}
+.badge.archived,
+.badge.canceled,
+.badge.pending_payment {
+  color: var(--text-muted);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.inline-form select,
+.inline-form input {
+  width: auto;
 }
