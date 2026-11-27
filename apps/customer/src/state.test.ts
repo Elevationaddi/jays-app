@@ -115,4 +115,23 @@ describe('customer navigation state', () => {
     expect(s.cartCount).toBe(0);
     expect(s.cartToken).toBeNull();
   });
+
+  it('opens the booking flow in services mode and returns to it after switching modes', () => {
+    const s = run([
+      { type: 'chooseMode', mode: 'services' },
+      { type: 'openStore', mode: 'services', storeId: 'venue-1' },
+      { type: 'startBooking', serviceId: 'svc-1' },
+      { type: 'chooseMode', mode: 'shop' },
+      { type: 'chooseMode', mode: 'services' },
+    ]);
+    expect(s.route).toBe('/services/book');
+    expect(s.bookServiceId).toBe('svc-1');
+    expect(s.storeByMode.services).toBe('venue-1');
+  });
+
+  it('opens an appointment', () => {
+    const s = run([{ type: 'openBooking', bookingId: 'b-1' }]);
+    expect(s.route).toBe('/appointments/detail');
+    expect(s.bookingId).toBe('b-1');
+  });
 });

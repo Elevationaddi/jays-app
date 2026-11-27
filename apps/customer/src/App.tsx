@@ -5,7 +5,9 @@ import { makeApi } from './api';
 import { AppContext } from './context';
 import { deviceLocale } from './locale';
 import { AccountScreen } from './screens/AccountScreen';
+import { AppointmentScreen, AppointmentsScreen } from './screens/AppointmentsScreen';
 import { AuthScreen } from './screens/AuthScreen';
+import { BookScreen } from './screens/BookScreen';
 import { CartScreen } from './screens/CartScreen';
 import { CheckoutScreen } from './screens/CheckoutScreen';
 import { ModeHome } from './screens/ModeHome';
@@ -100,6 +102,12 @@ export function App() {
         return <OrdersScreen />;
       case '/orders/detail':
         return <OrderScreen />;
+      case '/services/book':
+        return <BookScreen />;
+      case '/appointments':
+        return <AppointmentsScreen />;
+      case '/appointments/detail':
+        return <AppointmentScreen />;
       case '/shop/store':
       case '/services/store':
         return <StoreScreen />;

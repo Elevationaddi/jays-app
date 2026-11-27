@@ -10,6 +10,9 @@ export type Tab =
   | 'inventory'
   | 'delivery'
   | 'orders'
+  | 'services'
+  | 'staff'
+  | 'calendar'
   | 'team';
 
 /** Workspace tabs, shown only for what the member's capabilities allow. */
@@ -19,10 +22,11 @@ export function BusinessNav({
   current,
 }: {
   locale: Locale;
-  business: Pick<BusinessView, 'id' | 'myCapabilities'>;
+  business: Pick<BusinessView, 'id' | 'myCapabilities' | 'modes'>;
   current: Tab;
 }) {
   const can = (c: BusinessView['myCapabilities'][number]) => business.myCapabilities.includes(c);
+  const services = business.modes.services !== 'not_activated';
   const tabs: { key: Tab; href: string; label: string; show: boolean }[] = [
     {
       key: 'gateway',
@@ -65,6 +69,24 @@ export function BusinessNav({
       href: `/business/${business.id}/orders`,
       label: t(locale, 'business.nav.orders'),
       show: can('orders.fulfill'),
+    },
+    {
+      key: 'calendar',
+      href: `/business/${business.id}/calendar`,
+      label: t(locale, 'business.nav.calendar'),
+      show: services && (can('appointments.view_all') || can('appointments.view_own')),
+    },
+    {
+      key: 'services',
+      href: `/business/${business.id}/services`,
+      label: t(locale, 'business.nav.services'),
+      show: services && can('services.manage'),
+    },
+    {
+      key: 'staff',
+      href: `/business/${business.id}/staff`,
+      label: t(locale, 'business.nav.staff'),
+      show: services && (can('services.manage') || can('bookings.schedule')),
     },
     {
       key: 'team',

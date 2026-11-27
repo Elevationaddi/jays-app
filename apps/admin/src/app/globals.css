@@ -601,3 +601,21 @@ td input[type='text'] {
   align-items: center;
   gap: 12px;
 }
+
+/* Booking statuses (phase 4). */
+.badge.confirmed,
+.badge.checked_in,
+.badge.completed {
+  color: var(--success);
+}
+.badge.held {
+  color: #8a5a00;
+}
+.badge.canceled,
+.badge.no_show {
+  color: var(--danger);
+}
+.badge.expired,
+.badge.archived {
+  color: var(--text-muted);
+}

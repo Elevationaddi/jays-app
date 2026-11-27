@@ -7,15 +7,88 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 | 0     | Monorepo, local Docker, env schema, CI, ADRs                 | Merged (PR #1)                      |
 | 1     | Identity, roles, memberships, bilingual gateway              | Merged (PR #2)                      |
 | 2     | Merchant onboarding, approval, categories, media, storefront | Merged (PR #3)                      |
-| 3     | Catalog, inventory, cart, multi-seller checkout (mock PSP)   | In review                           |
-| 4     | Services, staff, availability, booking holds                 | Not started                         |
+| 3     | Catalog, inventory, cart, multi-seller checkout (mock PSP)   | Merged (PR #4)                      |
+| 4     | Services, staff, availability, booking holds                 | In review                           |
 | 5     | Real PSP sandbox, ledger, refunds, payouts, reconciliation   | Blocked on founder decisions D3, D5 |
 | 6     | Fulfillment, reviews, support, notifications, dashboards     | Not started                         |
 | 7     | RTL/accessibility, hardening, backups, observability, pilot  | Not started                         |
 
+## Phase 4: Services, staff, availability and booking
+
+Date: 2026-11-27. Branch: `claude/project-thread-qyds1l`. Decision: [ADR-0014](adr/0014-services-staff-availability-and-booking.md). Detail: [implementation plan](implementation-plan.md#phase-4-services-branches-staff-availability-booking-holds).
+
+### Delivered
+
+- Migration `0005_services_booking.sql`:
+  - Tables: branches with weekly hours and closures, services with branch links, and staff with branch and service links.
+  - Staff schedules: weekly shifts and dated blocks.
+  - Bookings with price and policy snapshots. An exclusion constraint stops one professional's held, confirmed or checked-in bookings from overlapping.
+  - SQL function `expire_booking_holds`, shared by the API and the worker.
+- API (106 paths under `/v1`, up from 81):
+  - Merchant: branches, closures, services, staff, weekly shifts and blocks. Every edit is refused with `SCHEDULE_CONFLICT` if it would strand an upcoming booking.
+  - Public: venue page data, and availability per day in branch time on a 15-minute grid with buffers.
+  - Customer:
+    - Holds are idempotent and last 10 minutes. A customer may have at most 2 open holds and book up to 60 days ahead.
+    - Payment uses the mock PSP, and only a verified webhook confirms a booking.
+    - Customers can list bookings, cancel under the policy snapshot and reschedule in place.
+  - Merchant calendar with check-in, complete, no-show and cancel (with a version check), plus phone and walk-in bookings. Professionals see only their own appointments.
+  - Admin: booking monitoring with payment-attention flags, and service suspension and reinstatement with reasons and audit.
+  - Payments: refunds are requested inside the transaction and issued after commit, with partial-refund status, for orders and bookings alike.
+- Worker: expires booking holds every 30 seconds.
+- Business portal:
+  - Calendar: a day view per branch, with actions and manual bookings.
+  - Services page with branches: hours, closures, services, prices, buffers and policy.
+  - Staff page: branches, services, linked member, weekly shifts, breaks and leave.
+- Admin console: Services (suspend and reinstate) and Bookings.
+- Customer app:
+  - Venue services on the store page in services mode.
+  - Booking flow: professional, day, time, hold, mock payment, and a confirmation that waits for the webhook.
+  - My appointments: upcoming and past, with detail, cancel (showing the refund) and change time.
+- Seed data: Lumière Salon (1 branch, 3 services, 3 staff, one linked to `staff.pro`) and Oud & Bloom (1 spa branch, 2 services, 2 staff), with weekly hours and shifts.
+- Screenshots: [`docs/screenshots/phase-4/`](screenshots/phase-4/) (18 screens, English and Arabic RTL, phone and desktop).
+
+### Verified locally (2026-11-27)
+
+| Command                                | Result                                                            |
+| -------------------------------------- | ----------------------------------------------------------------- |
+| `pnpm format:check`                    | pass                                                              |
+| `pnpm lint`                            | pass, 12 projects                                                 |
+| `pnpm typecheck`                       | pass, 12 projects                                                 |
+| `pnpm test`                            | pass, 195 unit tests                                              |
+| `pnpm build`                           | pass (packages, API, worker, both Next.js apps)                   |
+| `pnpm openapi`                         | 106 paths; committed with the code                                |
+| `pnpm db:migrate` on an empty database | applied 0001 to 0005                                              |
+| `pnpm test:integration`                | pass, 118 tests (15 database, 103 API against Postgres and Redis) |
+| `pnpm db:seed`                         | seeds 2 venues; the booking flow was run end to end in the app    |
+
+Acceptance coverage:
+
+- **T07:** two simultaneous holds for the same professional and time produce exactly one booking. A burst of "any professional" holds never books more people than exist. A direct database insert that bypasses the API is also refused.
+- **T08:**
+  - Only the verified webhook confirms a booking, and a retried hold returns the same booking.
+  - An expired hold frees the time and cannot be paid. A late payment is refunded in full, and a failed payment releases the time at once.
+  - The hold cap and the 15-minute grid are enforced, and "any professional" goes to whoever has fewer appointments that day.
+- **T09:** cancellation is refunded in full before the cutoff and at the late share after it. The customer cannot cancel once the appointment starts, and a business cancellation is always refunded in full.
+- **T13 (services):** a booking keeps the price, duration and policy it was sold with after the service changes.
+- **T14:** a booking just after local midnight in Dubai lands on the previous UTC day. Daylight-saving gaps and overlaps are covered in the domain tests.
+- Also covered: schedule edits that would strand a booking are refused and rolled back; rescheduling keeps the original time when the new one is taken; manual bookings follow the same rules; professionals see only their own appointments; businesses and customers cannot see each other's bookings; a suspended service cannot be booked.
+
+### Known limitations and follow-ups
+
+- Payments use the mock provider only (D5). Booking revenue does not reach a ledger or payouts until phase 5.
+- **Services go live without admin pre-approval:** once the business and its services mode are approved, services are bookable straight away, and admins can suspend them. Cancellation policies are set per service by the merchant (D7, proposed). Services are in-venue only (D9, proposed).
+- **Not built yet:** merchant-side rescheduling, deposits, packages, waitlists and reminders. Reminders arrive with notifications in phase 6.
+- **Shifts:** the portal edits one shift per day per professional, although the API accepts several.
+- **Sign-in during booking:** signing in part-way through returns the customer to the booking page, but they have to pick the time again.
+- Arabic copy for this phase needs review by a native speaker before the pilot.
+
+### Rollback
+
+`0005_services_booking.sql` only adds tables, a constraint on the new bookings table and functions. Rolling back means deploying the previous code; the new tables are then unused.
+
 ## Phase 3: Catalog, inventory, cart, multi-seller checkout (mock PSP)
 
-Date: 2026-11-27. Branch: `claude/project-thread-qyds1l`. Decision: [ADR-0013](adr/0013-catalog-inventory-checkout-and-mock-payments.md). Detail: [implementation plan](implementation-plan.md#phase-3-catalog-inventory-cart-multi-seller-checkout-mock-psp).
+Date: 2026-11-27. Branch: `claude/project-thread-qyds1l`. Merged in PR #4. Decision: [ADR-0013](adr/0013-catalog-inventory-checkout-and-mock-payments.md). Detail: [implementation plan](implementation-plan.md#phase-3-catalog-inventory-cart-multi-seller-checkout-mock-psp).
 
 ### Delivered
 

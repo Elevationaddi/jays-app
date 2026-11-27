@@ -89,6 +89,20 @@ export function errorMessageKey(code: string | undefined): MessageKey | null {
       return 'error.cartNotReady';
     case 'PAYMENT_PROVIDER_UNAVAILABLE':
       return 'error.paymentUnavailable';
+    case 'SLOT_UNAVAILABLE':
+      return 'error.slotUnavailable';
+    case 'SCHEDULE_CONFLICT':
+      return 'error.scheduleConflict';
+    case 'TOO_EARLY':
+      return 'error.tooEarly';
+    case 'OUTSIDE_BOOKING_WINDOW':
+      return 'error.outsideWindow';
+    case 'SERVICE_SUSPENDED':
+      return 'error.serviceSuspended';
+    case 'MEMBER_ALREADY_STAFF':
+      return 'error.memberAlreadyStaff';
+    case 'CANCEL_TOO_LATE':
+      return 'error.cancelTooLate';
     default:
       return 'common.error';
   }

@@ -19,6 +19,7 @@ import {
   SEED_PRODUCTS,
   SEED_SUBCATEGORIES,
   SEED_USERS,
+  SEED_VENUES,
   type SeedBusiness,
   seedAdminEmail,
 } from './seed-data.js';
@@ -452,6 +453,118 @@ try {
         }
       }
     }
+    // Phase 4: a branch, services, staff and weekly shifts per services business.
+    for (const v of SEED_VENUES) {
+      const businessId = businessIds.get(v.business) as string;
+      const owner = SEED_BUSINESSES.find((b) => b.key === v.business)?.owner as string;
+      const ownerId = userIds.get(owner) as string;
+      const existing = await trx
+        .selectFrom('branches')
+        .select('id')
+        .where('business_id', '=', businessId)
+        .executeTakeFirst();
+      if (existing) continue;
+      const branch = await trx
+        .insertInto('branches')
+        .values({
+          business_id: businessId,
+          name: JSON.stringify(v.branch.name),
+          emirate_code: v.branch.emirate,
+          area: v.branch.area,
+          street: v.branch.street,
+          building: v.branch.building,
+        })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      await trx
+        .insertInto('branch_hours')
+        .values(
+          Object.entries(v.branch.hours).map(([weekday, [opens, closes]]) => ({
+            branch_id: branch.id,
+            weekday: Number(weekday),
+            opens_at: opens,
+            closes_at: closes,
+          })),
+        )
+        .execute();
+      const serviceIds = new Map<string, string>();
+      for (const sv of v.services) {
+        const category = await trx
+          .selectFrom('categories')
+          .select('id')
+          .where('mode', '=', 'services')
+          .where('slug', '=', sv.category)
+          .executeTakeFirstOrThrow();
+        const row = await trx
+          .insertInto('services')
+          .values({
+            business_id: businessId,
+            category_id: category.id,
+            title: JSON.stringify(sv.title),
+            description: JSON.stringify(sv.description),
+            price_fils: sv.priceFils,
+            duration_min: sv.durationMin,
+            buffer_before_min: sv.bufferBeforeMin,
+            buffer_after_min: sv.bufferAfterMin,
+            cancel_cutoff_hours: sv.cancelCutoffHours,
+            late_cancel_refund_bps: sv.lateCancelRefundBps,
+            created_by: ownerId,
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        serviceIds.set(sv.key, row.id);
+        await trx
+          .insertInto('branch_services')
+          .values({ branch_id: branch.id, service_id: row.id, business_id: businessId })
+          .execute();
+      }
+      for (const st of v.staff) {
+        const membership = st.member
+          ? await trx
+              .selectFrom('memberships')
+              .select('id')
+              .where('business_id', '=', businessId)
+              .where('user_id', '=', userIds.get(st.member) as string)
+              .executeTakeFirst()
+          : undefined;
+        const staff = await trx
+          .insertInto('staff')
+          .values({
+            business_id: businessId,
+            display_name: st.name,
+            membership_id: membership?.id ?? null,
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        await trx
+          .insertInto('staff_branches')
+          .values({ staff_id: staff.id, branch_id: branch.id, business_id: businessId })
+          .execute();
+        await trx
+          .insertInto('staff_services')
+          .values(
+            st.services.map((key) => ({
+              staff_id: staff.id,
+              service_id: serviceIds.get(key) as string,
+              business_id: businessId,
+            })),
+          )
+          .execute();
+        await trx
+          .insertInto('shifts')
+          .values(
+            Object.entries(st.shifts).map(([weekday, [from, to]]) => ({
+              staff_id: staff.id,
+              branch_id: branch.id,
+              business_id: businessId,
+              weekday: Number(weekday),
+              starts_at: from,
+              ends_at: to,
+            })),
+          )
+          .execute();
+      }
+    }
     const a = SEED_CUSTOMER_ADDRESS;
     const addressUser = userIds.get(a.user) as string;
     const hasAddress = await trx
@@ -476,7 +589,7 @@ try {
     }
   });
   console.log(
-    `seeded ${SEED_PRODUCTS.length} products, ${SEED_USERS.length} users, ${SEED_BUSINESSES.length} businesses, ${SEED_ADMIN_ROLES.length} admins`,
+    `seeded ${SEED_PRODUCTS.length} products, ${SEED_VENUES.length} venues, ${SEED_USERS.length} users, ${SEED_BUSINESSES.length} businesses, ${SEED_ADMIN_ROLES.length} admins`,
   );
   console.log(`password for every seeded account: ${SEED_PASSWORD}`);
   console.log(

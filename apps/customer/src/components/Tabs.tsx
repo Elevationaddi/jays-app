@@ -2,11 +2,14 @@ import { colors, minTouchTarget } from '@jays/ui';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useApp } from '../context';
 
-/** Bottom tabs: the current mode's home, the cart (shop), orders and the shared account. */
+/** Bottom tabs: the mode's home, cart and orders (shop) or appointments (services), account. */
 export function Tabs() {
   const { state, dispatch, tr } = useApp();
   const home = state.mode === 'services' ? '/services' : '/shop';
-  const tab = (route: '/shop' | '/services' | '/account' | '/cart' | '/orders', label: string) => {
+  const tab = (
+    route: '/shop' | '/services' | '/account' | '/cart' | '/orders' | '/appointments',
+    label: string,
+  ) => {
     const selected =
       state.route === route ||
       state.route.startsWith(`${route}/`) ||
@@ -31,8 +34,8 @@ export function Tabs() {
             '/cart',
             state.cartCount ? `${tr('cart.title')} (${state.cartCount})` : tr('cart.title'),
           )
-        : null}
-      {tab('/orders', tr('myOrders.title'))}
+        : tab('/appointments', tr('tab.appointments'))}
+      {state.mode !== 'services' ? tab('/orders', tr('myOrders.title')) : null}
       {tab('/account', tr('tab.account'))}
     </View>
   );
