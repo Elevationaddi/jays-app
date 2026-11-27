@@ -1,7 +1,7 @@
 /**
  * Access model from docs/01-product.md and docs/03-business.md / 04-admin.md.
  * Three top-level roles; business staff are permission-scoped members, not a fourth role.
- * Enforcement lives in the API (phase 1). These lists are the single vocabulary for it.
+ * Enforcement lives in the API; capabilities per permission are in access.ts.
  */
 export const TOP_LEVEL_ROLES = ['customer', 'business', 'admin'] as const;
 export type TopLevelRole = (typeof TOP_LEVEL_ROLES)[number];

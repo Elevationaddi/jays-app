@@ -18,7 +18,7 @@ The spec files are committed unchanged; the combined specification and storyboar
 
 ## Phases
 
-### Phase 0: Foundation (this PR)
+### Phase 0: Foundation (merged)
 
 Monorepo scaffold, local Docker, environment schema, lint/typecheck/test CI, ADRs.
 
@@ -38,13 +38,29 @@ No seed data yet, because there are no domain tables. Seeds begin in phase 1.
 
 ### Phase 1: Identity, roles, memberships, bilingual gateway
 
-- Tables: `users`, `sessions`, `addresses`, `businesses` (shell), `memberships`, `business_modes`, `admin_accounts`, `audit_logs`, `outbox`.
-- Email/phone OTP verification with expiry and throttling (mock email/SMS adapter locally), short access token plus rotating refresh token with reuse detection, logout and revocation.
-- Admin accounts are invite-only and require MFA (TOTP); platform roles from `docs/04-admin.md`.
-- Business permissions (owner, manager, fulfillment, scheduler, finance, professional); default deny; business context resolved from DB membership, never from client claims.
-- Bilingual gateway: customer `/welcome` with Shop Products / Book Services cards and manual emirate choice; business `/business/gateway` with mode cards and onboarding state; persistent mode switch.
-- Seeds: test customers, one admin per platform role, business owners (fictional data).
-- Tests: T03 (role boundaries for identity endpoints), auth expiry and rate limits, part of T01 (mode switch keeps state), T11 smoke for RTL.
+Delivered on branch `claude/project-thread-i0hr4p`. Decisions: [ADR-0009](adr/0009-identity-and-sessions.md) (identity and sessions), [ADR-0010](adr/0010-authorization-and-admin-mfa.md) (authorization and admin MFA), [ADR-0011](adr/0011-web-sessions-bff-cookies.md) (web sessions and CSRF).
+
+| Deliverable                                                                                                                                                                                      | Where                                                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| Migration `0002_identity.sql`: emirates (seeded), users, verification challenges, sessions, addresses, businesses, memberships, business modes, admin accounts/roles/sessions, audit log, outbox | `packages/db/migrations`                                   |
+| Kysely table types with a drift test against the live schema                                                                                                                                     | `packages/db/src/schema.ts`                                |
+| Register, verify (email or UAE mobile), resend, login, refresh with rotation and reuse detection, logout, password reset; Argon2id; OTP expiry, attempt limits and Redis rate limits             | `apps/api/src/auth`                                        |
+| Profile, language, emirate, preferred mode, marketing consent, addresses (archive, one default), my memberships with accept/decline                                                              | `apps/api/src/me`                                          |
+| Businesses (draft shell), mode activation, team management with capability checks and last-owner protection                                                                                      | `apps/api/src/businesses`, `packages/domain/src/access.ts` |
+| Invite-only admins with mandatory TOTP, platform roles, admin list/invite, audit log viewer                                                                                                      | `apps/api/src/admin`                                       |
+| Shared request/response schemas (validation and OpenAPI) and a typed API client                                                                                                                  | `packages/contracts`, `packages/api-client`                |
+| Customer app: welcome with Shop Products / Book Services, manual or location-suggested emirate, persistent mode switch, sign in/up, verify, reset, account                                       | `apps/customer`                                            |
+| Business portal: sign in/up, verify, workspace gateway with mode cards and onboarding state, start a business, team management, invitations                                                      | `apps/business`                                            |
+| Admin console: sign in with TOTP, invite acceptance and authenticator enrolment, admin accounts, audit log                                                                                       | `apps/admin`                                               |
+| English and Arabic (RTL) on all three surfaces                                                                                                                                                   | `packages/i18n`                                            |
+| Fictional seed data and helper scripts (`db:seed`, `totp`, `admin:bootstrap`)                                                                                                                    | `apps/api/scripts`                                         |
+
+Acceptance coverage in this phase:
+
+- **T03 (role boundaries):** clients cannot send role or status fields, business A is invisible to members of business B, staff without a capability get 403, invitees have no access until they accept, removal cuts access at once, user and admin tokens are not interchangeable, and platform roles are enforced on every admin endpoint.
+- **Auth expiry and rate limits:** code expiry, attempt lockout, resend cooldown, send limits, login and registration limits, 15-minute access tokens, 30-day idle sessions, refresh reuse and concurrent refresh.
+- **T01 (part):** the mode switch keeps the selected mode across sign-in (reducer tests and screenshots `customer-04` and `customer-07`).
+- **T11 smoke:** every screen renders in Arabic with `dir="rtl"`, and catalog parity tests check that both languages define the same keys and placeholders.
 
 ### Phase 2: Merchant onboarding, approval, categories, media, storefront
 

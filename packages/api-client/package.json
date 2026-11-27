@@ -1,0 +1,28 @@
+{
+  "name": "@jays/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Typed client for the REST API, shared by the web portals and the customer app. Responses are validated with the contracts.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@jays/contracts": "workspace:*",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@jays/config": "workspace:*"
+  }
+}

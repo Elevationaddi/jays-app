@@ -1,0 +1,8 @@
+# Fictional passwords used only by integration tests in commit 1f8f78e (phase 1).
+# They were replaced in the next commit with a helper that builds test passwords at runtime.
+# Each entry is pinned to that commit, so it cannot hide a secret added later.
+1f8f78e3edcd255fd7088e98f39cbd3283ff48b2:apps/api/src/testing/harness.ts:generic-api-key:103
+1f8f78e3edcd255fd7088e98f39cbd3283ff48b2:apps/api/src/admin/admin.int.test.ts:generic-api-key:84
+1f8f78e3edcd255fd7088e98f39cbd3283ff48b2:apps/api/src/auth/auth.int.test.ts:generic-api-key:239
+1f8f78e3edcd255fd7088e98f39cbd3283ff48b2:apps/api/src/auth/auth.int.test.ts:generic-api-key:244
+1f8f78e3edcd255fd7088e98f39cbd3283ff48b2:apps/api/src/auth/auth.int.test.ts:generic-api-key:259

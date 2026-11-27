@@ -14,3 +14,6 @@ Status values: **Accepted** (engineering decision, in force), **Proposed** (need
 | [0006](0006-environment-and-secrets.md)             | Environment configuration, secrets and mock providers | Accepted |
 | [0007](0007-founder-decisions-and-mvp-defaults.md)  | Founder decisions and MVP defaults                    | Proposed |
 | [0008](0008-api-conventions.md)                     | API conventions: errors, request IDs, OpenAPI         | Accepted |
+| [0009](0009-identity-and-sessions.md)               | Identity, verification and sessions                   | Accepted |
+| [0010](0010-authorization-and-admin-mfa.md)         | Authorization model and admin MFA                     | Accepted |
+| [0011](0011-web-sessions-bff-cookies.md)            | Web sessions through server-side cookies, and CSRF    | Accepted |

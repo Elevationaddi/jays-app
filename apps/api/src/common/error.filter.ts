@@ -45,6 +45,8 @@ export class ErrorEnvelopeFilter implements ExceptionFilter {
 
     if (exception instanceof ApiError) {
       status = exception.getStatus();
+      const retryAfter = (exception as { retryAfterSeconds?: unknown }).retryAfterSeconds;
+      if (typeof retryAfter === 'number') res.setHeader('Retry-After', String(retryAfter));
       body = { code: exception.code, message: exception.message, requestId };
       if (exception.fieldErrors) body.fieldErrors = exception.fieldErrors;
     } else if (exception instanceof HttpException) {

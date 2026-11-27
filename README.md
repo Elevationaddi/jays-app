@@ -22,7 +22,7 @@ Copy these files into repository root. Start Claude Code in that directory and i
 
 ## Local development
 
-Phase 0 is the foundation only. There are no marketplace features yet.
+Phase 1 is in place: sign-up, verification and sign-in for customers and business users, business teams with permission-scoped staff, invite-only admins with an authenticator app, and the bilingual Shop Products / Book Services gateway in all three apps. Catalog, bookings and payments start in later phases (see [status](docs/IMPLEMENTATION_STATUS.md)).
 
 Requirements: Node.js 22 (`.nvmrc`), pnpm 10 (`corepack enable`), Docker.
 
@@ -31,21 +31,41 @@ pnpm install            # also builds the shared packages
 cp .env.example .env    # fictional local values only
 pnpm dev:deps           # PostgreSQL 17 and Redis 7 on 127.0.0.1
 pnpm db:migrate         # applies packages/db/migrations
+pnpm db:seed            # fictional local accounts and businesses (idempotent, refuses production)
 ```
 
-| Path                 | What it is                                   | Run                                                                                 | Local URL                       |
-| -------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------- |
-| `apps/api`           | NestJS REST API, `/v1`                       | `pnpm --filter @jays/api build && pnpm --filter @jays/api dev`                      | http://localhost:3000/v1/health |
-| `apps/worker`        | Background worker                            | `pnpm --filter @jays/worker build && node --env-file=.env apps/worker/dist/main.js` | –                               |
-| `apps/business`      | Next.js business portal                      | `pnpm --filter @jays/business dev`                                                  | http://localhost:3001           |
-| `apps/admin`         | Next.js admin console                        | `pnpm --filter @jays/admin dev`                                                     | http://localhost:3002           |
-| `apps/customer`      | Expo customer app                            | `pnpm --filter @jays/customer start`                                                | Expo Go / simulator             |
-| `packages/config`    | Shared tsconfig and the environment schema   |                                                                                     |                                 |
-| `packages/domain`    | Money (integer fils), modes, roles, time     |                                                                                     |                                 |
-| `packages/contracts` | Error envelope, pagination, health contracts |                                                                                     |                                 |
-| `packages/i18n`      | English/Arabic catalogs, RTL helpers         |                                                                                     |                                 |
-| `packages/ui`        | Design tokens with contrast tests            |                                                                                     |                                 |
-| `packages/db`        | SQL migrations and runner                    |                                                                                     |                                 |
+### Local accounts after `pnpm db:seed`
+
+Every seeded account uses the password `Local-Dev-Passw0rd!`. All names, emails and phone numbers are fictional.
+
+| Who                                    | Sign in as                                                               | Where           |
+| -------------------------------------- | ------------------------------------------------------------------------ | --------------- |
+| Customer                               | `customer.en@example.test` (English), `+971500000101` (Arabic, mobile)   | customer app    |
+| Shop owner (Noor Beauty Supply)        | `owner.noor@example.test`                                                | business portal |
+| Services owner (Lumière Salon)         | `owner.lumiere@example.test`                                             | business portal |
+| Hybrid owner (Oud & Bloom), with staff | `owner.oud@example.test`                                                 | business portal |
+| One admin per platform role            | `<role>@admin.example.test`, for example `superadmin@admin.example.test` | admin console   |
+
+Admins also need an authenticator code. For seeded admins, print the current one with `pnpm --filter @jays/api totp superadmin@admin.example.test`.
+
+Verification codes are not sent anywhere locally. The mock notifier writes them to the API log (lines starting `[mock email]` or `[mock sms]`, with the code in the JSON).
+
+To create the first real superadmin on an empty database, run `pnpm --filter @jays/api admin:bootstrap -- ops@company.example "Display Name"`. It prints a one-time invitation link, and it refuses to run once a superadmin exists.
+
+| Path                  | What it is                                                             | Run                                                                                 | Local URL                       |
+| --------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------- |
+| `apps/api`            | NestJS REST API, `/v1`                                                 | `pnpm --filter @jays/api build && pnpm --filter @jays/api dev`                      | http://localhost:3000/v1/health |
+| `apps/worker`         | Background worker                                                      | `pnpm --filter @jays/worker build && node --env-file=.env apps/worker/dist/main.js` | –                               |
+| `apps/business`       | Next.js business portal                                                | `pnpm --filter @jays/business dev`                                                  | http://localhost:3001           |
+| `apps/admin`          | Next.js admin console                                                  | `pnpm --filter @jays/admin dev`                                                     | http://localhost:3002           |
+| `apps/customer`       | Expo customer app                                                      | `pnpm --filter @jays/customer start` (`w` for web)                                  | Expo Go / simulator / web       |
+| `packages/config`     | Shared tsconfig and the environment schema                             |                                                                                     |                                 |
+| `packages/domain`     | Money (integer fils), modes, roles, permissions and capabilities, time |                                                                                     |                                 |
+| `packages/contracts`  | Zod request/response schemas (validation and OpenAPI)                  |                                                                                     |                                 |
+| `packages/api-client` | Typed API client shared by the three apps                              |                                                                                     |                                 |
+| `packages/i18n`       | English/Arabic catalogs, RTL helpers                                   |                                                                                     |                                 |
+| `packages/ui`         | Design tokens with contrast tests                                      |                                                                                     |                                 |
+| `packages/db`         | SQL migrations, runner and Kysely table types                          |                                                                                     |                                 |
 
 Checks (the same ones CI runs):
 
@@ -57,3 +77,11 @@ DATABASE_URL=postgresql://jays:jays@localhost:5432/jays_test REDIS_URL=redis://l
 ```
 
 Integration tests use the separate `jays_test` database, created automatically the first time the Postgres container starts.
+
+## Screenshots
+
+Phase 1 screens, in English and Arabic (RTL), are in [`docs/screenshots/phase-1/`](docs/screenshots/phase-1/). Arabic copy still needs review by a native speaker.
+
+| Customer app                                                                      | Business portal                                                                          | Admin console                                                                      |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| <img src="docs/screenshots/phase-1/customer-02-welcome-ar-rtl.png" width="220" /> | <img src="docs/screenshots/phase-1/business-03-gateway-hybrid-ar-rtl.png" width="360" /> | <img src="docs/screenshots/phase-1/admin-03-security-and-audit.png" width="360" /> |

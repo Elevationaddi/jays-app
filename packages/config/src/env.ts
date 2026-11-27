@@ -17,6 +17,9 @@ export const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace'] a
 /** Payment providers with an adapter in this codebase. A real provider is added in phase 5. */
 export const PSP_PROVIDERS = ['mock'] as const;
 
+/** Email/SMS providers with an adapter. Only the mock exists until a provider is chosen (ADR-0007). */
+export const NOTIFY_PROVIDERS = ['mock'] as const;
+
 /** Marker that every committed example secret carries, so production can reject copied examples. */
 export const LOCAL_SECRET_MARKER = 'local-dev-only';
 
@@ -27,6 +30,38 @@ const booleanFlag = z
 
 const postgresUrl = z.url({ protocol: /^postgres(ql)?$/, error: 'must be a postgres:// URL' });
 const redisUrl = z.url({ protocol: /^rediss?$/, error: 'must be a redis:// or rediss:// URL' });
+
+/**
+ * JWT signing keys: `kid:secret[,kid:secret...]`. The first key signs; every key verifies, so a
+ * new key can be put first and the old one removed after the access-token lifetime (ADR-0009).
+ */
+export interface SigningKey {
+  kid: string;
+  secret: string;
+}
+const KID = /^[A-Za-z0-9_-]{1,64}$/;
+export const jwtKeysSchema = z.string().transform((value, ctx): SigningKey[] => {
+  const keys: SigningKey[] = [];
+  for (const entry of value.split(',')) {
+    const index = entry.indexOf(':');
+    const kid = entry.slice(0, index).trim();
+    const secret = entry.slice(index + 1).trim();
+    if (index <= 0 || !KID.test(kid)) {
+      ctx.addIssue({ code: 'custom', message: 'each entry must be kid:secret' });
+      return z.NEVER;
+    }
+    if (secret.length < 32) {
+      ctx.addIssue({ code: 'custom', message: 'each secret must be at least 32 characters' });
+      return z.NEVER;
+    }
+    keys.push({ kid, secret });
+  }
+  if (new Set(keys.map((k) => k.kid)).size !== keys.length) {
+    ctx.addIssue({ code: 'custom', message: 'key ids must be unique' });
+    return z.NEVER;
+  }
+  return keys;
+});
 
 const commaList = z
   .string()
@@ -49,7 +84,16 @@ const apiShape = {
   ...baseShape,
   API_PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   CORS_ORIGINS: commaList,
-  JWT_KEYS: z.string().min(32, 'must be at least 32 characters'),
+  JWT_KEYS: jwtKeysSchema,
+  /** HMAC key for one-time codes, so a database leak does not reveal live codes. */
+  OTP_SECRET: z.string().min(32, 'must be at least 32 characters'),
+  /** Key material for encrypting admin TOTP secrets at rest (HKDF-derived AES-256-GCM key). */
+  MFA_ENCRYPTION_KEY: z.string().min(32, 'must be at least 32 characters'),
+  NOTIFY_PROVIDER: z.enum(NOTIFY_PROVIDERS).default('mock'),
+  /** Base URL of the admin console, used in invite links. */
+  ADMIN_WEB_URL: z.url().default('http://localhost:3002'),
+  /** Number of reverse proxies in front of the API, so client IPs for rate limits are correct. */
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
   STORAGE_BUCKET: z.string().min(3).max(63),
   PSP_PROVIDER: z.enum(PSP_PROVIDERS).default('mock'),
   PSP_API_KEY: z.string().min(1).optional(),
@@ -70,6 +114,12 @@ function productionIssues(env: Record<string, unknown>, shape: z.ZodRawShape): I
       message: 'mock payment provider is not allowed in production',
     });
   }
+  if (env['NOTIFY_PROVIDER'] === 'mock') {
+    issues.push({
+      path: 'NOTIFY_PROVIDER',
+      message: 'mock email/SMS provider is not allowed in production',
+    });
+  }
   if (env['MOCK_PAYMENT_OUTCOMES'] === true) {
     issues.push({
       path: 'MOCK_PAYMENT_OUTCOMES',
@@ -82,9 +132,14 @@ function productionIssues(env: Record<string, unknown>, shape: z.ZodRawShape): I
     }
   }
   for (const [key, value] of Object.entries(env)) {
-    if (typeof value === 'string' && value.includes(LOCAL_SECRET_MARKER)) {
+    const text = Array.isArray(value) ? JSON.stringify(value) : value;
+    if (typeof text === 'string' && text.includes(LOCAL_SECRET_MARKER)) {
       issues.push({ path: key, message: 'contains a committed example value' });
     }
+  }
+  const adminUrl = env['ADMIN_WEB_URL'];
+  if (typeof adminUrl === 'string' && !adminUrl.startsWith('https://')) {
+    issues.push({ path: 'ADMIN_WEB_URL', message: 'must be https:// in production' });
   }
   const origins = env['CORS_ORIGINS'];
   if (Array.isArray(origins) && origins.some((origin) => !String(origin).startsWith('https://'))) {

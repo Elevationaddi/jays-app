@@ -1,20 +1,12 @@
 import type { INestApplication } from '@nestjs/common';
-import { apiEnvSchema, parseEnv } from '@jays/config';
 import { errorEnvelopeSchema, livenessSchema, readinessSchema } from '@jays/contracts';
 import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createApp } from './bootstrap.js';
+import { testEnv } from './testing/test-env.js';
 import type { DependencyProbe } from './health/dependencies.js';
 
-const env = parseEnv(apiEnvSchema, {
-  APP_ENV: 'test',
-  DATABASE_URL: 'postgresql://unused@localhost/unused',
-  REDIS_URL: 'redis://localhost:6379',
-  JWT_KEYS: 'local-dev-only-test-000000000000000000000',
-  STORAGE_BUCKET: 'jays-test',
-  PSP_WEBHOOK_SECRET: 'local-dev-only-test-secret',
-  CORS_ORIGINS: 'http://localhost:3001',
-});
+const env = testEnv();
 
 const up = (name: DependencyProbe['name']): DependencyProbe => ({ name, check: async () => true });
 const down = (name: DependencyProbe['name']): DependencyProbe => ({
