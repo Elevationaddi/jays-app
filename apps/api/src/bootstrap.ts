@@ -12,7 +12,11 @@ export const API_PREFIX = 'v1';
 
 /** Builds a fully configured app. Shared by main.ts, tests and the OpenAPI generator. */
 export async function createApp(options: AppModuleOptions): Promise<INestApplication> {
-  const app = await NestFactory.create(AppModule.forRoot(options), { bufferLogs: true });
+  const app = await NestFactory.create(AppModule.forRoot(options), {
+    bufferLogs: true,
+    // Webhook signatures are verified over the exact bytes received.
+    rawBody: true,
+  });
   app.useLogger(app.get(Logger));
   app.use(helmet());
   // Client IPs feed the rate limiters; only trust X-Forwarded-For from configured proxies.

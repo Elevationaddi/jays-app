@@ -302,3 +302,188 @@ export const SEED_ADMIN_ROLES = [
   'analyst',
 ] as const;
 export const seedAdminEmail = (role: string) => `${role}@admin.example.test`;
+
+// ---------------------------------------------------------------------------------------------
+// Phase 3: products, stock and delivery zones. Fictional products and brands only.
+
+export interface SeedProduct {
+  business: string;
+  category: string;
+  brand: string | null;
+  status: 'active' | 'submitted' | 'draft';
+  title: Localized;
+  description: Localized;
+  details: Localized | null;
+  colors: { from: [number, number, number]; to: [number, number, number] };
+  variants: {
+    sku: string;
+    name: Localized;
+    priceFils: number;
+    stock: number;
+    taxClass?: 'standard' | 'zero_rated' | 'exempt';
+  }[];
+}
+
+export const SEED_DELIVERY_ZONES: Record<
+  string,
+  {
+    emirate: string;
+    feeFils: number;
+    freeOverFils: number | null;
+    minDays: number;
+    maxDays: number;
+  }[]
+> = {
+  noor: [
+    { emirate: 'DXB', feeFils: 1_500, freeOverFils: 20_000, minDays: 1, maxDays: 2 },
+    { emirate: 'SHJ', feeFils: 2_000, freeOverFils: 25_000, minDays: 1, maxDays: 3 },
+    { emirate: 'AUH', feeFils: 2_500, freeOverFils: null, minDays: 2, maxDays: 4 },
+  ],
+  oud: [
+    { emirate: 'DXB', feeFils: 2_000, freeOverFils: null, minDays: 1, maxDays: 3 },
+    { emirate: 'AUH', feeFils: 2_000, freeOverFils: null, minDays: 1, maxDays: 3 },
+  ],
+};
+
+export const SEED_PRODUCTS: SeedProduct[] = [
+  {
+    business: 'noor',
+    category: 'moisturisers',
+    brand: 'gulf-glow',
+    status: 'active',
+    title: { en: 'Dew Drop Daily Moisturiser', ar: 'مرطب يومي قطرة الندى' },
+    description: {
+      en: 'A light gel cream for everyday hydration. Fictional product for local testing.',
+      ar: 'كريم جل خفيف للترطيب اليومي. منتج تجريبي للاختبار المحلي.',
+    },
+    details: {
+      en: 'Water, glycerin, aloe (fictional list).',
+      ar: 'ماء، جلسرين، صبار (قائمة تجريبية).',
+    },
+    colors: { from: [196, 226, 232], to: [122, 170, 190] },
+    variants: [
+      { sku: 'NOOR-DEW-50', name: { en: '50 ml', ar: '٥٠ مل' }, priceFils: 8_900, stock: 24 },
+      { sku: 'NOOR-DEW-100', name: { en: '100 ml', ar: '١٠٠ مل' }, priceFils: 14_500, stock: 3 },
+    ],
+  },
+  {
+    business: 'noor',
+    category: 'lips',
+    brand: 'desert-petal',
+    status: 'active',
+    title: { en: 'Velvet Dune Lip Colour', ar: 'أحمر شفاه كثبان مخملي' },
+    description: {
+      en: 'Soft matte lip colour in warm desert shades. Fictional product.',
+      ar: 'أحمر شفاه مطفي ناعم بألوان الصحراء الدافئة. منتج تجريبي.',
+    },
+    details: null,
+    colors: { from: [184, 92, 92], to: [122, 52, 70] },
+    variants: [
+      {
+        sku: 'NOOR-VEL-ROSE',
+        name: { en: 'Rose sand', ar: 'رمل وردي' },
+        priceFils: 6_500,
+        stock: 12,
+      },
+      {
+        sku: 'NOOR-VEL-CLAY',
+        name: { en: 'Red clay', ar: 'طين أحمر' },
+        priceFils: 6_500,
+        stock: 1,
+      },
+      { sku: 'NOOR-VEL-DUSK', name: { en: 'Dusk', ar: 'غسق' }, priceFils: 6_500, stock: 0 },
+    ],
+  },
+  {
+    business: 'noor',
+    category: 'sun-care',
+    brand: 'oasis-lab',
+    status: 'active',
+    title: { en: 'Shade Shield SPF 50 Fluid', ar: 'سائل واقي الظل بعامل ٥٠' },
+    description: {
+      en: 'Daily sun fluid with a sheer finish. Fictional product for local testing.',
+      ar: 'سائل يومي للحماية من الشمس بلمسة شفافة. منتج تجريبي للاختبار المحلي.',
+    },
+    details: null,
+    colors: { from: [252, 214, 140], to: [236, 150, 80] },
+    variants: [
+      { sku: 'NOOR-SHADE-40', name: { en: '40 ml', ar: '٤٠ مل' }, priceFils: 11_000, stock: 0 },
+    ],
+  },
+  {
+    business: 'noor',
+    category: 'cleansers',
+    brand: 'oasis-lab',
+    status: 'submitted',
+    title: { en: 'Clear Spring Gel Cleanser', ar: 'غسول جل الينبوع الصافي' },
+    description: {
+      en: 'Gentle foaming cleanser waiting for listing review. Fictional product.',
+      ar: 'غسول رغوي لطيف بانتظار مراجعة الإدراج. منتج تجريبي.',
+    },
+    details: null,
+    colors: { from: [210, 236, 220], to: [120, 180, 150] },
+    variants: [
+      { sku: 'NOOR-CLEAR-150', name: { en: '150 ml', ar: '١٥٠ مل' }, priceFils: 5_900, stock: 30 },
+    ],
+  },
+  {
+    business: 'noor',
+    category: 'face',
+    brand: null,
+    status: 'draft',
+    title: { en: 'Glow Veil Highlighter', ar: 'هايلايتر وشاح التوهج' },
+    description: {
+      en: 'Draft listing to try editing and submitting. Fictional product.',
+      ar: 'إدراج في المسودة لتجربة التعديل والإرسال. منتج تجريبي.',
+    },
+    details: null,
+    colors: { from: [246, 226, 200], to: [214, 176, 140] },
+    variants: [
+      { sku: 'NOOR-GLOW-01', name: { en: 'Champagne', ar: 'شمبانيا' }, priceFils: 7_500, stock: 0 },
+    ],
+  },
+  {
+    business: 'oud',
+    category: 'oud',
+    brand: null,
+    status: 'active',
+    title: { en: 'Amber Night Oud Oil', ar: 'زيت عود ليلة العنبر' },
+    description: {
+      en: 'Concentrated oud oil blended in-house. Fictional product for local testing.',
+      ar: 'زيت عود مركز ممزوج في متجرنا. منتج تجريبي للاختبار المحلي.',
+    },
+    details: { en: 'Oud, amber, sandalwood (fictional).', ar: 'عود، عنبر، صندل (تجريبي).' },
+    colors: { from: [92, 58, 40], to: [180, 120, 60] },
+    variants: [
+      { sku: 'OUD-AMBER-3', name: { en: '3 ml', ar: '٣ مل' }, priceFils: 18_000, stock: 6 },
+      { sku: 'OUD-AMBER-12', name: { en: '12 ml', ar: '١٢ مل' }, priceFils: 59_000, stock: 2 },
+    ],
+  },
+  {
+    business: 'oud',
+    category: 'bath-body',
+    brand: 'desert-petal',
+    status: 'active',
+    title: { en: 'Rose Bloom Body Mist', ar: 'رذاذ الجسم زهرة الورد' },
+    description: {
+      en: 'Light rose body mist. Fictional product for local testing.',
+      ar: 'رذاذ ورد خفيف للجسم. منتج تجريبي للاختبار المحلي.',
+    },
+    details: null,
+    colors: { from: [240, 190, 200], to: [200, 120, 150] },
+    variants: [
+      { sku: 'OUD-ROSE-100', name: { en: '100 ml', ar: '١٠٠ مل' }, priceFils: 9_500, stock: 15 },
+    ],
+  },
+];
+
+/** A default delivery address for the seeded English customer (fictional). */
+export const SEED_CUSTOMER_ADDRESS = {
+  user: 'customer.en',
+  label: 'Home',
+  emirate: 'DXB',
+  area: 'Jumeirah Lake Towers',
+  street: 'Cluster Z (fictional)',
+  building: 'Tower 9',
+  unit: '1204',
+};

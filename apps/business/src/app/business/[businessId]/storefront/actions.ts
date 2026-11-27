@@ -1,7 +1,7 @@
 'use server';
 
 import { ApiClientError } from '@jays/api-client';
-import { IMAGE_CONTENT_TYPES, MEDIA_PURPOSES } from '@jays/domain';
+import { IMAGE_CONTENT_TYPES, STOREFRONT_MEDIA_PURPOSES } from '@jays/domain';
 import { redirect } from 'next/navigation';
 import { serverApi } from '../../../../lib/api';
 
@@ -47,7 +47,7 @@ export async function uploadStorefrontImage(formData: FormData) {
   if (
     !(file instanceof File) ||
     file.size === 0 ||
-    !(MEDIA_PURPOSES as readonly string[]).includes(purpose) ||
+    !(STOREFRONT_MEDIA_PURPOSES as readonly string[]).includes(purpose) ||
     !(IMAGE_CONTENT_TYPES as readonly string[]).includes(file.type)
   ) {
     redirect(`/business/${id}/storefront?error=VALIDATION_FAILED`);

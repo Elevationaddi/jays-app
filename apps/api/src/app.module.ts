@@ -4,7 +4,25 @@ import { LoggerModule } from 'nestjs-pino';
 import { AdminAuthGuard } from './admin/admin.guard.js';
 import { AdminBusinessesController } from './admin/admin-businesses.controller.js';
 import { AdminBusinessesService } from './admin/admin-businesses.service.js';
+import { AdminProductsController } from './admin/admin-products.controller.js';
+import { AdminProductsService } from './admin/admin-products.service.js';
 import { AdminTaxonomyController } from './catalog/admin-taxonomy.controller.js';
+import { BusinessCatalogController } from './catalog/business-catalog.controller.js';
+import { InventoryService } from './catalog/inventory.service.js';
+import { ProductsService } from './catalog/products.service.js';
+import { PublicProductsService } from './catalog/public-products.service.js';
+import { CartService } from './commerce/cart.service.js';
+import { CheckoutService } from './commerce/checkout.service.js';
+import { CommerceController } from './commerce/commerce.controller.js';
+import { OrdersService } from './commerce/orders.service.js';
+import {
+  httpWebhookSink,
+  MockPaymentProvider,
+  type WebhookSink,
+} from './payments/mock-provider.js';
+import { MockPspController, WebhooksController } from './payments/payments.controller.js';
+import { PaymentsService } from './payments/payments.service.js';
+import { PAYMENT_PROVIDER, type PaymentProvider } from './payments/provider.js';
 import { CatalogController } from './catalog/catalog.controller.js';
 import { StoresService } from './catalog/stores.service.js';
 import { TaxonomyService } from './catalog/taxonomy.service.js';
@@ -30,7 +48,7 @@ import {
 } from './auth/auth.module-tokens.js';
 import { AuthService } from './auth/auth.service.js';
 import { SecretBox } from './auth/crypto.js';
-import { UserAuthGuard } from './auth/guards.js';
+import { OptionalUserAuthGuard, UserAuthGuard } from './auth/guards.js';
 import { AccessTokens } from './auth/jwt.js';
 import { MockNotifier, type Notifier } from './auth/notifier.js';
 import {
@@ -73,6 +91,10 @@ export interface AppModuleOptions {
   storage?: ObjectStorage;
   /** Test seam: replace the malware scanner. */
   scanner?: MalwareScanner;
+  /** Test seam: replace the payment provider. */
+  paymentProvider?: PaymentProvider;
+  /** Test seam: where the mock provider sends webhooks (default: POST to this API). */
+  webhookSink?: WebhookSink;
 }
 
 @Module({})
@@ -86,7 +108,20 @@ export class AppModule {
     rateLimitNamespace,
     storage,
     scanner,
+    paymentProvider,
+    webhookSink,
   }: AppModuleOptions): DynamicModule {
+    const theClock = clock ?? systemClock;
+    const provider =
+      paymentProvider ??
+      new MockPaymentProvider(
+        env.PSP_WEBHOOK_SECRET,
+        webhookSink ??
+          httpWebhookSink(`${env.API_PUBLIC_URL.replace(/\/$/, '')}/webhooks/payments`, (error) =>
+            console.error('mock webhook delivery failed', error),
+          ),
+        theClock,
+      );
     const sessionStore = (audience: 'user' | 'admin') => ({
       provide: audience === 'user' ? USER_SESSIONS : ADMIN_SESSIONS,
       inject: [DB, ACCESS_TOKENS],
@@ -118,6 +153,12 @@ export class AppModule {
         AdminBusinessesController,
         AdminTaxonomyController,
         CatalogController,
+        BusinessCatalogController,
+        AdminProductsController,
+        CommerceController,
+        WebhooksController,
+        // The mock provider's hosted payment step. Production cannot run the mock (ADR-0006).
+        ...(env.PSP_PROVIDER === 'mock' ? [MockPspController] : []),
         // Signed URLs of the local storage adapter are served by the API itself.
         ...(env.STORAGE_PROVIDER === 'local' ? [LocalStorageController] : []),
       ],
@@ -130,7 +171,8 @@ export class AppModule {
           inject: [Infrastructure],
         },
         { provide: DB, useFactory: (infra: Infrastructure) => infra.db, inject: [Infrastructure] },
-        { provide: CLOCK, useValue: clock ?? systemClock },
+        { provide: CLOCK, useValue: theClock },
+        { provide: PAYMENT_PROVIDER, useValue: provider },
         { provide: NOTIFIER, useValue: notifier ?? new MockNotifier(env.APP_ENV !== 'test') },
         {
           provide: RATE_LIMITER,
@@ -164,7 +206,16 @@ export class AppModule {
         AdminBusinessesService,
         TaxonomyService,
         StoresService,
+        PublicProductsService,
+        ProductsService,
+        InventoryService,
+        AdminProductsService,
+        CartService,
+        CheckoutService,
+        OrdersService,
+        PaymentsService,
         UserAuthGuard,
+        OptionalUserAuthGuard,
         BusinessAccessGuard,
         AdminAuthGuard,
       ],

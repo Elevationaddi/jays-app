@@ -11,7 +11,9 @@ export class ReferenceController {
   constructor(@Inject(DB) private readonly db: Db) {}
 
   @Get()
-  @ApiOperation({ summary: 'Emirates offered on the welcome screen and in addresses (admin-controlled)' })
+  @ApiOperation({
+    summary: 'Emirates offered on the welcome screen and in addresses (admin-controlled)',
+  })
   @ApiZodResponse(200, emirateListSchema, 'Enabled emirates in display order.')
   async list(): Promise<{ items: Emirate[] }> {
     const rows = await this.db

@@ -6,16 +6,72 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 | ----- | ------------------------------------------------------------ | ----------------------------------- |
 | 0     | Monorepo, local Docker, env schema, CI, ADRs                 | Merged (PR #1)                      |
 | 1     | Identity, roles, memberships, bilingual gateway              | Merged (PR #2)                      |
-| 2     | Merchant onboarding, approval, categories, media, storefront | In review                           |
-| 3     | Catalog, inventory, cart, multi-seller checkout (mock PSP)   | Not started                         |
+| 2     | Merchant onboarding, approval, categories, media, storefront | Merged (PR #3)                      |
+| 3     | Catalog, inventory, cart, multi-seller checkout (mock PSP)   | In review                           |
 | 4     | Services, staff, availability, booking holds                 | Not started                         |
 | 5     | Real PSP sandbox, ledger, refunds, payouts, reconciliation   | Blocked on founder decisions D3, D5 |
 | 6     | Fulfillment, reviews, support, notifications, dashboards     | Not started                         |
 | 7     | RTL/accessibility, hardening, backups, observability, pilot  | Not started                         |
 
+## Phase 3: Catalog, inventory, cart, multi-seller checkout (mock PSP)
+
+Date: 2026-11-27. Branch: `claude/project-thread-qyds1l`. Decision: [ADR-0013](adr/0013-catalog-inventory-checkout-and-mock-payments.md). Detail: [implementation plan](implementation-plan.md#phase-3-catalog-inventory-cart-multi-seller-checkout-mock-psp).
+
+### Delivered
+
+- Migration `0004_catalog_checkout.sql`: products (draft and live copies), product images, variants with stock CHECK constraints, append-only stock movements, delivery zones, carts, quotes, orders, merchant suborders, order items, reservations, payments, refunds, webhook events, idempotency keys and tax rates; SQL functions `release_order_reservations` and `expire_unpaid_orders` shared by the API and the worker.
+- API (81 paths under `/v1`, up from 54):
+  - Merchant products and variants, product images, submission and archive; inventory list, idempotent adjustments and movement history; delivery zones; merchant suborders.
+  - Admin listing queue and detail with approve, reject, suspend and reinstate (version precondition, reasons, audit, outbox).
+  - Public product search and filters (text, category, brand, store, price, availability, sort) and product detail.
+  - Guest and account carts with merge after sign-in, a 15-minute server-priced quote, idempotent `POST /orders`, order history and detail.
+  - Mock PSP hosted step and signed webhook endpoint with replay protection, late-payment refunds and manual-exception flags.
+- Worker: expires unpaid orders and releases held stock every 30 seconds.
+- Business portal: Products (list, create, edit, images, variants, submit, archive), Inventory (adjust with reason), Delivery zones and Orders.
+- Admin console: Listings queue and review page.
+- Customer app: product grid on the shop home and store pages, product page with variant choice and stock state, cart grouped by store, checkout with address, quote, mock payment and confirmation that waits for the webhook, and My orders.
+- Seed data: 7 fictional products (5 live including partly and fully sold-out variants, 1 in review, 1 draft), delivery zones for both shops and a saved address for `customer.en`.
+- Screenshots: [`docs/screenshots/phase-3/`](screenshots/phase-3/) (19 screens, English and Arabic RTL, phone and desktop).
+
+### Verified locally (2026-11-27)
+
+| Command                                | Result                                                          |
+| -------------------------------------- | --------------------------------------------------------------- |
+| `pnpm format:check`                    | pass                                                            |
+| `pnpm lint`                            | pass, 12 projects                                               |
+| `pnpm typecheck`                       | pass, 12 projects                                               |
+| `pnpm test`                            | pass, 169 unit tests                                            |
+| `pnpm build`                           | pass (packages, API, worker, both Next.js apps)                 |
+| `pnpm openapi`                         | 81 paths; committed with the code                               |
+| `pnpm db:migrate` on an empty database | applied 0001 to 0004                                            |
+| `pnpm test:integration`                | pass, 94 tests (15 database, 79 API against Postgres and Redis) |
+| `pnpm db:seed`, run twice              | idempotent                                                      |
+
+Acceptance coverage:
+
+- **T04:** two customers race for the last unit and exactly one order succeeds; a burst of concurrent checkouts never takes stock below zero or above what was on hand.
+- **T05:** one payment for two sellers creates two suborders whose totals add up to the order total, and a duplicate checkout with the same key returns the same order.
+- **T06 (mock):** failed payment releases stock; expiry releases stock and a late success is refunded; a failed refund is flagged for manual handling; duplicate and replayed webhooks change nothing; bad, missing and stale signatures are refused.
+- **T13 (products):** a changed price or expired quote is refused with a fresh quote needed, and order history keeps the price and title paid even after the merchant edits the product.
+- **T01 (cart):** a guest cart is merged into the account after sign-in, and the app keeps the cart across mode switches.
+- Listings: unapproved products and their images are invisible, edits to live listings wait for review, suspension hides a product at once, SKUs are unique per business, foreign images are refused, and staff without the capability get 403.
+
+### Known limitations and follow-ups
+
+- Payments use the mock provider only (D5). Production refuses to start with it.
+- Prices are treated as VAT-inclusive with half-up rounding (D4, proposed); tax invoices are not produced yet.
+- No promotions, no order cancellation by customer or merchant, and no admin order monitoring yet. Fulfillment after "paid" (processing, shipped, delivered) arrives in phase 6.
+- Product search is a simple text match (`ILIKE`) in both languages; a search index can follow if the catalog grows.
+- The mock PSP keeps intents in memory, so restarting the API forgets unpaid local intents (they expire normally).
+- Arabic copy for this phase needs review by a native speaker before the pilot.
+
+### Rollback
+
+`0004_catalog_checkout.sql` widens one CHECK constraint on `media.purpose` and otherwise only adds tables and functions. Rolling back means deploying the previous code; the new tables are then unused.
+
 ## Phase 2: Merchant onboarding, approval, categories, media, storefront
 
-Date: 2026-11-27. Branch: `claude/project-thread-eooims`. Decision: [ADR-0012](adr/0012-merchant-onboarding-storage-and-review.md). Detail: [implementation plan](implementation-plan.md#phase-2-merchant-onboarding-approval-categories-media-storefront).
+Date: 2026-11-27. Branch: `claude/project-thread-eooims`. Merged in PR #3. Decision: [ADR-0012](adr/0012-merchant-onboarding-storage-and-review.md). Detail: [implementation plan](implementation-plan.md#phase-2-merchant-onboarding-approval-categories-media-storefront).
 
 ### Delivered
 

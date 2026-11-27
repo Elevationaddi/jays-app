@@ -13,7 +13,10 @@ import {
   SEED_ADMIN_ROLES,
   SEED_BRANDS,
   SEED_BUSINESSES,
+  SEED_CUSTOMER_ADDRESS,
+  SEED_DELIVERY_ZONES,
   SEED_PASSWORD,
+  SEED_PRODUCTS,
   SEED_SUBCATEGORIES,
   SEED_USERS,
   type SeedBusiness,
@@ -297,9 +300,183 @@ try {
         .onConflict((oc) => oc.column('slug').doNothing())
         .execute();
     }
+
+    // Phase 3: delivery zones, products with variants and stock, a customer address.
+    const businessIds = new Map<string, string>();
+    for (const b of SEED_BUSINESSES) {
+      const row = await trx
+        .selectFrom('businesses')
+        .select('id')
+        .where('created_by', '=', userIds.get(b.owner) as string)
+        .where(({ eb, ref }) => eb(ref('display_name', '->>').key('en'), '=', b.displayName.en))
+        .executeTakeFirstOrThrow();
+      businessIds.set(b.key, row.id);
+    }
+    for (const [key, zones] of Object.entries(SEED_DELIVERY_ZONES)) {
+      for (const z of zones) {
+        await trx
+          .insertInto('delivery_zones')
+          .values({
+            business_id: businessIds.get(key) as string,
+            emirate_code: z.emirate,
+            fee_fils: z.feeFils,
+            free_over_fils: z.freeOverFils,
+            min_days: z.minDays,
+            max_days: z.maxDays,
+          })
+          .onConflict((oc) => oc.columns(['business_id', 'emirate_code']).doNothing())
+          .execute();
+      }
+    }
+    for (const p of SEED_PRODUCTS) {
+      const businessId = businessIds.get(p.business) as string;
+      const firstSku = p.variants[0]?.sku as string;
+      const exists = await trx
+        .selectFrom('variants')
+        .select('id')
+        .where('business_id', '=', businessId)
+        .where('sku', '=', firstSku)
+        .executeTakeFirst();
+      if (exists) continue;
+      const owner = SEED_BUSINESSES.find((b) => b.key === p.business)?.owner as string;
+      const ownerId = userIds.get(owner) as string;
+      const png = renderPng(800, 800, {
+        from: p.colors.from,
+        to: p.colors.to,
+        disc: [255, 255, 255],
+      });
+      const key = `media/${businessId}/${randomUUID()}.png`;
+      await storage.put(key, png, 'image/png');
+      const media = await trx
+        .insertInto('media')
+        .values({
+          business_id: businessId,
+          purpose: 'product_image',
+          object_key: key,
+          content_type: 'image/png',
+          declared_size_bytes: png.length,
+          size_bytes: png.length,
+          width: 800,
+          height: 800,
+          status: 'ready',
+          upload_expires_at: now,
+          uploaded_at: now,
+          created_by: ownerId,
+        })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      const category = await trx
+        .selectFrom('categories')
+        .select('id')
+        .where('mode', '=', 'shop')
+        .where('slug', '=', p.category)
+        .executeTakeFirstOrThrow();
+      const brand = p.brand
+        ? await trx
+            .selectFrom('brands')
+            .select('id')
+            .where('slug', '=', p.brand)
+            .executeTakeFirstOrThrow()
+        : null;
+      const title = JSON.stringify(p.title);
+      const description = JSON.stringify(p.description);
+      const details = p.details ? JSON.stringify(p.details) : null;
+      const live = p.status === 'active';
+      const product = await trx
+        .insertInto('products')
+        .values({
+          business_id: businessId,
+          category_id: category.id,
+          brand_id: brand?.id ?? null,
+          title,
+          description,
+          details,
+          status: p.status,
+          created_by: ownerId,
+          ...(p.status !== 'draft' ? { submitted_at: now } : {}),
+          ...(live
+            ? {
+                live_title: title,
+                live_description: description,
+                live_details: details,
+                live_category_id: category.id,
+                live_brand_id: brand?.id ?? null,
+                live_return_eligible: true,
+                live_media_ids: [media.id],
+                published_at: now,
+                reviewed_at: now,
+                reviewed_by: adminIds.get('catalog') ?? null,
+              }
+            : {}),
+        })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      await trx
+        .insertInto('product_media')
+        .values({
+          product_id: product.id,
+          business_id: businessId,
+          media_id: media.id,
+          sort_order: 0,
+        })
+        .execute();
+      for (const [i, v] of p.variants.entries()) {
+        const variant = await trx
+          .insertInto('variants')
+          .values({
+            product_id: product.id,
+            business_id: businessId,
+            sku: v.sku,
+            name: JSON.stringify(v.name),
+            price_fils: v.priceFils,
+            tax_class: v.taxClass ?? 'standard',
+            stock_on_hand: v.stock,
+            sort_order: i,
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        if (v.stock > 0) {
+          await trx
+            .insertInto('stock_movements')
+            .values({
+              variant_id: variant.id,
+              business_id: businessId,
+              delta: v.stock,
+              reason: 'initial_stock',
+              note: 'local seed',
+              actor_type: 'user',
+              actor_id: ownerId,
+              on_hand_after: v.stock,
+            })
+            .execute();
+        }
+      }
+    }
+    const a = SEED_CUSTOMER_ADDRESS;
+    const addressUser = userIds.get(a.user) as string;
+    const hasAddress = await trx
+      .selectFrom('addresses')
+      .select('id')
+      .where('user_id', '=', addressUser)
+      .executeTakeFirst();
+    if (!hasAddress) {
+      await trx
+        .insertInto('addresses')
+        .values({
+          user_id: addressUser,
+          label: a.label,
+          emirate_code: a.emirate,
+          area: a.area,
+          street: a.street,
+          building: a.building,
+          unit: a.unit,
+          is_default: true,
+        })
+        .execute();
+    }
   });
   console.log(
-    `seeded ${SEED_USERS.length} users, ${SEED_BUSINESSES.length} businesses, ${SEED_ADMIN_ROLES.length} admins`,
+    `seeded ${SEED_PRODUCTS.length} products, ${SEED_USERS.length} users, ${SEED_BUSINESSES.length} businesses, ${SEED_ADMIN_ROLES.length} admins`,
   );
   console.log(`password for every seeded account: ${SEED_PASSWORD}`);
   console.log(

@@ -1,8 +1,9 @@
-import type { CategoryView, PublicStore } from '@jays/contracts';
+import type { CategoryView, PublicProductListItem, PublicStore } from '@jays/contracts';
 import { colors, minTouchTarget, radius, spacing } from '@jays/ui';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ModeSwitch } from '../components/ModeSwitch';
+import { ProductCard, gridStyle } from '../components/ProductCard';
 import { Tabs } from '../components/Tabs';
 import { Banner, Body, Button, Screen, Title } from '../components/ui';
 import { useApp } from '../context';
@@ -10,12 +11,17 @@ import { useApp } from '../context';
 type Load =
   | { state: 'loading' }
   | { state: 'error' }
-  | { state: 'ready'; categories: CategoryView[]; stores: PublicStore[] };
+  | {
+      state: 'ready';
+      categories: CategoryView[];
+      stores: PublicStore[];
+      products: PublicProductListItem[];
+    };
 
 /**
  * /shop and /services home: the mode's categories and approved storefronts. Only businesses that
- * passed review and are active in this mode are listed (the API enforces it). Products and booking
- * arrive in phases 3 and 4, so there are no placeholder listings.
+ * passed review and are active in this mode are listed (the API enforces it). Shop mode also lists
+ * approved products; booking arrives in phase 4, so services has no placeholder listings.
  */
 export function ModeHome() {
   const { state, api, dispatch, tr } = useApp();
@@ -28,13 +34,18 @@ export function ModeHome() {
   useEffect(() => {
     let cancelled = false;
     setLoad({ state: 'loading' });
-    Promise.all([api.categories(mode), api.stores({ mode, limit: 50 })])
-      .then(([categories, stores]) => {
+    Promise.all([
+      api.categories(mode),
+      api.stores({ mode, limit: 50 }),
+      mode === 'shop' ? api.products({ limit: 20 }) : Promise.resolve({ items: [] }),
+    ])
+      .then(([categories, stores, products]) => {
         if (!cancelled)
           setLoad({
             state: 'ready',
             categories: categories.items.filter((c) => c.depth === 0),
             stores: stores.items,
+            products: products.items,
           });
       })
       .catch(() => {
@@ -77,6 +88,18 @@ export function ModeHome() {
                   <View key={c.id} style={styles.chip}>
                     <Text style={styles.chipText}>{c.name[state.locale]}</Text>
                   </View>
+                ))}
+              </View>
+            </>
+          ) : null}
+          {load.products.length > 0 ? (
+            <>
+              <Text style={styles.section} accessibilityRole="header">
+                {tr('shop.products')}
+              </Text>
+              <View style={gridStyle}>
+                {load.products.map((p) => (
+                  <ProductCard key={p.id} product={p} />
                 ))}
               </View>
             </>

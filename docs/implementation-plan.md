@@ -87,10 +87,20 @@ Acceptance coverage in this phase:
 
 ### Phase 3: Catalog, inventory, cart, multi-seller checkout (mock PSP)
 
-- Products, variants (unique SKU per business), stock movements, CHECK constraints `stock_on_hand >= stock_reserved >= 0`.
-- Cart (survives login and mode switch), server-priced expiring quote, `POST /orders` locking variant rows in stable ID order, reservations with expiry worker.
-- Mock PSP adapter with success, fail, timeout, duplicate outcomes delivered as signed webhooks; idempotency keys.
-- Tests: T04, T05, T06 (mock), T13 for products, T01 (cart kept on login).
+Delivered on branch `claude/project-thread-qyds1l`. Decision: [ADR-0013](adr/0013-catalog-inventory-checkout-and-mock-payments.md).
+
+| Deliverable                                                                                                        | Where                                                         |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| Migration `0004_catalog_checkout.sql`: products, variants, stock, zones, carts, quotes, orders, payments, webhooks | `packages/db/migrations`                                      |
+| Product rules, stock checks, VAT-inclusive pricing and multi-seller grouping                                       | `packages/domain/src/commerce.ts`, `money.ts`                 |
+| Merchant catalog, inventory, delivery zones and suborders                                                          | `apps/api/src/catalog`                                        |
+| Admin listing review                                                                                               | `apps/api/src/admin/admin-products.*`                         |
+| Cart, quote, idempotent orders, order reads                                                                        | `apps/api/src/commerce`, `apps/api/src/common/idempotency.ts` |
+| Mock PSP, signed webhooks, late-payment refunds                                                                    | `apps/api/src/payments`                                       |
+| Expiry job                                                                                                         | `apps/worker/src/jobs.ts`                                     |
+| Business Products, Inventory, Delivery and Orders; admin Listings; customer shop, cart, checkout and orders        | `apps/business`, `apps/admin`, `apps/customer`                |
+
+Acceptance coverage: T04, T05, T06 (mock), T13 (products) and T01 (cart kept on sign-in and mode switch). See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
 
 ### Phase 4: Services, branches, staff, availability, booking holds
 

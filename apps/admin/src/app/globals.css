@@ -147,6 +147,7 @@ input[type='text'],
 input[type='email'],
 input[type='tel'],
 input[type='password'],
+input[type='number'],
 select {
   min-height: 44px;
   padding: 8px 12px;
@@ -592,4 +593,11 @@ td input[type='text'] {
 .badge.submitted,
 .badge.under_review {
   color: #8a5a00;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
 }

@@ -1,8 +1,9 @@
-import type { PublicStore } from '@jays/contracts';
+import type { PublicProductListItem, PublicStore } from '@jays/contracts';
 import { colors, radius, spacing } from '@jays/ui';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import { ModeSwitch } from '../components/ModeSwitch';
+import { ProductCard, gridStyle } from '../components/ProductCard';
 import { Tabs } from '../components/Tabs';
 import { Banner, Body, Button, Screen, Title } from '../components/ui';
 import { useApp } from '../context';
@@ -16,6 +17,7 @@ export function StoreScreen() {
   const mode = state.mode === 'services' ? 'services' : 'shop';
   const storeId = state.storeByMode[mode];
   const [store, setStore] = useState<PublicStore | 'loading' | 'error'>('loading');
+  const [products, setProducts] = useState<PublicProductListItem[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -29,13 +31,17 @@ export function StoreScreen() {
       .then((s) => {
         if (!cancelled) setStore(s);
       })
+      .then(() => (mode === 'shop' ? api.products({ store: storeId, limit: 50 }) : null))
+      .then((p) => {
+        if (!cancelled && p) setProducts(p.items);
+      })
       .catch(() => {
         if (!cancelled) setStore('error');
       });
     return () => {
       cancelled = true;
     };
-  }, [api, storeId]);
+  }, [api, storeId, mode]);
 
   const back = (
     <Button
@@ -71,16 +77,24 @@ export function StoreScreen() {
           </View>
           <Title>{store.name[state.locale]}</Title>
           <Body>{store.description[state.locale]}</Body>
-          <View style={styles.note}>
-            <Text
-              style={{ fontSize: 28 }}
-              accessibilityElementsHidden
-              importantForAccessibility="no"
-            >
-              {mode === 'shop' ? '🛍' : '📅'}
-            </Text>
-            <Body muted>{tr(mode === 'shop' ? 'store.productsLater' : 'store.servicesLater')}</Body>
-          </View>
+          {products.length > 0 ? (
+            <View style={gridStyle}>
+              {products.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </View>
+          ) : (
+            <View style={styles.note}>
+              <Text
+                style={{ fontSize: 28 }}
+                accessibilityElementsHidden
+                importantForAccessibility="no"
+              >
+                {mode === 'shop' ? '🛍' : '📅'}
+              </Text>
+              <Body muted>{tr(mode === 'shop' ? 'shop.noProducts' : 'store.servicesLater')}</Body>
+            </View>
+          )}
         </>
       )}
     </Screen>

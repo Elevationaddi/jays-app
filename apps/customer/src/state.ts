@@ -9,6 +9,11 @@ export type Route =
   | '/services'
   | '/shop/store'
   | '/services/store'
+  | '/shop/product'
+  | '/cart'
+  | '/checkout'
+  | '/orders'
+  | '/orders/detail'
   | '/auth'
   | '/auth/verify'
   | '/auth/reset'
@@ -24,6 +29,14 @@ export interface AppState {
   /** The store open in each mode, kept like the route so switching modes returns to it. */
   storeByMode: Record<Mode, string | null>;
   session: { user: Me; tokens: TokenPair } | null;
+  /** The product open in the shop. */
+  productId: string | null;
+  /** The order open in /orders/detail. */
+  orderId: string | null;
+  /** A guest cart's token, merged into the account cart after sign-in. */
+  cartToken: string | null;
+  /** Items in the cart, for the tab badge. */
+  cartCount: number;
   /** Where to return after sign-in, and the open verification challenge if any. */
   auth: { returnTo: Route; challenge: Challenge | null };
 }
@@ -34,6 +47,9 @@ export type Action =
   | { type: 'chooseMode'; mode: Mode }
   | { type: 'navigate'; route: Route }
   | { type: 'openStore'; mode: Mode; storeId: string }
+  | { type: 'openProduct'; productId: string }
+  | { type: 'openOrder'; orderId: string }
+  | { type: 'cart'; cartToken: string | null; count: number }
   | { type: 'requireSignIn'; returnTo: Route }
   | { type: 'challenge'; challenge: Challenge }
   | { type: 'signedIn'; user: Me; tokens: TokenPair }
@@ -52,12 +68,23 @@ export function initialState(locale: Locale): AppState {
     routeByMode: { ...MODE_HOME },
     storeByMode: { shop: null, services: null },
     session: null,
+    productId: null,
+    orderId: null,
+    cartToken: null,
+    cartCount: 0,
     auth: { returnTo: '/welcome', challenge: null },
   };
 }
 
 export function modeOf(route: Route): Mode | null {
-  if (route === '/shop' || route === '/shop/store') return 'shop';
+  if (
+    route === '/shop' ||
+    route === '/shop/store' ||
+    route === '/shop/product' ||
+    route === '/cart' ||
+    route === '/checkout'
+  )
+    return 'shop';
   if (route === '/services' || route === '/services/store') return 'services';
   return null;
 }
@@ -94,6 +121,18 @@ export function reducer(state: AppState, action: Action): AppState {
         storeByMode: { ...state.storeByMode, [action.mode]: action.storeId },
       };
     }
+    case 'openProduct':
+      return {
+        ...state,
+        mode: 'shop',
+        route: '/shop/product',
+        productId: action.productId,
+        routeByMode: { ...state.routeByMode, shop: '/shop/product' },
+      };
+    case 'openOrder':
+      return { ...state, route: '/orders/detail', orderId: action.orderId };
+    case 'cart':
+      return { ...state, cartToken: action.cartToken, cartCount: action.count };
     case 'requireSignIn':
       return { ...state, route: '/auth', auth: { returnTo: action.returnTo, challenge: null } };
     case 'challenge':
@@ -119,9 +158,12 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'profile':
       return state.session ? { ...state, session: { ...state.session, user: action.user } } : state;
     case 'signedOut':
+      // The account cart stays on the server; the device starts a fresh guest cart.
       return {
         ...state,
         session: null,
+        cartToken: null,
+        cartCount: 0,
         route: state.mode ? state.routeByMode[state.mode] : '/welcome',
       };
   }

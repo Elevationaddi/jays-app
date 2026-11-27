@@ -2,7 +2,15 @@ import type { BusinessView } from '@jays/contracts';
 import { t, type Locale } from '@jays/i18n';
 import Link from 'next/link';
 
-type Tab = 'gateway' | 'verification' | 'storefront' | 'team';
+export type Tab =
+  | 'gateway'
+  | 'verification'
+  | 'storefront'
+  | 'products'
+  | 'inventory'
+  | 'delivery'
+  | 'orders'
+  | 'team';
 
 /** Workspace tabs, shown only for what the member's capabilities allow. */
 export function BusinessNav({
@@ -33,6 +41,30 @@ export function BusinessNav({
       href: `/business/${business.id}/storefront`,
       label: t(locale, 'business.nav.storefront'),
       show: can('storefront.manage'),
+    },
+    {
+      key: 'products',
+      href: `/business/${business.id}/products`,
+      label: t(locale, 'business.nav.products'),
+      show: can('catalog.manage'),
+    },
+    {
+      key: 'inventory',
+      href: `/business/${business.id}/inventory`,
+      label: t(locale, 'business.nav.inventory'),
+      show: can('inventory.adjust'),
+    },
+    {
+      key: 'delivery',
+      href: `/business/${business.id}/delivery`,
+      label: t(locale, 'business.nav.delivery'),
+      show: can('storefront.manage'),
+    },
+    {
+      key: 'orders',
+      href: `/business/${business.id}/orders`,
+      label: t(locale, 'business.nav.orders'),
+      show: can('orders.fulfill'),
     },
     {
       key: 'team',

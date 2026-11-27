@@ -62,6 +62,27 @@ export class UserAuthGuard implements CanActivate {
   }
 }
 
+/**
+ * For routes open to guests (the cart): no Authorization header means anonymous; a header that is
+ * present must be valid, so an expired token is never silently treated as a guest.
+ */
+@Injectable()
+export class OptionalUserAuthGuard implements CanActivate {
+  constructor(@Inject(UserAuthGuard) private readonly inner: UserAuthGuard) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const req = context.switchToHttp().getRequest<AuthedRequest>();
+    if (req.headers.authorization === undefined) return true;
+    return this.inner.canActivate(context);
+  }
+}
+
+/** The signed-in user, or null on an anonymous request to an optional-auth route. */
+export const OptionalUser = createParamDecorator(
+  (_data: unknown, context: ExecutionContext): UserPrincipal | null =>
+    context.switchToHttp().getRequest<AuthedRequest>().user ?? null,
+);
+
 export const CurrentUser = createParamDecorator(
   (_data: unknown, context: ExecutionContext): UserPrincipal => {
     const user = context.switchToHttp().getRequest<AuthedRequest>().user;

@@ -79,7 +79,7 @@ export async function loadDocuments(db: Db, businessId: string): Promise<Documen
 
 interface MediaRow {
   id: string;
-  purpose: 'storefront_logo' | 'storefront_banner';
+  purpose: MediaView['purpose'];
   object_key: string;
   content_type: string;
   status: 'pending_upload' | 'ready' | 'rejected';

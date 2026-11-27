@@ -80,4 +80,39 @@ describe('customer navigation state', () => {
     expect(s.storeByMode).toEqual({ shop: 'store-1', services: null });
     expect(run([{ type: 'navigate', route: '/shop' }], s).route).toBe('/shop');
   });
+
+  it('keeps the guest cart and your place in the shop when switching modes (T01)', () => {
+    const s = run([
+      { type: 'chooseMode', mode: 'shop' },
+      { type: 'openProduct', productId: 'p-1' },
+      { type: 'cart', cartToken: 'guest-token', count: 2 },
+      { type: 'chooseMode', mode: 'services' },
+      { type: 'chooseMode', mode: 'shop' },
+    ]);
+    expect(s.route).toBe('/shop/product');
+    expect(s.productId).toBe('p-1');
+    expect(s.cartToken).toBe('guest-token');
+    expect(s.cartCount).toBe(2);
+  });
+
+  it('returns to checkout after signing in from the cart', () => {
+    const s = run([
+      { type: 'chooseMode', mode: 'shop' },
+      { type: 'navigate', route: '/cart' },
+      { type: 'requireSignIn', returnTo: '/checkout' },
+      { type: 'signedIn', user, tokens },
+    ]);
+    expect(s.route).toBe('/checkout');
+    expect(s.mode).toBe('shop');
+  });
+
+  it('forgets the guest cart token on sign-out', () => {
+    const s = run([
+      { type: 'signedIn', user, tokens },
+      { type: 'cart', cartToken: null, count: 3 },
+      { type: 'signedOut' },
+    ]);
+    expect(s.cartCount).toBe(0);
+    expect(s.cartToken).toBeNull();
+  });
 });

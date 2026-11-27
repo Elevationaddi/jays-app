@@ -5,7 +5,11 @@ import {
   categoryListSchema,
   categoryQuerySchema,
   pageSchema,
+  productListQuerySchema,
+  publicProductListItemSchema,
+  publicProductSchema,
   publicStoreSchema,
+  type ProductListQuery,
   storeListQuerySchema,
   type StoreListQuery,
 } from '@jays/contracts';
@@ -13,6 +17,7 @@ import type { Response } from 'express';
 import type { z } from 'zod';
 import { UuidParam } from '../common/params.js';
 import { ApiErrors, ApiZodQuery, ApiZodResponse, ZodQuery } from '../common/zod.js';
+import { PublicProductsService } from './public-products.service.js';
 import { StoresService } from './stores.service.js';
 import { TaxonomyService } from './taxonomy.service.js';
 
@@ -23,7 +28,32 @@ export class CatalogController {
   constructor(
     @Inject(TaxonomyService) private readonly taxonomy: TaxonomyService,
     @Inject(StoresService) private readonly stores: StoresService,
+    @Inject(PublicProductsService) private readonly products: PublicProductsService,
   ) {}
+
+  @Get('products')
+  @ApiOperation({
+    summary: 'Approved products on sale',
+    description:
+      'Only approved listings of approved sellers with an active shop mode. Sold-out products are included unless availability=in_stock. Filters: q, category (with subcategories), brand, store, price; sort newest, price_asc or price_desc.',
+  })
+  @ApiZodQuery(productListQuerySchema)
+  @ApiZodResponse(200, pageSchema(publicProductListItemSchema), 'A page of products.')
+  @ApiErrors(400)
+  productList(@ZodQuery(productListQuerySchema) query: ProductListQuery) {
+    return this.products.list(query);
+  }
+
+  @Get('products/:productId')
+  @ApiParam({ name: 'productId', format: 'uuid' })
+  @ApiOperation({
+    summary: 'One approved product with its variants and delivery zones (404 when not public)',
+  })
+  @ApiZodResponse(200, publicProductSchema, 'The product.')
+  @ApiErrors(404)
+  product(@UuidParam('productId') productId: string) {
+    return this.products.get(productId);
+  }
 
   @Get('categories')
   @ApiOperation({ summary: 'Active category tree for one or both modes' })
@@ -65,11 +95,14 @@ export class CatalogController {
 
   @Get('media/:mediaId')
   @ApiParam({ name: 'mediaId', format: 'uuid' })
-  @ApiOperation({ summary: 'A public storefront image (redirects to a short-lived signed URL)' })
+  @ApiOperation({
+    summary: 'A public storefront or product image (redirects to a short-lived signed URL)',
+  })
   @ApiResponse({ status: 302, description: 'Redirect to the image.' })
   @ApiErrors(404)
   async media(@UuidParam('mediaId') mediaId: string, @Res() res: Response) {
-    const url = await this.stores.mediaRedirect(mediaId);
+    const url =
+      (await this.products.mediaRedirect(mediaId)) ?? (await this.stores.mediaRedirect(mediaId));
     res.setHeader('Cache-Control', 'public, max-age=60');
     // Customer apps load these from another origin; a same-origin policy on the redirect blocks the image.
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');

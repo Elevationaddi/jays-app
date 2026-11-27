@@ -13,7 +13,7 @@ export function Shell({
 }: {
   locale: Locale;
   admin: AdminView;
-  current: 'dashboard' | 'businesses' | 'content' | 'security';
+  current: 'dashboard' | 'businesses' | 'products' | 'content' | 'security';
   children: ReactNode;
 }) {
   const items = [
@@ -28,6 +28,12 @@ export function Shell({
       href: '/admin/businesses',
       label: t(locale, 'admin.nav.businesses'),
       show: admin.capabilities.includes('businesses.view'),
+    },
+    {
+      key: 'products',
+      href: '/admin/products',
+      label: t(locale, 'admin.nav.products'),
+      show: admin.capabilities.includes('products.view'),
     },
     {
       key: 'content',
