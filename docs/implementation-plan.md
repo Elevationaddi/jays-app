@@ -64,12 +64,26 @@ Acceptance coverage in this phase:
 
 ### Phase 2: Merchant onboarding, approval, categories, media, storefront
 
-- Business onboarding draft → submitted → under_review → approved/rejected, resubmission with reason; suspension.
-- Private verification documents via signed upload URLs (content type/size checks; malware scan adapter).
-- Admin review queue with reasoned actions and audit log; category taxonomy (both modes), brands, media, bilingual storefront.
-- Public read endpoints only return approved data.
-- Seeds: 2 product sellers, 1 salon, 1 hybrid, with English/Arabic listings.
-- Tests: T02 (pending invisible, approved visible, suspension), audit entries.
+Delivered on branch `claude/project-thread-eooims`. Decision: [ADR-0012](adr/0012-merchant-onboarding-storage-and-review.md) (onboarding, private files and admin review).
+
+| Deliverable                                                                                                                                                          | Where                                           |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| Migration `0003_merchant_onboarding.sql`: legal profile and review columns, verification documents, media, storefronts (draft and live), categories (seeded), brands | `packages/db/migrations`                        |
+| Business and mode state machines, review action allowlist and capabilities, submission checklist, file rules (magic bytes, sizes, image dimensions)                  | `packages/domain/src/onboarding.ts`, `files.ts` |
+| Storage and malware scanner adapters (local signed links, mock EICAR scanner), production guards                                                                     | `apps/api/src/storage`, `packages/config`       |
+| Merchant onboarding, documents, storefront and media endpoints                                                                                                       | `apps/api/src/onboarding`                       |
+| Admin review queue, detail, audited document download, typed actions with reasons and version checks                                                                 | `apps/api/src/admin/admin-businesses.*`         |
+| Public categories, brands, approved stores and store images; admin taxonomy                                                                                          | `apps/api/src/catalog`                          |
+| Business portal Verification and Storefront pages                                                                                                                    | `apps/business`                                 |
+| Admin console business review and categories and brands                                                                                                              | `apps/admin`                                    |
+| Customer app categories, approved stores and store page                                                                                                              | `apps/customer`                                 |
+| Seeds: 2 product sellers, 1 salon, 1 hybrid (approved), 1 in review, 1 draft, with English and Arabic storefronts                                                    | `apps/api/scripts`                              |
+
+Acceptance coverage in this phase:
+
+- **T02:** a submitted or under-review merchant is not listed and its images answer 404; after approval only the live copy is public; suspension hides the store at once and reactivation restores it; storefront edits after approval wait for review while the live copy stays public.
+- **Audit and concurrency:** every review action and document download writes an audit entry; two reviewers acting on the same version cannot both win.
+- **T03 (extended):** each admin role can take only its own review actions; documents are limited to the owner and compliance roles; one business cannot use another's media.
 
 ### Phase 3: Catalog, inventory, cart, multi-seller checkout (mock PSP)
 

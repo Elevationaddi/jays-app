@@ -1,5 +1,15 @@
 import type {
   acceptInviteRequestSchema,
+  adminBusinessListQuerySchema,
+  businessActionRequestSchema,
+  createBrandRequestSchema,
+  createCategoryRequestSchema,
+  createDocumentUploadRequestSchema,
+  createMediaUploadRequestSchema,
+  updateBrandRequestSchema,
+  updateCategoryRequestSchema,
+  updateOnboardingRequestSchema,
+  updateStorefrontRequestSchema,
   addressInputSchema,
   confirmMfaRequestSchema,
   createAdminInviteRequestSchema,
@@ -9,6 +19,20 @@ import type {
   updateMeRequestSchema,
 } from '@jays/contracts';
 import {
+  adminBusinessDetailSchema,
+  adminBusinessListItemSchema,
+  brandListSchema,
+  brandSchema,
+  categoryListSchema,
+  categorySchema,
+  documentSchema,
+  mediaSchema,
+  onboardingSchema,
+  publicStoreSchema,
+  signedUrlSchema,
+  storefrontSchema,
+  uploadTicketSchema,
+  type UploadTicket,
   adminInviteSchema,
   adminListItemSchema,
   adminSchema,
@@ -65,6 +89,16 @@ export const loginResultSchema = z.discriminatedUnion('status', [
 export type LoginResult = z.infer<typeof loginResultSchema>;
 
 type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+
+/** Builds `?a=1&b=2` from defined values only. */
+function query(params: Record<string, string | number | undefined>): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') search.set(key, String(value));
+  }
+  const text = search.toString();
+  return text ? `?${text}` : '';
+}
 
 export function createApiClient(options: ApiClientOptions) {
   const doFetch = options.fetch ?? fetch;
@@ -125,9 +159,48 @@ export function createApiClient(options: ApiClientOptions) {
   };
   const none = z.null();
 
+  const biz = (id: string) => `/businesses/${encodeURIComponent(id)}`;
+
+  /**
+   * Sends file bytes to a signed upload URL. The URL carries its own short-lived authorisation, so
+   * no access token is sent with it.
+   */
+  async function upload(ticket: UploadTicket, bytes: Blob | Uint8Array): Promise<void> {
+    let response: Response;
+    try {
+      response = await doFetch(ticket.uploadUrl, {
+        method: ticket.method,
+        headers: ticket.headers,
+        body: bytes as BodyInit,
+        cache: 'no-store',
+      });
+    } catch {
+      throw new ApiClientError(0, 'NETWORK_ERROR', 'Could not reach the server.');
+    }
+    if (!response.ok) {
+      const parsed = errorEnvelopeSchema.safeParse(await response.json().catch(() => null));
+      throw parsed.success
+        ? new ApiClientError(response.status, parsed.data.error.code, parsed.data.error.message)
+        : new ApiClientError(response.status, 'UPLOAD_FAILED', 'The upload failed.');
+    }
+  }
+
   return {
     // Public reference data
     emirates: () => call('GET', '/emirates', emirateListSchema),
+    categories: (mode?: 'shop' | 'services') =>
+      call('GET', `/categories${query({ mode })}`, categoryListSchema),
+    brands: () => call('GET', '/brands', brandListSchema),
+    stores: (
+      params: {
+        mode?: 'shop' | 'services';
+        emirate?: string;
+        cursor?: string;
+        limit?: number;
+      } = {},
+    ) => call('GET', `/stores${query(params)}`, pageSchema(publicStoreSchema)),
+    store: (id: string) => call('GET', `/stores/${encodeURIComponent(id)}`, publicStoreSchema),
+    upload,
 
     // Identity
     register: (body: z.input<typeof registerRequestSchema>) =>
@@ -188,6 +261,37 @@ export function createApiClient(options: ApiClientOptions) {
         none,
       ),
 
+    // Onboarding (owner), storefront and media (owner, manager)
+    onboarding: (id: string) => call('GET', `${biz(id)}/onboarding`, onboardingSchema),
+    updateOnboarding: (id: string, body: z.input<typeof updateOnboardingRequestSchema>) =>
+      call('PATCH', `${biz(id)}/onboarding`, onboardingSchema, body),
+    acceptAgreement: (id: string, version: string) =>
+      call('POST', `${biz(id)}/agreement`, onboardingSchema, { version }),
+    submitBusiness: (id: string) => call('POST', `${biz(id)}/submit`, onboardingSchema),
+    createDocumentUpload: (id: string, body: z.input<typeof createDocumentUploadRequestSchema>) =>
+      call('POST', `${biz(id)}/documents`, uploadTicketSchema, body),
+    completeDocument: (id: string, documentId: string) =>
+      call(
+        'POST',
+        `${biz(id)}/documents/${encodeURIComponent(documentId)}/complete`,
+        documentSchema,
+      ),
+    documentDownload: (id: string, documentId: string) =>
+      call(
+        'GET',
+        `${biz(id)}/documents/${encodeURIComponent(documentId)}/download`,
+        signedUrlSchema,
+      ),
+    removeDocument: (id: string, documentId: string) =>
+      call('DELETE', `${biz(id)}/documents/${encodeURIComponent(documentId)}`, none),
+    storefront: (id: string) => call('GET', `${biz(id)}/storefront`, storefrontSchema),
+    updateStorefront: (id: string, body: z.input<typeof updateStorefrontRequestSchema>) =>
+      call('PATCH', `${biz(id)}/storefront`, storefrontSchema, body),
+    createMediaUpload: (id: string, body: z.input<typeof createMediaUploadRequestSchema>) =>
+      call('POST', `${biz(id)}/media`, uploadTicketSchema, body),
+    completeMedia: (id: string, mediaId: string) =>
+      call('POST', `${biz(id)}/media/${encodeURIComponent(mediaId)}/complete`, mediaSchema),
+
     // Admin
     adminLogin: (email: string, password: string, totpCode: string) =>
       call('POST', '/admin/auth/login', adminSessionSchema, { email, password, totpCode }),
@@ -206,6 +310,39 @@ export function createApiClient(options: ApiClientOptions) {
       call('POST', '/admin/admins/invites', adminInviteSchema, body),
     auditLogs: (params?: { cursor?: string; limit?: number }) =>
       call('GET', `/admin/audit-logs${q(params)}`, pageSchema(auditLogItemSchema)),
+    adminBusinesses: (
+      params: {
+        status?: z.output<typeof adminBusinessListQuerySchema>['status'];
+        cursor?: string;
+        limit?: number;
+      } = {},
+    ) => call('GET', `/admin/businesses${query(params)}`, pageSchema(adminBusinessListItemSchema)),
+    adminBusiness: (id: string) =>
+      call('GET', `/admin/businesses/${encodeURIComponent(id)}`, adminBusinessDetailSchema),
+    adminBusinessAction: (id: string, body: z.input<typeof businessActionRequestSchema>) =>
+      call(
+        'POST',
+        `/admin/businesses/${encodeURIComponent(id)}/actions`,
+        adminBusinessDetailSchema,
+        body,
+      ),
+    adminDocumentDownload: (id: string, documentId: string) =>
+      call(
+        'GET',
+        `/admin/businesses/${encodeURIComponent(id)}/documents/${encodeURIComponent(documentId)}/download`,
+        signedUrlSchema,
+      ),
+    adminCategories: (mode?: 'shop' | 'services') =>
+      call('GET', `/admin/categories${query({ mode })}`, categoryListSchema),
+    createCategory: (body: z.input<typeof createCategoryRequestSchema>) =>
+      call('POST', '/admin/categories', categorySchema, body),
+    updateCategory: (id: string, body: z.input<typeof updateCategoryRequestSchema>) =>
+      call('PATCH', `/admin/categories/${encodeURIComponent(id)}`, categorySchema, body),
+    adminBrands: () => call('GET', '/admin/brands', brandListSchema),
+    createBrand: (body: z.input<typeof createBrandRequestSchema>) =>
+      call('POST', '/admin/brands', brandSchema, body),
+    updateBrand: (id: string, body: z.input<typeof updateBrandRequestSchema>) =>
+      call('PATCH', `/admin/brands/${encodeURIComponent(id)}`, brandSchema, body),
   };
 }
 

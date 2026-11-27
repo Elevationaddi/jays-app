@@ -66,3 +66,27 @@ describe('platform capabilities', () => {
     expect(hasPlatformCapability(['owner'], 'audit.view')).toBe(false);
   });
 });
+
+describe('phase 2 capabilities', () => {
+  it('keeps the legal profile and private documents to owners', () => {
+    for (const permission of BUSINESS_PERMISSIONS) {
+      expect(hasBusinessCapability([permission], 'onboarding.manage')).toBe(permission === 'owner');
+    }
+    expect(hasBusinessCapability(['manager'], 'storefront.manage')).toBe(true);
+    expect(hasBusinessCapability(['fulfillment'], 'storefront.manage')).toBe(false);
+  });
+
+  it('gives review and documents only to superadmin and compliance', () => {
+    for (const role of ['superadmin', 'compliance']) {
+      expect(hasPlatformCapability([role], 'businesses.review')).toBe(true);
+      expect(hasPlatformCapability([role], 'documents.view')).toBe(true);
+    }
+    for (const role of ['catalog', 'operations', 'finance', 'support', 'analyst']) {
+      expect(hasPlatformCapability([role], 'businesses.review')).toBe(false);
+      expect(hasPlatformCapability([role], 'documents.view')).toBe(false);
+    }
+    expect(hasPlatformCapability(['catalog'], 'taxonomy.manage')).toBe(true);
+    expect(hasPlatformCapability(['operations'], 'businesses.suspend')).toBe(true);
+    expect(hasPlatformCapability(['support'], 'businesses.suspend')).toBe(false);
+  });
+});

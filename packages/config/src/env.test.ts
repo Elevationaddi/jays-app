@@ -9,6 +9,7 @@ const local = {
   OTP_SECRET: 'local-dev-only-otp-0000000000000000000000',
   MFA_ENCRYPTION_KEY: 'local-dev-only-mfa-0000000000000000000000',
   STORAGE_BUCKET: 'jays-local',
+  STORAGE_SIGNING_SECRET: 'local-dev-only-storage-000000000000000000',
   PSP_WEBHOOK_SECRET: 'local-dev-only-webhook-secret',
 };
 
@@ -29,6 +30,8 @@ describe('apiEnvSchema', () => {
     expect(env.PSP_PROVIDER).toBe('mock');
     expect(env.MOCK_PAYMENT_OUTCOMES).toBe(false);
     expect(env.CORS_ORIGINS).toEqual([]);
+    expect(env.STORAGE_PROVIDER).toBe('local');
+    expect(env.MALWARE_SCANNER).toBe('mock');
   });
 
   it('treats empty strings as unset', () => {
@@ -81,6 +84,10 @@ describe('apiEnvSchema', () => {
         'NOTIFY_PROVIDER',
         'ADMIN_WEB_URL',
         'CORS_ORIGINS',
+        'STORAGE_PROVIDER',
+        'STORAGE_SIGNING_SECRET',
+        'MALWARE_SCANNER',
+        'API_PUBLIC_URL',
       ]),
     );
   });

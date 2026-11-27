@@ -3,6 +3,7 @@ import type { BusinessModeStatus, MyMembership } from '@jays/contracts';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { BusinessNav } from '../../../components/BusinessNav';
 import { ErrorAlert } from '../../../components/ErrorAlert';
 import { TopBar } from '../../../components/TopBar';
 import { serverApi } from '../../../lib/api';
@@ -131,20 +132,7 @@ export default async function GatewayPage({ searchParams }: { searchParams: Sear
                 </button>
               </form>
             </div>
-            <nav
-              className="tabs"
-              aria-label={tr('business.gateway.switch')}
-              style={{ margin: '16px 0 24px' }}
-            >
-              <Link href="/business/gateway" aria-current="page">
-                {tr('business.nav.gateway')}
-              </Link>
-              {current.business.myCapabilities.includes('members.view') ? (
-                <Link href={`/business/${current.business.id}/team`}>
-                  {tr('business.nav.team')}
-                </Link>
-              ) : null}
-            </nav>
+            <BusinessNav locale={locale} business={current.business} current="gateway" />
             <div className="cards">
               {(['shop', 'services'] as const).map((mode) => (
                 <ModeCard key={mode} mode={mode} membership={current} tr={tr} />
@@ -202,7 +190,7 @@ function ModeCard({
             {tr('business.mode.open')} · {tr('common.later')}
           </span>
         ) : (
-          <Link className="btn secondary" href={`/business/${id}/onboarding/${mode}`}>
+          <Link className="btn secondary" href={`/business/${id}/onboarding`}>
             {tr('business.mode.continueSetup')}
           </Link>
         )}

@@ -12,3 +12,4 @@ next-env.d.ts
 
 # Local Redis snapshot
 dump.rdb
+.local-storage/

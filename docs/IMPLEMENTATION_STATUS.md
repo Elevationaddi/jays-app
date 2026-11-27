@@ -5,17 +5,65 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 | Phase | Scope                                                        | Status                              |
 | ----- | ------------------------------------------------------------ | ----------------------------------- |
 | 0     | Monorepo, local Docker, env schema, CI, ADRs                 | Merged (PR #1)                      |
-| 1     | Identity, roles, memberships, bilingual gateway              | In review                           |
-| 2     | Merchant onboarding, approval, categories, media, storefront | Not started                         |
+| 1     | Identity, roles, memberships, bilingual gateway              | Merged (PR #2)                      |
+| 2     | Merchant onboarding, approval, categories, media, storefront | In review                           |
 | 3     | Catalog, inventory, cart, multi-seller checkout (mock PSP)   | Not started                         |
 | 4     | Services, staff, availability, booking holds                 | Not started                         |
 | 5     | Real PSP sandbox, ledger, refunds, payouts, reconciliation   | Blocked on founder decisions D3, D5 |
 | 6     | Fulfillment, reviews, support, notifications, dashboards     | Not started                         |
 | 7     | RTL/accessibility, hardening, backups, observability, pilot  | Not started                         |
 
+## Phase 2: Merchant onboarding, approval, categories, media, storefront
+
+Date: 2026-11-27. Branch: `claude/project-thread-eooims`. Decision: [ADR-0012](adr/0012-merchant-onboarding-storage-and-review.md). Detail: [implementation plan](implementation-plan.md#phase-2-merchant-onboarding-approval-categories-media-storefront).
+
+### Delivered
+
+- Migration `0003_merchant_onboarding.sql`: legal profile, address, agreement, review and suspension columns plus a version counter on `businesses`; per-mode review columns; new tables `verification_documents`, `media`, `storefronts` (draft and live copies), `categories` (one mode, at most three levels, depth set by trigger) and `brands`. The MVP category tree is seeded in English and Arabic, without medical categories (D10).
+- API (54 paths under `/v1`, up from 31):
+  - Merchant onboarding: legal profile, agreement acceptance, private document upload, check, download and removal, submission with a server-side checklist.
+  - Storefront editing with logo and banner uploads; after approval, edits wait for review while the live copy stays public.
+  - Admin review queue and detail, audited document downloads, and nine typed review actions with reasons, a version precondition, row locks, audit entries and outbox events.
+  - Admin categories and brands; public categories, brands, approved stores and store images.
+- Files: signed upload tickets, real type from magic bytes, size and image dimension rules, a malware scanner adapter (mock flags EICAR), refused files deleted. Local storage adapter with HMAC-signed links; production refuses the local storage and mock scanner.
+- Business portal: Verification page (legal details, documents, payouts note, agreement, checklist, modes, submit or resubmit), Storefront page (both languages, logo and banner, preview, pending and rejected notices), and shared workspace tabs.
+- Admin console: business review queue with status filters, business detail with legal profile, documents, submitted and live storefront, history and only the decisions the reviewer's role allows; categories and brands.
+- Customer app: categories and approved stores on each mode's home, and a store page. Nothing appears before approval.
+- Seed data: Noor Beauty Supply (shop), Lumière Salon (services) and Oud & Bloom (hybrid) approved and public; Saffron Skin Co. waiting in the review queue; Amber Atelier as an empty draft to try the forms. Subcategories and three fictional brands.
+- Screenshots: [`docs/screenshots/phase-2/`](screenshots/phase-2/) (14 screens, English and Arabic RTL, phone and desktop).
+
+### Verified locally (2026-11-27)
+
+| Command                                            | Result                                                          |
+| -------------------------------------------------- | --------------------------------------------------------------- |
+| `pnpm format:check`                                | pass                                                            |
+| `pnpm lint`                                        | pass, 12 projects                                               |
+| `pnpm typecheck`                                   | pass, 12 projects                                               |
+| `pnpm test`                                        | pass, 144 unit tests                                            |
+| `pnpm build`                                       | pass (packages, API, worker, both Next.js apps)                 |
+| `pnpm openapi`                                     | 54 paths; committed with the code                               |
+| `pnpm db:migrate` on an empty database, then again | applied 0001 to 0003, then "database is up to date"             |
+| `pnpm test:integration`                            | pass, 74 tests (15 database, 59 API against Postgres and Redis) |
+| `pnpm db:seed`, run twice                          | idempotent; refuses `APP_ENV=production`                        |
+
+Acceptance coverage: **T02** (a pending merchant is invisible, an approved one shows only live content, suspension hides it at once and reactivation restores it), audit entries for every review action and document read, concurrent reviewer decisions (only one wins), role boundaries for each admin action, cross-business media refused by the API and the database, and upload refusals (wrong type, infected, oversize, tampered or expired links).
+
+### Known limitations and follow-ups
+
+- Production storage (S3-compatible) and a real malware scanner are not implemented. Production refuses to start without them, so this blocks deployment until the hosting decision is made.
+- Bank and PSP onboarding is not collected until the provider is chosen (D5). The portal says so.
+- The merchant agreement text and version are placeholders (`merchant-draft-2026-11`, D13).
+- Expired pending uploads are not cleaned up yet (worker job later). Documents are reviewed with the business, not one by one. A licence that expires after approval does not yet trigger reminders or suspension.
+- The portals relay uploads through their own server instead of uploading straight from the browser.
+- Arabic copy for this phase needs review by a native speaker before the pilot.
+
+### Rollback
+
+`0003_merchant_onboarding.sql` adds columns with defaults and new tables only. Rolling back means deploying the previous code; the new columns and tables are ignored by it. Uploaded files live under `STORAGE_LOCAL_DIR` locally and can be deleted with the database.
+
 ## Phase 1: Identity, roles, memberships, bilingual gateway
 
-Date: 2026-11-27. Branch: `claude/project-thread-i0hr4p`. Decisions: [ADR-0009](adr/0009-identity-and-sessions.md), [ADR-0010](adr/0010-authorization-and-admin-mfa.md), [ADR-0011](adr/0011-web-sessions-bff-cookies.md). Detail: [implementation plan](implementation-plan.md#phase-1-identity-roles-memberships-bilingual-gateway).
+Date: 2026-11-27. Branch: `claude/project-thread-i0hr4p`. Merged in PR #2. Decisions: [ADR-0009](adr/0009-identity-and-sessions.md), [ADR-0010](adr/0010-authorization-and-admin-mfa.md), [ADR-0011](adr/0011-web-sessions-bff-cookies.md). Detail: [implementation plan](implementation-plan.md#phase-1-identity-roles-memberships-bilingual-gateway).
 
 ### Delivered
 

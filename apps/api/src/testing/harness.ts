@@ -1,10 +1,21 @@
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { INestApplication } from '@nestjs/common';
-import { sessionSchema, type Session } from '@jays/contracts';
+import {
+  adminSessionSchema,
+  businessSchema,
+  sessionSchema,
+  type Session,
+  type UploadTicket,
+} from '@jays/contracts';
 import { createDb, type Db } from '@jays/db';
 import pg from 'pg';
 import request from 'supertest';
 import { createApp } from '../bootstrap.js';
+import { hashPassword, SecretBox } from '../auth/crypto.js';
 import { MockNotifier } from '../auth/notifier.js';
+import { generateTotpSecret, totpAt } from '../auth/totp.js';
 import type { Clock } from '../common/clock.js';
 import { testEnv } from './test-env.js';
 
@@ -26,6 +37,8 @@ export interface Harness {
   notifier: MockNotifier;
   clock: TestClock;
   db: Db;
+  /** Directory of the local storage adapter for this run. */
+  storageDir: string;
   close: () => Promise<void>;
 }
 
@@ -63,10 +76,12 @@ export function uniquePhone(): string {
 
 /** Full app on real PostgreSQL and Redis (DATABASE_URL, REDIS_URL), with a capturing notifier. */
 export async function startHarness(): Promise<Harness> {
+  const storageDir = await mkdtemp(join(tmpdir(), 'jays-storage-'));
   const env = testEnv({
     DATABASE_URL: process.env['DATABASE_URL'],
     REDIS_URL: process.env['REDIS_URL'],
     TRUST_PROXY_HOPS: '1',
+    STORAGE_LOCAL_DIR: storageDir,
   });
   const notifier = new MockNotifier(false);
   const clock = new TestClock();
@@ -86,9 +101,11 @@ export async function startHarness(): Promise<Harness> {
     notifier,
     clock,
     db,
+    storageDir,
     close: async () => {
       await app.close();
       await db.destroy();
+      await rm(storageDir, { recursive: true, force: true });
     },
   };
 }
@@ -125,3 +142,72 @@ export async function signUp(
 
 export const bearer = (session: { tokens: { accessToken: string } }) =>
   `Bearer ${session.tokens.accessToken}`;
+
+/** Starts a business as `session` (who becomes owner). */
+export async function createBusiness(
+  h: Harness,
+  session: { tokens: { accessToken: string } },
+  modes: ('shop' | 'services')[] = ['shop'],
+  displayName = { en: 'Fictional Store', ar: 'متجر تجريبي' },
+) {
+  const res = await h
+    .http()
+    .post('/v1/businesses')
+    .set('Authorization', bearer(session))
+    .send({ displayName, modes })
+    .expect(201);
+  return businessSchema.parse(res.body);
+}
+
+/** Path of a signed storage URL on the test server (the public base URL points elsewhere). */
+export function storagePath(url: string): string {
+  return new URL(url).pathname;
+}
+
+/** PUTs bytes to a signed upload URL as a browser or app would. */
+export function putUpload(h: Harness, ticket: UploadTicket, bytes: Buffer, contentType?: string) {
+  return h
+    .http()
+    .put(storagePath(ticket.uploadUrl))
+    .set(
+      'Content-Type',
+      contentType ?? ticket.headers['content-type'] ?? 'application/octet-stream',
+    )
+    .send(bytes);
+}
+
+const adminBox = () => new SecretBox(testEnv().MFA_ENCRYPTION_KEY);
+
+/** Provisions an active admin directly (as the seed and bootstrap do). */
+export async function provisionAdmin(h: Harness, roles: string[]) {
+  const email = uniqueEmail('admin');
+  const secret = generateTotpSecret();
+  const admin = await h.db
+    .insertInto('admin_accounts')
+    .values({
+      email,
+      display_name: 'Fictional Admin',
+      password_hash: await hashPassword(PASSWORD),
+      status: 'active',
+      mfa_secret_enc: adminBox().seal(secret),
+      mfa_enabled_at: new Date(),
+    })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  await h.db
+    .insertInto('admin_roles')
+    .values(roles.map((role) => ({ admin_id: admin.id, role })))
+    .execute();
+  return { id: admin.id, email, secret };
+}
+
+/** Signs an admin in with a fresh TOTP step (each step works once). */
+export async function adminLogin(h: Harness, admin: { email: string; secret: string }) {
+  h.clock.advance(30);
+  const res = await h
+    .http()
+    .post('/v1/admin/auth/login')
+    .send({ email: admin.email, password: PASSWORD, totpCode: totpAt(admin.secret, h.clock.now()) })
+    .expect(200);
+  return adminSessionSchema.parse(res.body);
+}

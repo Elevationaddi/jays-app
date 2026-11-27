@@ -68,4 +68,16 @@ describe('customer navigation state', () => {
     expect(s.session).toBeNull();
     expect(s.route).toBe('/shop');
   });
+
+  it('opens a store inside its mode and returns to it after switching modes', () => {
+    const s = run([
+      { type: 'chooseMode', mode: 'shop' },
+      { type: 'openStore', mode: 'shop', storeId: 'store-1' },
+      { type: 'chooseMode', mode: 'services' },
+      { type: 'chooseMode', mode: 'shop' },
+    ]);
+    expect(s.route).toBe('/shop/store');
+    expect(s.storeByMode).toEqual({ shop: 'store-1', services: null });
+    expect(run([{ type: 'navigate', route: '/shop' }], s).route).toBe('/shop');
+  });
 });

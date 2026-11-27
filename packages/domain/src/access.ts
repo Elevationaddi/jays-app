@@ -23,6 +23,11 @@ export const BUSINESS_CAPABILITIES = [
   'appointments.view_own',
   'finance.view',
   'payouts.manage',
+  // Phase 2. Legal profile, private verification documents, agreement and submission: owner only
+  // (docs/03-business.md: private documents visible only to authorised reviewers and the owner).
+  'onboarding.manage',
+  // Storefront content and its media.
+  'storefront.manage',
 ] as const;
 export type BusinessCapability = (typeof BUSINESS_CAPABILITIES)[number];
 
@@ -37,6 +42,7 @@ const MANAGER: readonly BusinessCapability[] = [
   'bookings.schedule',
   'appointments.view_all',
   'appointments.view_own',
+  'storefront.manage',
 ];
 
 export const BUSINESS_GRANTS: Record<BusinessPermission, readonly BusinessCapability[]> = {
@@ -105,16 +111,33 @@ export function canAssignPermissions(
 }
 
 /** Platform admin capabilities. superadmin holds all of them. */
-export const PLATFORM_CAPABILITIES = ['admins.manage', 'audit.view'] as const;
+export const PLATFORM_CAPABILITIES = [
+  'admins.manage',
+  'audit.view',
+  // Phase 2 (ADR-0012).
+  'businesses.view',
+  'businesses.review',
+  'businesses.suspend',
+  'documents.view',
+  'storefronts.review',
+  'taxonomy.manage',
+] as const;
 export type PlatformCapability = (typeof PLATFORM_CAPABILITIES)[number];
 
 export const PLATFORM_GRANTS: Record<PlatformRole, readonly PlatformCapability[]> = {
   superadmin: PLATFORM_CAPABILITIES,
-  compliance: ['audit.view'],
-  catalog: [],
-  operations: [],
+  compliance: [
+    'audit.view',
+    'businesses.view',
+    'businesses.review',
+    'businesses.suspend',
+    'documents.view',
+    'storefronts.review',
+  ],
+  catalog: ['businesses.view', 'storefronts.review', 'taxonomy.manage'],
+  operations: ['businesses.view', 'businesses.suspend'],
   finance: [],
-  support: [],
+  support: ['businesses.view'],
   analyst: [],
 };
 

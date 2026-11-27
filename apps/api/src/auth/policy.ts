@@ -40,4 +40,5 @@ export const LIMITS = {
   adminInviteAcceptPerIp: rule('admin-invite-ip', 20, 3600),
   createBusinessPerUser: rule('business-create-user', 10, 24 * 3600),
   inviteMemberPerUser: rule('member-invite-user', 50, 24 * 3600),
+  uploadPerBusiness: rule('upload-business', 200, 24 * 3600),
 } as const;
