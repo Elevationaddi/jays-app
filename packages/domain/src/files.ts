@@ -19,7 +19,12 @@ export const IMAGE_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as 
 export type ImageContentType = (typeof IMAGE_CONTENT_TYPES)[number];
 export const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
-export const MEDIA_PURPOSES = ['storefront_logo', 'storefront_banner', 'product_image'] as const;
+export const MEDIA_PURPOSES = [
+  'storefront_logo',
+  'storefront_banner',
+  'product_image',
+  'portfolio_image',
+] as const;
 export type MediaPurpose = (typeof MEDIA_PURPOSES)[number];
 /** Purposes uploaded through the storefront endpoints (owner, manager). */
 export const STOREFRONT_MEDIA_PURPOSES = ['storefront_logo', 'storefront_banner'] as const;
@@ -34,6 +39,7 @@ export const IMAGE_RULES: Record<
   storefront_logo: { minWidth: 200, minHeight: 200, maxSide: 4000, minRatio: 0.8, maxRatio: 1.25 },
   storefront_banner: { minWidth: 1200, minHeight: 300, maxSide: 6000, minRatio: 2, maxRatio: 5 },
   product_image: { minWidth: 600, minHeight: 600, maxSide: 6000, minRatio: 0.5, maxRatio: 2 },
+  portfolio_image: { minWidth: 600, minHeight: 600, maxSide: 6000, minRatio: 0.5, maxRatio: 2 },
 };
 
 /** Signed upload and download URLs are short-lived. */

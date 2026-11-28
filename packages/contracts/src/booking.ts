@@ -211,8 +211,12 @@ export type Service = z.infer<typeof serviceSchema>;
 // ---------------------------------------------------------------------------------------------
 // Staff, shifts and blocks
 
+const bioSchema = localizedInputSchema(10, 600);
+
 export const staffInputSchema = z.strictObject({
   displayName: z.string().trim().min(1).max(80),
+  /** A short bilingual introduction shown to customers (phase 8.7). */
+  bio: bioSchema.nullable().optional(),
   /** Link to a member account so the professional can sign in and see their own appointments. */
   membershipId: z.uuid().nullable().optional(),
   branchIds: z.array(z.uuid()).min(1).max(50),
@@ -223,6 +227,7 @@ export type StaffInput = z.infer<typeof staffInputSchema>;
 export const updateStaffRequestSchema = z
   .strictObject({
     displayName: staffInputSchema.shape.displayName.optional(),
+    bio: bioSchema.nullable().optional(),
     membershipId: z.uuid().nullable().optional(),
     branchIds: staffInputSchema.shape.branchIds.optional(),
     serviceIds: staffInputSchema.shape.serviceIds.optional(),
@@ -249,6 +254,7 @@ export const shiftSchema = z.object({ id: z.uuid(), branchId: z.uuid(), ...weekl
 export const staffSchema = z.object({
   id: z.uuid(),
   displayName: z.string(),
+  bio: localized.nullable(),
   membershipId: z.uuid().nullable(),
   status: z.enum(['active', 'archived']),
   branchIds: z.array(z.uuid()),
@@ -295,6 +301,27 @@ export type BlockListQuery = z.infer<typeof blockListQuerySchema>;
 // ---------------------------------------------------------------------------------------------
 // Public venue and availability
 
+const venueRating = z.object({ average: z.number().min(1).max(5), count: z.number().int().min(1) });
+
+export const publicAddonSchema = z.object({
+  id: z.uuid(),
+  title: localized,
+  /** Added to the service price; VAT-inclusive like it. */
+  priceFils: z.number().int(),
+  /** Added to the appointment's length. */
+  durationMin: z.number().int(),
+});
+export type PublicAddon = z.infer<typeof publicAddonSchema>;
+
+export const publicPortfolioItemSchema = z.object({
+  id: z.uuid(),
+  imageUrl: z.string(),
+  caption: localized.nullable(),
+  serviceId: z.uuid().nullable(),
+  staffId: z.uuid().nullable(),
+});
+export type PublicPortfolioItem = z.infer<typeof publicPortfolioItemSchema>;
+
 export const publicVenueSchema = z.object({
   id: z.uuid(),
   name: localized,
@@ -323,6 +350,9 @@ export const publicVenueSchema = z.object({
       lateCancelRefundBps: z.number().int(),
       locationMode: z.enum(SERVICE_LOCATION_MODES),
       branchIds: z.array(z.uuid()),
+      addons: z.array(publicAddonSchema),
+      /** From published reviews of completed appointments; null without any. */
+      rating: venueRating.nullable(),
     }),
   ),
   /** Home visits, when the business is approved for them; null otherwise. */
@@ -342,12 +372,24 @@ export const publicVenueSchema = z.object({
     z.object({
       id: z.uuid(),
       displayName: z.string(),
+      bio: localized.nullable(),
       branchIds: z.array(z.uuid()),
       serviceIds: z.array(z.uuid()),
+      rating: venueRating.nullable(),
     }),
   ),
+  /** Photos of past work, newest arrangement first; filter by serviceId or staffId. */
+  portfolio: z.array(publicPortfolioItemSchema),
+  rating: venueRating.nullable(),
 });
 export type PublicVenue = z.infer<typeof publicVenueSchema>;
+
+const addonIdsQuery = z
+  .string()
+  .max(400)
+  .optional()
+  .transform((v) => (v ? v.split(',').filter(Boolean) : []))
+  .pipe(z.array(z.uuid()).max(10));
 
 export const availabilityQuerySchema = z.strictObject({
   branchId: z.uuid(),
@@ -356,6 +398,8 @@ export const availabilityQuerySchema = z.strictObject({
   staffId: z.uuid().optional(),
   /** Home visits keep the travel buffer free around each appointment. */
   location: z.enum(BOOKING_LOCATIONS).default('venue'),
+  /** Comma-separated add-on ids; their minutes lengthen the appointment. */
+  addonIds: addonIdsQuery,
 });
 export type AvailabilityQuery = z.infer<typeof availabilityQuerySchema>;
 
@@ -382,6 +426,8 @@ export const holdRequestSchema = z
     location: z.enum(BOOKING_LOCATIONS).default('venue'),
     /** One of the customer's saved addresses; required for a home visit. */
     addressId: z.uuid().nullable().optional(),
+    /** Add-ons of this service, each at most once (phase 8.7). */
+    addonIds: z.array(z.uuid()).max(10).default([]),
   })
   .refine((b) => b.location !== 'home' || !!b.addressId, {
     message: 'required for a home visit',
@@ -444,6 +490,9 @@ const bookingCore = {
   homeAddress: homeAddressSchema.nullable(),
   /** Included in priceFils. */
   travelFeeFils: z.number().int(),
+  /** Add-ons as booked; their total is addonsFils, included in priceFils. */
+  addons: z.array(publicAddonSchema),
+  addonsFils: z.number().int(),
   priceFils: z.number().int(),
   taxFils: z.number().int(),
   currency: z.literal('AED'),

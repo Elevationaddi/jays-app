@@ -20,6 +20,7 @@ import type { Response } from 'express';
 import { z } from 'zod';
 import { UuidParam } from '../common/params.js';
 import { ApiErrors, ApiZodQuery, ApiZodResponse, ZodQuery } from '../common/zod.js';
+import { ServiceDiscoveryService } from '../booking/service-discovery.service.js';
 import { PublicProductsService } from './public-products.service.js';
 import { StoresService } from './stores.service.js';
 import { TaxonomyService } from './taxonomy.service.js';
@@ -32,6 +33,7 @@ export class CatalogController {
     @Inject(TaxonomyService) private readonly taxonomy: TaxonomyService,
     @Inject(StoresService) private readonly stores: StoresService,
     @Inject(PublicProductsService) private readonly products: PublicProductsService,
+    @Inject(ServiceDiscoveryService) private readonly portfolio: ServiceDiscoveryService,
   ) {}
 
   @Get('products')
@@ -124,13 +126,16 @@ export class CatalogController {
   @Get('media/:mediaId')
   @ApiParam({ name: 'mediaId', format: 'uuid' })
   @ApiOperation({
-    summary: 'A public storefront or product image (redirects to a short-lived signed URL)',
+    summary:
+      'A public storefront, product or portfolio image (redirects to a short-lived signed URL)',
   })
   @ApiResponse({ status: 302, description: 'Redirect to the image.' })
   @ApiErrors(404)
   async media(@UuidParam('mediaId') mediaId: string, @Res() res: Response) {
     const url =
-      (await this.products.mediaRedirect(mediaId)) ?? (await this.stores.mediaRedirect(mediaId));
+      (await this.products.mediaRedirect(mediaId)) ??
+      (await this.portfolio.portfolioMediaRedirect(mediaId)) ??
+      (await this.stores.mediaRedirect(mediaId));
     res.setHeader('Cache-Control', 'public, max-age=60');
     // Customer apps load these from another origin; a same-origin policy on the redirect blocks the image.
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');

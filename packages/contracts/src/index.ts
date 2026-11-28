@@ -13,3 +13,4 @@ export * from './aftercare.js';
 export * from './privacy.js';
 export * from './operations.js';
 export * from './home.js';
+export * from './services.js';

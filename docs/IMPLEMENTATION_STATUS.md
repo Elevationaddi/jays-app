@@ -13,7 +13,7 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 | 6     | Fulfillment, reviews, support, notifications, dashboards     | Merged (PR #7); D7, D12, D14 assumed  |
 | 7     | RTL/accessibility, hardening, backups, observability, pilot  | Merged (PR #8); pilot not started     |
 
-| 8 | Complete application functionality | 8.1 to 8.6 merged (PRs #9 to #14) |
+| 8 | Complete application functionality | 8.1 to 8.7 merged (PRs #9 to #14, #16) |
 | 9 | Provider integrations in test mode (Stripe, Resend, FCM, Supabase) | Not started |
 | 10 | Vercel deployment architecture (replaces AWS) | Not started; nothing deployed |
 | 11 | Security, QA, app store preparation | Not started |
@@ -29,6 +29,21 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 ## Phase 8: Complete application functionality
 
 Founder decisions: [ADR-0018](adr/0018-founder-decisions-2026-11-28.md). Phase 8 ships as slices. Each slice is its own PR, merged once CI passes.
+
+### 8.7 Service discovery
+
+Decision: [ADR-0026](adr/0026-service-discovery.md).
+
+- **Customer app:**
+  - The services home has a search box with Top rated and At home shortcuts. A search screen filters by place and 4 stars and up and sorts by relevance, popularity, rating or price.
+  - The booking page shows portfolio photos, the next available time with "Show that day", add-ons with the new total and length, professional ratings and bios, and "Tell me if a time opens on this day".
+  - Appointments lists waitlist entries (Book now, Leave), shows booked add-ons and offers "Book again" for past bookings.
+- **Business portal:** add-ons on each service (add, edit, archive, restore), a Portfolio page and professional bios.
+- **Rules:** add-on time is booked and locked like the service time. Add-ons are taxed like the service, carry commission and appear as their own invoice lines. Waitlists hold nothing. Reminders go once, 24 hours ahead, in the app and by email where allowed.
+- **Limits:** search is a database `ILIKE` scan (fine for the pilot). Next available checks up to 14 days and costs one availability query per day and branch. Reminders run in the worker until the Phase 10 cron. Emails share the Resend Free daily quota.
+- **Screens:** business portal add-ons, portfolio and bio (`business-56` to `business-58`); customer app search, booking with add-ons, waitlist and Book again (`customer-23` to `customer-27`). All are in English and Arabic.
+- **Tests:** 9 new API integration tests (178 in total, all passing on a fresh database), 7 domain unit tests, worker and state tests.
+- **API:** migration 0013. 11 new paths (202 in total).
 
 ### 8.6 Product discovery
 

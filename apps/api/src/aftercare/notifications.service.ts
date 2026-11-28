@@ -239,7 +239,8 @@ export class NotificationsService {
       }
       case 'booking.confirmed':
       case 'booking.canceled':
-      case 'booking.rescheduled': {
+      case 'booking.rescheduled':
+      case 'booking.reminder': {
         const b = await this.db
           .selectFrom('bookings as bk')
           .innerJoin('businesses as b', 'b.id', 'bk.business_id')
@@ -256,6 +257,39 @@ export class NotificationsService {
             business: name.en,
             ref: ref(b.id),
             when: dubaiTime(b.start_at, recipients[0]?.locale ?? 'en'),
+          },
+        };
+      }
+      case 'booking.waitlist_opened': {
+        const w = await this.db
+          .selectFrom('booking_waitlist as w')
+          .innerJoin('services as s', 's.id', 'w.service_id')
+          .innerJoin('businesses as b', 'b.id', 'w.business_id')
+          .leftJoin('storefronts as sf', 'sf.business_id', 'b.id')
+          .select([
+            'w.user_id',
+            'w.business_id',
+            'w.service_id',
+            's.title',
+            'b.display_name',
+            'sf.live_name',
+          ])
+          .where('w.id', '=', str('waitlistId') ?? '')
+          .where('w.status', '=', 'notified')
+          .executeTakeFirst();
+        const startAt = str('startAt');
+        if (!w || !startAt) return null;
+        const recipients = await this.users(
+          [w.user_id],
+          `/venues/${w.business_id}/services/${w.service_id}`,
+        );
+        const locale = recipients[0]?.locale ?? 'en';
+        return {
+          recipients,
+          params: {
+            business: ((w.live_name ?? w.display_name) as Localized)[locale],
+            service: (w.title as Localized)[locale],
+            when: dubaiTime(new Date(startAt), locale),
           },
         };
       }

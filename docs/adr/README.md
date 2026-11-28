@@ -31,3 +31,4 @@ Status values: **Accepted** (engineering decision, in force), **Proposed** (need
 | [0023](0023-product-discovery.md)                                 | Product discovery: sale prices, ratings, sorts, facets, wishlist and back-in-stock alerts                    | Accepted                                |
 | [0024](0024-cost-constraints-and-vercel-first-architecture.md)    | No paid subscriptions beyond Vercel, ChatGPT and Claude; Vercel-first hosting; Supabase, Resend, FCM; no SMS | Accepted                                |
 | [0025](0025-travel-fees-home-cancellations-pilot-promotion.md)    | Travel fees outside commission, home-visit cancellations, pilot 0% commission promotion                      | Accepted (cancellation policy proposed) |
+| [0026](0026-service-discovery.md)                                 | Service discovery: add-ons, search, ratings, waitlists, reminders, rebooking and portfolios                  | Accepted                                |

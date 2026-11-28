@@ -3,6 +3,7 @@ import { Redis } from 'ioredis';
 import pg from 'pg';
 import { pino } from 'pino';
 import {
+  bookingRemindersJob,
   completeAccountDeletionsJob,
   expireBookingHoldsJob,
   expireUnpaidOrdersJob,
@@ -19,6 +20,7 @@ const worker = new Worker(env, redis, log, [
   expireBookingHoldsJob(pool),
   markEarningsEligibleJob(pool),
   completeAccountDeletionsJob(pool),
+  bookingRemindersJob(pool),
 ]);
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {

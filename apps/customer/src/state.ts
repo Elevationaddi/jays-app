@@ -1,4 +1,4 @@
-import type { Challenge, Me, ProductSort, TokenPair } from '@jays/contracts';
+import type { Challenge, Me, ProductSort, ServiceSort, TokenPair } from '@jays/contracts';
 import type { Mode } from '@jays/domain';
 import type { Locale } from '@jays/i18n';
 
@@ -10,6 +10,7 @@ export type Route =
   | '/shop/store'
   | '/services/store'
   | '/services/book'
+  | '/services/search'
   | '/appointments'
   | '/appointments/detail'
   | '/shop/product'
@@ -51,6 +52,24 @@ export interface SearchFilters {
   sort?: ProductSort;
 }
 
+/** Service search filters (phase 8.7). */
+export interface ServiceFilters {
+  q?: string;
+  location?: 'venue' | 'home';
+  minRating?: number;
+  sort?: ServiceSort;
+}
+
+/** What "Book again" or a waitlist link prefills on /services/book. */
+export interface BookPrefill {
+  branchId?: string;
+  staffId?: string | null;
+  addonIds?: string[];
+  location?: 'venue' | 'home';
+  addressId?: string | null;
+  date?: string;
+}
+
 export interface AppState {
   locale: Locale;
   emirate: string | null;
@@ -73,6 +92,9 @@ export interface AppState {
   orderId: string | null;
   /** The service being booked in /services/book (at the venue open in services mode). */
   bookServiceId: string | null;
+  bookPrefill: BookPrefill;
+  /** The filters of /services/search. */
+  serviceSearch: ServiceFilters;
   /** The appointment open in /appointments/detail. */
   bookingId: string | null;
   /** The support ticket open in /support/detail, and the draft for /support/new. */
@@ -102,6 +124,8 @@ export type Action =
   | { type: 'wishlist'; productIds: string[] | null }
   | { type: 'openOrder'; orderId: string }
   | { type: 'startBooking'; serviceId: string }
+  | { type: 'openService'; venueId: string; serviceId: string; prefill?: BookPrefill }
+  | { type: 'searchServices'; filters: ServiceFilters }
   | { type: 'openBooking'; bookingId: string }
   | { type: 'openTicket'; ticketId: string }
   | { type: 'newTicket'; draft: TicketDraft }
@@ -134,6 +158,8 @@ export function initialState(locale: Locale): AppState {
     wishlist: null,
     orderId: null,
     bookServiceId: null,
+    bookPrefill: {},
+    serviceSearch: {},
     bookingId: null,
     ticketId: null,
     ticketDraft: { type: 'other' },
@@ -173,6 +199,10 @@ export function actionForLink(link: string): Action | null {
         return { type: 'openTicket', ticketId: id };
     }
   }
+  const venue = /^\/venues\/([0-9a-f-]{36})\/services\/([0-9a-f-]{36})$/.exec(link);
+  if (venue?.[1] && venue[2]) {
+    return { type: 'openService', venueId: venue[1], serviceId: venue[2] };
+  }
   if (link === '/reviews') return { type: 'navigate', route: '/orders' };
   return null;
 }
@@ -187,7 +217,12 @@ export function modeOf(route: Route): Mode | null {
     route === '/checkout'
   )
     return 'shop';
-  if (route === '/services' || route === '/services/store' || route === '/services/book')
+  if (
+    route === '/services' ||
+    route === '/services/store' ||
+    route === '/services/book' ||
+    route === '/services/search'
+  )
     return 'services';
   return null;
 }
@@ -254,7 +289,26 @@ export function reducer(state: AppState, action: Action): AppState {
         mode: 'services',
         route: '/services/book',
         bookServiceId: action.serviceId,
+        bookPrefill: {},
         routeByMode: { ...state.routeByMode, services: '/services/book' },
+      };
+    case 'openService':
+      return {
+        ...state,
+        mode: 'services',
+        route: '/services/book',
+        bookServiceId: action.serviceId,
+        bookPrefill: action.prefill ?? {},
+        storeByMode: { ...state.storeByMode, services: action.venueId },
+        routeByMode: { ...state.routeByMode, services: '/services/book' },
+      };
+    case 'searchServices':
+      return {
+        ...state,
+        mode: 'services',
+        route: '/services/search',
+        serviceSearch: action.filters,
+        routeByMode: { ...state.routeByMode, services: '/services/search' },
       };
     case 'openBooking':
       return { ...state, route: '/appointments/detail', bookingId: action.bookingId };

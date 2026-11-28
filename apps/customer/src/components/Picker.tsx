@@ -63,3 +63,40 @@ const styles = StyleSheet.create({
   on: { borderColor: colors.accent, borderWidth: 2 },
   text: { color: colors.text, fontSize: 15, fontWeight: '600' },
 });
+
+/** Several independent choices, each toggled on or off (checkbox semantics). */
+export function MultiChips<T extends string>({
+  options,
+  values,
+  onChange,
+  label,
+}: {
+  options: { value: T; label: string }[];
+  values: readonly T[];
+  onChange: (values: T[]) => void;
+  label: string;
+}) {
+  return (
+    <View accessibilityLabel={label} style={styles.chips}>
+      {options.map((o) => {
+        const on = values.includes(o.value);
+        return (
+          <Pressable
+            key={o.value}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: on }}
+            onPress={() =>
+              onChange(on ? values.filter((v) => v !== o.value) : [...values, o.value])
+            }
+            style={[styles.chip, on && styles.on]}
+          >
+            <Text style={[styles.text, on && { color: colors.accent }]}>
+              {on ? '✓ ' : '+ '}
+              {o.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
