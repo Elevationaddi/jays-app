@@ -38,3 +38,4 @@ Status values: **Accepted** (engineering decision, in force), **Proposed** (need
 | [0030](0030-stripe-connect-test-mode.md)                          | Stripe Connect in test mode: adapter, connected payout accounts, transfers, live keys refused                | Accepted (funds flow proposed)          |
 | [0031](0031-resend-email-and-fcm-push.md)                         | Resend email with bilingual templates and a daily budget, Firebase push devices and delivery, no SMS         | Accepted                                |
 | [0032](0032-supabase-storage-and-malware-scanning.md)             | Supabase file storage, direct uploads, 4 MB images, ClamAV scanning that fails closed                        | Accepted (scanner host undecided)       |
+| [0033](0033-vercel-deployment.md)                                 | Vercel deployment: API function, cron routes, PostgreSQL rate limits, direct document uploads, usage card    | Accepted (not deployed)                 |

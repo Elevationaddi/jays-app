@@ -2,7 +2,13 @@ import Link from 'next/link';
 import { Workspace, aedInput, loadBusiness } from '../../../../../components/Workspace';
 import { serverApi } from '../../../../../lib/api';
 import { translator } from '../../../../../lib/i18n';
-import { saveHomeServices, submitHomeServices, uploadHomeLicence } from '../../home-actions';
+import { DirectUploadForm } from '../../../../../components/DirectUploadForm';
+import {
+  finishHomeLicenceUpload,
+  prepareHomeLicenceUpload,
+  saveHomeServices,
+  submitHomeServices,
+} from '../../home-actions';
 
 type Search = Promise<Record<string, string | undefined>>;
 
@@ -76,7 +82,11 @@ export default async function HomeServicesPage({
       {owner && editable ? (
         <section className="card" aria-labelledby="home-upload">
           <h2 id="home-upload">{tr('home.uploadTitle')}</h2>
-          <form action={uploadHomeLicence} encType="multipart/form-data" className="inline-form">
+          <DirectUploadForm
+            prepare={prepareHomeLicenceUpload}
+            finish={finishHomeLicenceUpload}
+            className="inline-form"
+          >
             <input type="hidden" name="businessId" value={businessId} />
             <label htmlFor="licenceFile" className="sr-only">
               {tr('home.uploadTitle')}
@@ -91,7 +101,7 @@ export default async function HomeServicesPage({
             <button className="btn secondary" type="submit">
               {tr('home.upload')}
             </button>
-          </form>
+          </DirectUploadForm>
         </section>
       ) : null}
 

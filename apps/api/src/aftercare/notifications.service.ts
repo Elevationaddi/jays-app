@@ -753,7 +753,8 @@ export class NotificationScheduler implements OnApplicationBootstrap, OnApplicat
   ) {}
 
   onApplicationBootstrap() {
-    if (this.env.APP_ENV === 'test') return;
+    // On Vercel the cron routes run this instead (ADR-0033).
+    if (this.env.APP_ENV === 'test' || this.env.SCHEDULERS === 'off') return;
     this.timer = setInterval(() => void this.tick(), 5_000);
     this.timer.unref();
   }

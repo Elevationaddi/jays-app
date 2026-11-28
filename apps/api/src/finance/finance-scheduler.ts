@@ -36,7 +36,8 @@ export class FinanceScheduler implements OnApplicationBootstrap, OnApplicationSh
   ) {}
 
   onApplicationBootstrap() {
-    if (this.env.APP_ENV === 'test') return;
+    // On Vercel the cron routes run this instead (ADR-0033).
+    if (this.env.APP_ENV === 'test' || this.env.SCHEDULERS === 'off') return;
     this.timer = setInterval(() => void this.tick(), HOUR_MS);
     this.timer.unref();
     setTimeout(() => void this.tick(), 30_000).unref();

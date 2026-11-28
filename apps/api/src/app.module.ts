@@ -134,7 +134,12 @@ import { BusinessesController } from './businesses/businesses.controller.js';
 import { BusinessesService } from './businesses/businesses.service.js';
 import { CLOCK, type Clock, systemClock } from './common/clock.js';
 import { loggerParams } from './common/logging.js';
-import { RATE_LIMITER, type RateLimiter, RedisRateLimiter } from './common/rate-limit.js';
+import {
+  PostgresRateLimiter,
+  RATE_LIMITER,
+  type RateLimiter,
+  RedisRateLimiter,
+} from './common/rate-limit.js';
 import { DB, NOTIFIER } from './common/tokens.js';
 import { API_ENV, type ApiEnv } from './config.js';
 import { DEPENDENCY_PROBES, type DependencyProbe } from './health/dependencies.js';
@@ -145,8 +150,10 @@ import { PrivacyController, UnsubscribeController } from './privacy/privacy.cont
 import { PrivacyService } from './privacy/privacy.service.js';
 import { AdminOperationsController } from './operations/operations.controller.js';
 import { OperationsService } from './operations/operations.service.js';
+import { UsageService } from './operations/usage.service.js';
 import { HttpMetrics } from './observability/http-metrics.js';
 import { MetricsController } from './observability/metrics.controller.js';
+import { CronController } from './cron/cron.controller.js';
 import { MeService } from './me/me.service.js';
 import { ReferenceController } from './reference/reference.controller.js';
 
@@ -233,6 +240,7 @@ export class AppModule {
       controllers: [
         HealthController,
         MetricsController,
+        CronController,
         ReferenceController,
         AuthController,
         MeController,
@@ -325,9 +333,11 @@ export class AppModule {
           provide: RATE_LIMITER,
           useFactory: (infra: Infrastructure) =>
             rateLimiter ??
-            new RedisRateLimiter(infra.redis, rateLimitNamespace ?? env.APP_ENV, () =>
-              infra.redisReady(),
-            ),
+            (infra.redis
+              ? new RedisRateLimiter(infra.redis, rateLimitNamespace ?? env.APP_ENV, () =>
+                  infra.redisReady(),
+                )
+              : new PostgresRateLimiter(infra.db, rateLimitNamespace ?? env.APP_ENV)),
           inject: [Infrastructure],
         },
         { provide: ACCESS_TOKENS, useValue: new AccessTokens(env.JWT_KEYS) },
@@ -373,6 +383,7 @@ export class AppModule {
         MeService,
         PrivacyService,
         OperationsService,
+        UsageService,
         BusinessesService,
         AdminService,
         OnboardingService,

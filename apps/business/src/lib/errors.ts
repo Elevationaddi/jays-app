@@ -47,6 +47,10 @@ export function errorMessageKey(code: string | undefined): MessageKey | null {
       return 'error.fileTooLarge';
     case 'FILE_INFECTED':
       return 'error.fileInfected';
+    case 'UPLOAD_FAILED':
+      return 'error.uploadFailed';
+    case 'SCANNER_UNAVAILABLE':
+      return 'error.scannerUnavailable';
     case 'IMAGE_DIMENSIONS':
       return 'error.imageDimensions';
     case 'UPLOAD_EXPIRED':

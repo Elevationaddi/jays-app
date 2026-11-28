@@ -3,7 +3,9 @@
 import { ApiClientError } from '@jays/api-client';
 import { DOCUMENT_KINDS, MERCHANT_AGREEMENT_VERSION } from '@jays/domain';
 import { redirect } from 'next/navigation';
+import type { DirectUploadTarget } from '../../../../components/DirectUploadForm';
 import { serverApi } from '../../../../lib/api';
+import { fileMeta, uploadTarget } from '../../../../lib/uploads';
 
 const UUID = /^[0-9a-f-]{36}$/i;
 
@@ -55,27 +57,36 @@ export async function saveLegalProfile(formData: FormData) {
   redirect(`/business/${id}/onboarding?saved=legal#legal`);
 }
 
-export async function uploadDocument(formData: FormData) {
+/** Step 1 of a direct upload (ADR-0033): the signed target for one document. */
+export async function prepareDocumentUpload(formData: FormData): Promise<DirectUploadTarget> {
   const id = idOf(formData);
-  const file = formData.get('file');
   const kind = String(formData.get('kind') ?? '');
-  if (
-    !(file instanceof File) ||
-    file.size === 0 ||
-    !(DOCUMENT_KINDS as readonly string[]).includes(kind)
-  ) {
+  const meta = fileMeta(formData);
+  if (!meta || !(DOCUMENT_KINDS as readonly string[]).includes(kind)) {
     redirect(`/business/${id}/onboarding?error=VALIDATION_FAILED#documents`);
   }
   try {
-    const api = await serverApi();
-    const ticket = await api.createDocumentUpload(id, {
+    const ticket = await (
+      await serverApi()
+    ).createDocumentUpload(id, {
       kind: kind as never,
-      fileName: file.name || 'document',
-      contentType: file.type as never,
-      sizeBytes: file.size,
+      fileName: meta.fileName || 'document',
+      contentType: meta.contentType as never,
+      sizeBytes: meta.sizeBytes,
     });
-    await api.upload(ticket, new Uint8Array(await file.arrayBuffer()));
-    await api.completeDocument(id, ticket.id);
+    return uploadTarget(ticket);
+  } catch (error) {
+    back(id, error, '#documents');
+  }
+}
+
+/** Step 3: the API checks type, size and malware before the document counts. */
+export async function finishDocumentUpload(formData: FormData) {
+  const id = idOf(formData);
+  const failed = String(formData.get('uploadError') ?? '');
+  if (failed) redirect(`/business/${id}/onboarding?error=${encodeURIComponent(failed)}#documents`);
+  try {
+    await (await serverApi()).completeDocument(id, String(formData.get('ticketId') ?? ''));
   } catch (error) {
     back(id, error, '#documents');
   }

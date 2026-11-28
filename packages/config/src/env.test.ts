@@ -198,6 +198,32 @@ describe('JWT_KEYS', () => {
   });
 });
 
+describe('apiEnvSchema on Vercel (ADR-0033)', () => {
+  it('runs without Redis when rate limits are counted in PostgreSQL', () => {
+    const { REDIS_URL: _unused, ...noRedis } = local;
+    expect(issuesOf(() => parseEnv(apiEnvSchema, noRedis))).toEqual(['REDIS_URL']);
+    const env = parseEnv(apiEnvSchema, { ...noRedis, RATE_LIMIT_STORE: 'postgres' });
+    expect(env.REDIS_URL).toBeUndefined();
+    expect(env.SCHEDULERS).toBe('on');
+    expect(env.DB_POOL_MAX).toBe(10);
+  });
+
+  it('needs a cron secret when timers are off', () => {
+    expect(issuesOf(() => parseEnv(apiEnvSchema, { ...local, SCHEDULERS: 'off' }))).toEqual([
+      'CRON_SECRET',
+    ]);
+    expect(issuesOf(() => parseEnv(apiEnvSchema, { ...local, CRON_SECRET: 'short' }))).toEqual([
+      'CRON_SECRET',
+    ]);
+    const env = parseEnv(apiEnvSchema, {
+      ...local,
+      SCHEDULERS: 'off',
+      CRON_SECRET: 'fictional-cron-secret-0000000000000000',
+    });
+    expect(env.SCHEDULERS).toBe('off');
+  });
+});
+
 describe('workerEnvSchema', () => {
   it('needs only the shared infrastructure variables', () => {
     const env = parseEnv(workerEnvSchema, {

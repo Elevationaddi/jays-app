@@ -14,8 +14,8 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 | 7     | RTL/accessibility, hardening, backups, observability, pilot  | Merged (PR #8); pilot not started     |
 
 | 8 | Complete application functionality | 8.1 to 8.8 merged (PRs #9 to #14, #16 to #19) |
-| 9 | Provider integrations in test mode (Stripe, Resend, FCM, Supabase) | 9.1 merged (PR #20); 9.2 merged (PR #21); 9.3 storage and scanning in progress |
-| 10 | Vercel deployment architecture (replaces AWS) | Not started; nothing deployed |
+| 9 | Provider integrations in test mode (Stripe, Resend, FCM, Supabase) | Merged (PRs #20, #21, #22) |
+| 10 | Vercel deployment design (replaces AWS) | Design and code done; nothing deployed |
 | 11 | Security, QA, app store preparation | Not started |
 | 12 | Pilot preparation (Abu Dhabi) | Not started; pilot needs approval |
 
@@ -26,6 +26,21 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 - **Travel fees:** no longer carry commission ([ADR-0025](adr/0025-travel-fees-home-cancellations-pilot-promotion.md)). The booking ledger line leaves the travel fee out of the commission base, and a test checks it.
 - **Home-visit cancellations:** built in 8.8 ([ADR-0027](adr/0027-booking-policies-and-component-amounts.md)); the rule is still proposed until a consumer-protection review.
 - **Still to build:** the pilot promotion (12).
+
+## Phase 10: Vercel deployment design
+
+Decision: [ADR-0033](adr/0033-vercel-deployment.md). Runbook: [DEPLOYMENT.md](DEPLOYMENT.md). **Nothing was deployed**, and no Vercel project or charge was created.
+
+- **API as a Vercel function:** the same Nest app, built once per instance and reused. A start-up failure answers a plain 503 and retries on the next request.
+- **Cron instead of timers and the worker:** three protected routes (every minute, every 5 minutes, hourly) run notifications, expiries, reminders, payout eligibility, account deletions, reconciliation and weekly payouts. The worker and the cron routes share the same SQL. Needs Vercel Pro.
+- **No Redis:** rate limits can be counted in PostgreSQL with one atomic upsert per check, failing closed. Readiness no longer needs Redis in that mode.
+- **Files never pass through a function:** business documents go straight from the browser to storage; images (4 MB at most) still use server actions under the 4.5 MB limit.
+- **Small connection pools** behind Supabase's transaction pooler; migrations only over the direct connection.
+- **Free-plan usage card** on the admin dashboard: database, stored files and email against the limits, amber at 80%.
+- **Security headers** on the portals and the web build.
+- **Tests:** 10 new integration tests (cron routes, PostgreSQL limits including concurrency, the function entry, readiness), 1 for the usage card, 2 config tests and 2 portal tests.
+- **Checked in a local browser:** a 6 MB PDF went from the business portal straight to the signed upload URL and was accepted after the check; the server actions never received the file.
+- **Not verified:** anything on Vercel itself (cold starts, bundle size, raw webhook bodies). These are the first staging checks in the runbook, after approval.
 
 ## Phase 9: Provider integrations in test mode
 

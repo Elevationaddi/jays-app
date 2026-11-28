@@ -126,12 +126,12 @@ Every external dependency JAYS uses or may need, what it costs, its limits, and 
 
 ### ClamAV: malware scanning (open source, hosting undecided)
 
-| Item             | Value                                                                                                                                                                                                                                      |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Purpose          | Scan uploaded business documents and attachments before release                                                                                                                                                                            |
-| Cost             | Software free. It cannot run reliably inside a Vercel function (signature database of a few hundred MB, daily updates, memory). It needs a small always-on machine. A free virtual machine for commercial use usually needs a card on file |
-| Status           | **Production blocker** until the founder approves where it runs. Until then, images are re-encoded and documents stay quarantined, visible only to compliance admins with a warning (ADR-0024, section 6)                                  |
-| Founder approval | Yes                                                                                                                                                                                                                                        |
+| Item             | Value                                                                                                                                                                                                                                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Purpose          | Scan uploaded business documents and attachments before release                                                                                                                                                                                                                                   |
+| Cost             | Software free. It cannot run reliably inside a Vercel function (signature database of a few hundred MB, daily updates, memory). It needs a small always-on machine. A free virtual machine for commercial use usually needs a card on file                                                        |
+| Status           | **Production blocker** until the founder approves where it runs: production refuses to start without a real scanner, and uploads wait (503, try again) when it is down (ADR-0032). The adapter is built (clamd over TLS, no new dependency). Hosting options and a recommendation are in ADR-0032 |
+| Founder approval | Yes                                                                                                                                                                                                                                                                                               |
 
 ### Fees that are not software subscriptions
 
