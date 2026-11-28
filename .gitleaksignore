@@ -6,3 +6,5 @@
 1f8f78e3edcd255fd7088e98f39cbd3283ff48b2:apps/api/src/auth/auth.int.test.ts:generic-api-key:239
 1f8f78e3edcd255fd7088e98f39cbd3283ff48b2:apps/api/src/auth/auth.int.test.ts:generic-api-key:244
 1f8f78e3edcd255fd7088e98f39cbd3283ff48b2:apps/api/src/auth/auth.int.test.ts:generic-api-key:259
+# Fictional CI-only metrics token in an earlier commit of the image smoke test (now generated per run).
+7965c51beeb194c4d447bc75f8d9316880a6fabb:.github/workflows/ci.yml:curl-auth-header:132
