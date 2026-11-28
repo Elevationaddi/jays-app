@@ -18,10 +18,12 @@ import { OrderScreen, OrdersScreen } from './screens/OrdersScreen';
 import { PrivacyScreen, UnsubscribeScreen } from './screens/PrivacyScreens';
 import { ProductScreen } from './screens/ProductScreen';
 import { ResetScreen } from './screens/ResetScreen';
+import { SearchScreen } from './screens/SearchScreen';
 import { StoreScreen } from './screens/StoreScreen';
 import { NewTicketScreen, SupportScreen, TicketScreen } from './screens/SupportScreens';
 import { VerifyScreen } from './screens/VerifyScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
+import { WishlistScreen } from './screens/WishlistScreen';
 import { loadRefreshToken, saveRefreshToken } from './secure-session';
 import { initialState, reducer, unsubscribeTokenFrom } from './state';
 
@@ -88,6 +90,15 @@ export function App() {
       .catch(() => dispatch({ type: 'cart', cartToken: null, count: 0 }));
   }, [api, signedInUser]);
 
+  // Saved product ids for the hearts on product cards.
+  useEffect(() => {
+    if (!signedInUser) return;
+    api
+      .wishlist()
+      .then((w) => dispatch({ type: 'wishlist', productIds: w.items.map((i) => i.productId) }))
+      .catch(() => undefined);
+  }, [api, signedInUser]);
+
   const signOut = useCallback(async () => {
     const refresh = stateRef.current.session?.tokens.refreshToken;
     if (refresh) await api.logout(refresh).catch(() => undefined);
@@ -109,6 +120,10 @@ export function App() {
         return <AccountScreen />;
       case '/shop/product':
         return <ProductScreen />;
+      case '/shop/search':
+        return <SearchScreen />;
+      case '/wishlist':
+        return <WishlistScreen />;
       case '/cart':
         return <CartScreen />;
       case '/checkout':

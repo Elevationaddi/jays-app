@@ -52,9 +52,12 @@ function content(f: FormData) {
 
 function variant(f: FormData) {
   const priceFils = parseAed(f.get('price'));
+  // Blank clears the was-price; anything unreadable is sent as invalid so the API explains it.
+  const compareAt = text(f, 'compareAt');
   return {
     name: { en: text(f, 'variantNameEn'), ar: text(f, 'variantNameAr') },
     priceFils: priceFils ?? -1,
+    compareAtFils: compareAt === '' ? null : (parseAed(compareAt) ?? -1),
     taxClass: taxClass(f),
     lowStockThreshold: intOr(f, 'lowStockThreshold'),
   };

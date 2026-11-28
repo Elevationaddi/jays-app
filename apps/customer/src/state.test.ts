@@ -1,6 +1,13 @@
 import type { Me, TokenPair } from '@jays/contracts';
 import { describe, expect, it } from 'vitest';
-import { initialState, reducer, unsubscribeTokenFrom, type AppState, type Action } from './state';
+import {
+  actionForLink,
+  initialState,
+  reducer,
+  unsubscribeTokenFrom,
+  type AppState,
+  type Action,
+} from './state';
 
 const run = (actions: Action[], start: AppState = initialState('en')) =>
   actions.reduce(reducer, start);
@@ -166,5 +173,37 @@ describe('privacy navigation', () => {
     expect(unsubscribeTokenFrom('jays://unsubscribe?lang=ar&token=x%2Ey')).toBe('x.y');
     expect(unsubscribeTokenFrom('https://jays.example/shop?token=abc')).toBeNull();
     expect(unsubscribeTokenFrom('https://jays.example/unsubscribe')).toBeNull();
+  });
+});
+
+describe('product discovery', () => {
+  it('keeps recently viewed products newest first, without repeats, up to ten', () => {
+    const actions: Action[] = Array.from({ length: 12 }, (_, i) => ({
+      type: 'openProduct' as const,
+      productId: `p-${i}`,
+    }));
+    const s = run([...actions, { type: 'openProduct', productId: 'p-5' }]);
+    expect(s.recentProductIds[0]).toBe('p-5');
+    expect(s.recentProductIds).toHaveLength(10);
+    expect(new Set(s.recentProductIds).size).toBe(10);
+  });
+
+  it('opens search in shop mode with its filters, and forgets the wishlist on sign-out', () => {
+    const s = run([
+      { type: 'chooseMode', mode: 'services' },
+      { type: 'search', filters: { q: 'serum', onSale: true, sort: 'discount' } },
+      { type: 'wishlist', productIds: ['p-1'] },
+    ]);
+    expect(s.mode).toBe('shop');
+    expect(s.route).toBe('/shop/search');
+    expect(s.search).toEqual({ q: 'serum', onSale: true, sort: 'discount' });
+    expect(run([{ type: 'signedOut' }], s).wishlist).toBeNull();
+  });
+
+  it('opens the screen a notification links to', () => {
+    const id = '00000000-0000-4000-8000-0000000000aa';
+    expect(actionForLink(`/products/${id}`)).toEqual({ type: 'openProduct', productId: id });
+    expect(actionForLink(`/orders/${id}`)).toEqual({ type: 'openOrder', orderId: id });
+    expect(actionForLink('/business/x/returns')).toBeNull();
   });
 });

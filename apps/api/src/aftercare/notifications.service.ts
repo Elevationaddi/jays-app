@@ -285,6 +285,26 @@ export class NotificationsService {
           params: { business: ((r.live_name ?? r.display_name) as Localized).en },
         };
       }
+      case 'product.back_in_stock': {
+        const v = await this.db
+          .selectFrom('variants as v')
+          .innerJoin('products as p', 'p.id', 'v.product_id')
+          .select(['v.name', 'p.id', 'p.live_title', 'p.status'])
+          .where('v.id', '=', str('variantId') ?? '')
+          .executeTakeFirst();
+        const userId = str('userId');
+        // Only a product still on sale is announced.
+        if (!v || !userId || v.status !== 'active' || !v.live_title) return null;
+        const recipients = await this.users([userId], `/products/${v.id}`);
+        const locale = recipients[0]?.locale ?? 'en';
+        return {
+          recipients,
+          params: {
+            product: (v.live_title as Localized)[locale],
+            variant: (v.name as Localized)[locale],
+          },
+        };
+      }
       default:
         return null; // Internal events (payment.*, merchant_order.paid ...) notify no one.
     }

@@ -52,6 +52,9 @@ export function errorKey(error: unknown): { key: MessageKey; seconds: number } {
     ADDRESS_NOT_COVERED: 'book.notCovered',
     BELOW_HOME_MINIMUM: 'error.belowHomeMinimum',
     EMIRATE_NOT_AVAILABLE: 'error.emirateUnavailable',
+    WISHLIST_FULL: 'error.wishlistFull',
+    STOCK_ALERTS_FULL: 'error.stockAlertsFull',
+    IN_STOCK: 'error.inStockNow',
   };
   return { key: map[error.code] ?? 'common.error', seconds };
 }

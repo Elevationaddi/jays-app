@@ -1,4 +1,4 @@
-import type { Challenge, Me, TokenPair } from '@jays/contracts';
+import type { Challenge, Me, ProductSort, TokenPair } from '@jays/contracts';
 import type { Mode } from '@jays/domain';
 import type { Locale } from '@jays/i18n';
 
@@ -13,6 +13,8 @@ export type Route =
   | '/appointments'
   | '/appointments/detail'
   | '/shop/product'
+  | '/shop/search'
+  | '/wishlist'
   | '/cart'
   | '/checkout'
   | '/orders'
@@ -36,6 +38,19 @@ export interface TicketDraft {
   bookingId?: string;
 }
 
+/** Product search filters (phase 8.6). */
+export interface SearchFilters {
+  q?: string;
+  category?: string;
+  brand?: string;
+  onSale?: boolean;
+  inStock?: boolean;
+  minRating?: number;
+  minPriceFils?: number;
+  maxPriceFils?: number;
+  sort?: ProductSort;
+}
+
 export interface AppState {
   locale: Locale;
   emirate: string | null;
@@ -48,6 +63,12 @@ export interface AppState {
   session: { user: Me; tokens: TokenPair } | null;
   /** The product open in the shop. */
   productId: string | null;
+  /** The filters of /shop/search. */
+  search: SearchFilters;
+  /** Products opened recently, newest first (this device only). */
+  recentProductIds: string[];
+  /** Ids of saved products, for the heart buttons; null until loaded or when signed out. */
+  wishlist: string[] | null;
   /** The order open in /orders/detail. */
   orderId: string | null;
   /** The service being booked in /services/book (at the venue open in services mode). */
@@ -77,6 +98,8 @@ export type Action =
   | { type: 'navigate'; route: Route }
   | { type: 'openStore'; mode: Mode; storeId: string }
   | { type: 'openProduct'; productId: string }
+  | { type: 'search'; filters: SearchFilters }
+  | { type: 'wishlist'; productIds: string[] | null }
   | { type: 'openOrder'; orderId: string }
   | { type: 'startBooking'; serviceId: string }
   | { type: 'openBooking'; bookingId: string }
@@ -92,6 +115,8 @@ export type Action =
   | { type: 'profile'; user: Me }
   | { type: 'signedOut' };
 
+export const RECENT_MAX = 10;
+
 const MODE_HOME: Record<Mode, Route> = { shop: '/shop', services: '/services' };
 
 export function initialState(locale: Locale): AppState {
@@ -104,6 +129,9 @@ export function initialState(locale: Locale): AppState {
     storeByMode: { shop: null, services: null },
     session: null,
     productId: null,
+    search: {},
+    recentProductIds: [],
+    wishlist: null,
     orderId: null,
     bookServiceId: null,
     bookingId: null,
@@ -129,11 +157,32 @@ export function unsubscribeTokenFrom(url: string): string | null {
   }
 }
 
+/** The screen a notification link opens (links are written by the API), or null. */
+export function actionForLink(link: string): Action | null {
+  const m = /^\/(products|orders|bookings|support)\/([0-9a-f-]{36})$/.exec(link);
+  if (m?.[1] && m[2]) {
+    const id = m[2];
+    switch (m[1]) {
+      case 'products':
+        return { type: 'openProduct', productId: id };
+      case 'orders':
+        return { type: 'openOrder', orderId: id };
+      case 'bookings':
+        return { type: 'openBooking', bookingId: id };
+      case 'support':
+        return { type: 'openTicket', ticketId: id };
+    }
+  }
+  if (link === '/reviews') return { type: 'navigate', route: '/orders' };
+  return null;
+}
+
 export function modeOf(route: Route): Mode | null {
   if (
     route === '/shop' ||
     route === '/shop/store' ||
     route === '/shop/product' ||
+    route === '/shop/search' ||
     route === '/cart' ||
     route === '/checkout'
   )
@@ -182,7 +231,21 @@ export function reducer(state: AppState, action: Action): AppState {
         route: '/shop/product',
         productId: action.productId,
         routeByMode: { ...state.routeByMode, shop: '/shop/product' },
+        recentProductIds: [
+          action.productId,
+          ...state.recentProductIds.filter((id) => id !== action.productId),
+        ].slice(0, RECENT_MAX),
       };
+    case 'search':
+      return {
+        ...state,
+        mode: 'shop',
+        route: '/shop/search',
+        search: action.filters,
+        routeByMode: { ...state.routeByMode, shop: '/shop/search' },
+      };
+    case 'wishlist':
+      return { ...state, wishlist: action.productIds };
     case 'openOrder':
       return { ...state, route: '/orders/detail', orderId: action.orderId };
     case 'startBooking':
@@ -242,6 +305,7 @@ export function reducer(state: AppState, action: Action): AppState {
         session: null,
         cartToken: null,
         cartCount: 0,
+        wishlist: null,
         route: state.mode ? state.routeByMode[state.mode] : '/welcome',
       };
   }

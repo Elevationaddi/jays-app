@@ -17,6 +17,26 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 
 Founder decisions: [ADR-0018](adr/0018-founder-decisions-2026-11-28.md). Phase 8 ships as slices. Each slice is its own PR, merged once CI passes.
 
+### 8.6 Product discovery
+
+Decision: [ADR-0023](adr/0023-product-discovery.md). The merchant terms still need wording on genuine was-prices (a legal item).
+
+- **Customer app:**
+  - The shop home has a search box, Deals and Best sellers shortcuts, working category chips and recently viewed products.
+  - A search screen filters by category, brand (with counts), price, in stock, on sale and 4 stars and up, and sorts by newest, best sellers, top rated, biggest saving or price. "Show more" loads the next page.
+  - Product cards show the brand, rating, a sale badge with the crossed-out price, and a heart to save the product.
+  - The product page shows the rating, the sale price, the latest reviews and related products. A sold-out option offers "Notify me when available".
+  - A Wishlist screen under Account. Notifications now open the product, order, appointment or ticket they are about.
+- **Business portal:** each variant has an optional compare-at price, shown crossed out in the variant list.
+- **Rules:** a was-price must be above the price. Ratings come only from published reviews of delivered items. "Best sellers" counts units in orders paid in the last 90 days. Back-in-stock alerts fire once, from a database trigger, whichever way stock returns. Account deletion removes wishlists and alerts.
+- **Screens:** see [`docs/screenshots/phase-8/`](screenshots/phase-8/):
+  - business portal: a variant with a compare-at price (`business-55`);
+  - customer app: search with filters, a product on sale with reviews and related products, the wishlist and a sold-out option with "Notify me" (`customer-19` to `customer-22`).
+
+  All are in English and Arabic.
+
+- **API:** migration 0012. 6 new paths (191 in total).
+
 ### 8.5 Home services (D9)
 
 Decision: [ADR-0022](adr/0022-home-services.md). Which licence each emirate requires is still a legal question; admins review the licence the business uploads.

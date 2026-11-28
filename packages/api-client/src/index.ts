@@ -106,8 +106,11 @@ import {
   mockConfirmResponseSchema,
   orderListItemSchema,
   orderSchema,
+  productFacetsSchema,
   publicProductListItemSchema,
   publicProductSchema,
+  stockAlertListSchema,
+  wishlistSchema,
   quoteSchema,
   stockMovementSchema,
   adminBusinessDetailSchema,
@@ -178,6 +181,7 @@ import {
   type homeServiceDecisionRequestSchema,
   type homeServiceProfileInputSchema,
 } from '@jays/contracts';
+import type { ProductSort } from '@jays/contracts';
 import { z } from 'zod';
 
 /** A failed API call, carrying the error envelope from docs/07-api.md. */
@@ -480,13 +484,46 @@ export function createApiClient(options: ApiClientOptions) {
         minPriceFils?: number;
         maxPriceFils?: number;
         availability?: 'in_stock' | 'all';
-        sort?: 'newest' | 'price_asc' | 'price_desc';
+        onSale?: boolean;
+        minRating?: number;
+        sort?: ProductSort;
         cursor?: string;
         limit?: number;
       } = {},
     ) => call('GET', `/products${query(params)}`, pageSchema(publicProductListItemSchema)),
+    productFacets: (
+      params: {
+        q?: string;
+        category?: string;
+        brand?: string;
+        store?: string;
+        minPriceFils?: number;
+        maxPriceFils?: number;
+        availability?: 'in_stock' | 'all';
+        onSale?: boolean;
+        minRating?: number;
+      } = {},
+    ) => call('GET', `/products/facets${query(params)}`, productFacetsSchema),
     product: (id: string) =>
       call('GET', `/products/${encodeURIComponent(id)}`, publicProductSchema),
+    relatedProducts: (id: string) =>
+      call(
+        'GET',
+        `/products/${encodeURIComponent(id)}/related`,
+        z.object({ items: z.array(publicProductListItemSchema) }),
+      ),
+
+    // Wishlist and back-in-stock alerts (customer)
+    wishlist: () => call('GET', '/me/wishlist', wishlistSchema),
+    addToWishlist: (productId: string) =>
+      call('PUT', `/me/wishlist/${encodeURIComponent(productId)}`, wishlistSchema),
+    removeFromWishlist: (productId: string) =>
+      call('DELETE', `/me/wishlist/${encodeURIComponent(productId)}`, wishlistSchema),
+    stockAlerts: () => call('GET', '/me/stock-alerts', stockAlertListSchema),
+    addStockAlert: (variantId: string) =>
+      call('POST', `/me/stock-alerts/${encodeURIComponent(variantId)}`, stockAlertListSchema),
+    removeStockAlert: (variantId: string) =>
+      call('DELETE', `/me/stock-alerts/${encodeURIComponent(variantId)}`, stockAlertListSchema),
 
     // Cart, checkout and orders (customer). Guests pass the cart token the cart response returned.
     cart: (cartToken?: string | null) =>

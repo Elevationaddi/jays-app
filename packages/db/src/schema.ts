@@ -400,6 +400,7 @@ export interface VariantsTable {
   status: Generated<'active' | 'archived'>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+  compare_at_fils: number | null;
 }
 
 export type StockReason =
@@ -784,6 +785,20 @@ export interface HomeAddress {
   building: string;
   unit: string | null;
   directions: string | null;
+}
+
+export interface WishlistItemsTable {
+  user_id: string;
+  product_id: string;
+  created_at: CreatedAt;
+}
+
+export interface StockAlertsTable {
+  id: Id;
+  user_id: string;
+  variant_id: string;
+  created_at: CreatedAt;
+  notified_at: Timestamp | null;
 }
 
 export type HomeServiceStatus = 'draft' | 'pending' | 'approved' | 'rejected' | 'suspended';
@@ -1376,6 +1391,8 @@ export interface Database {
   payout_runs: PayoutRunsTable;
   home_service_profiles: HomeServiceProfilesTable;
   home_service_areas: HomeServiceAreasTable;
+  wishlist_items: WishlistItemsTable;
+  stock_alerts: StockAlertsTable;
 }
 
 /** Every column of every table, used by the drift test. Keep in the same order as above. */
@@ -1678,6 +1695,8 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'status',
     'created_at',
     'updated_at',
+
+    'compare_at_fils',
   ],
   stock_movements: [
     'id',
@@ -2308,6 +2327,8 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'travel_fee_fils',
     'created_at',
   ],
+  wishlist_items: ['user_id', 'product_id', 'created_at'],
+  stock_alerts: ['id', 'user_id', 'variant_id', 'created_at', 'notified_at'],
   payout_runs: [
     'id',
     'scheduled_for',

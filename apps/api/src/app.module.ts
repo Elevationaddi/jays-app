@@ -62,6 +62,8 @@ import { TaxService } from './finance/tax.service.js';
 import { PayoutsService } from './finance/payouts.service.js';
 import { ReconciliationService } from './finance/reconciliation.service.js';
 import { CatalogController } from './catalog/catalog.controller.js';
+import { DiscoveryController } from './catalog/discovery.controller.js';
+import { DiscoveryService } from './catalog/discovery.service.js';
 import { StoresService } from './catalog/stores.service.js';
 import { TaxonomyService } from './catalog/taxonomy.service.js';
 import { OnboardingController } from './onboarding/onboarding.controller.js';
@@ -201,6 +203,7 @@ export class AppModule {
         AdminBusinessesController,
         AdminTaxonomyController,
         CatalogController,
+        DiscoveryController,
         BusinessCatalogController,
         AdminProductsController,
         CommerceController,
@@ -273,6 +276,7 @@ export class AppModule {
         TaxonomyService,
         StoresService,
         PublicProductsService,
+        DiscoveryService,
         ProductsService,
         InventoryService,
         AdminProductsService,

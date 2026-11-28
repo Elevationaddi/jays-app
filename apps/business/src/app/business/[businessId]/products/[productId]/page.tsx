@@ -110,8 +110,14 @@ export default async function ProductPage({
               <details key={v.id} className="variant" open={product.variants.length === 1}>
                 <summary>
                   <strong>{v.name[locale]}</strong> <span className="ltr muted">{v.sku}</span> ·{' '}
-                  {money(v.priceFils, locale)} ·{' '}
-                  {tr('products.available', { count: v.stockAvailable })}
+                  {money(v.priceFils, locale)}
+                  {v.compareAtFils ? (
+                    <>
+                      {' '}
+                      <s className="muted">{money(v.compareAtFils, locale)}</s>
+                    </>
+                  ) : null}{' '}
+                  · {tr('products.available', { count: v.stockAvailable })}
                   {v.status === 'archived' ? ` · ${tr('productStatus.archived')}` : ''}
                 </summary>
                 <form action={updateVariant}>
