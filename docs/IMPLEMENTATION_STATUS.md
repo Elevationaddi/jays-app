@@ -2,16 +2,68 @@
 
 Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/README.md).
 
-| Phase | Scope                                                        | Status                           |
-| ----- | ------------------------------------------------------------ | -------------------------------- |
-| 0     | Monorepo, local Docker, env schema, CI, ADRs                 | Merged (PR #1)                   |
-| 1     | Identity, roles, memberships, bilingual gateway              | Merged (PR #2)                   |
-| 2     | Merchant onboarding, approval, categories, media, storefront | Merged (PR #3)                   |
-| 3     | Catalog, inventory, cart, multi-seller checkout (mock PSP)   | Merged (PR #4)                   |
-| 4     | Services, staff, availability, booking holds                 | Merged (PR #5)                   |
-| 5     | Ledger, refunds, payouts, reconciliation (mock PSP)          | In review; real PSP needs D3, D5 |
-| 6     | Fulfillment, reviews, support, notifications, dashboards     | Not started                      |
-| 7     | RTL/accessibility, hardening, backups, observability, pilot  | Not started                      |
+| Phase | Scope                                                        | Status                                |
+| ----- | ------------------------------------------------------------ | ------------------------------------- |
+| 0     | Monorepo, local Docker, env schema, CI, ADRs                 | Merged (PR #1)                        |
+| 1     | Identity, roles, memberships, bilingual gateway              | Merged (PR #2)                        |
+| 2     | Merchant onboarding, approval, categories, media, storefront | Merged (PR #3)                        |
+| 3     | Catalog, inventory, cart, multi-seller checkout (mock PSP)   | Merged (PR #4)                        |
+| 4     | Services, staff, availability, booking holds                 | Merged (PR #5)                        |
+| 5     | Ledger, refunds, payouts, reconciliation (mock PSP)          | Merged (PR #6); real PSP needs D3, D5 |
+| 6     | Fulfillment, reviews, support, notifications, dashboards     | In review; D7, D12, D14 assumed       |
+| 7     | RTL/accessibility, hardening, backups, observability, pilot  | Not started                           |
+
+## Phase 6: Fulfillment, returns, reviews, support, notifications, dashboards and exports
+
+Date: 2026-11-28. Branch: `claude/project-thread-qyds1l`. Decision: [ADR-0016](adr/0016-fulfillment-returns-reviews-support-notifications.md). The return window (D7), support hours (D12) and email/SMS providers (D14) are assumptions until the founders decide.
+
+### Delivered
+
+- Migration `0007_fulfillment_reviews_support.sql`:
+  - Fulfillment columns on suborders, with CHECKs (shipped needs tracking; delivered needs shipped).
+  - Append-only order timeline (`merchant_order_events`).
+  - Returns and return items; one open return per suborder. Refunds gain reason `return`, linked to the return.
+  - Reviews (one per delivered item or completed booking), append-only replies, and reports (one open per review).
+  - Support tickets and append-only messages. Only admins can write internal notes.
+  - Versioned notification templates (seeded in English and Arabic), in-app notifications, and delivery records.
+- Domain package: fulfillment and return transitions, the return window, per-unit return amounts, review eligibility (T10), ticket transitions, template rendering, and notification backoff.
+- API (158 paths, up from 126):
+  - **Merchants:** fulfil (process, ship with tracking, deliver, cancel with full refund and restock), returns (approve, reject, receive and refund), reviews (reply, report), dashboard, statement CSV.
+  - **Customers:** cancel before processing, request returns, review, support tickets, notifications.
+  - **Public:** product and venue reviews with averages.
+  - **Admin:** dashboard, cross-merchant orders (with "stuck"), review moderation, support queue (assign, reply, internal note, resolve), notification templates and outbox health, CSV exports.
+- Notification dispatcher in the API: outbox to in-app and email, at most once per recipient and channel, exponential retry, failed after 6 attempts.
+- Business portal: Dashboard, Returns and Reviews tabs; the order page gains fulfilment actions and a timeline.
+- Admin console: real Dashboard with open work and exports, plus Orders, Support (queue and ticket), Reviews and Notifications pages.
+- Screenshots: [`docs/screenshots/phase-6/`](screenshots/phase-6/) (15 screens, English and Arabic RTL). They come from real orders paid through the mock provider, then shipped, delivered, returned, reviewed and discussed with support through the API. To place enough orders, the demo raised the demo shop's stock directly in the local database.
+
+### Verified locally (2026-11-28)
+
+| Command                 | Result                                                            |
+| ----------------------- | ----------------------------------------------------------------- |
+| `pnpm format:check`     | pass                                                              |
+| `pnpm lint`             | pass                                                              |
+| `pnpm typecheck`        | pass                                                              |
+| `pnpm test`             | pass, 220 unit tests                                              |
+| `pnpm build`            | pass                                                              |
+| `pnpm openapi`          | 158 paths; committed with the code                                |
+| `pnpm test:integration` | pass, 153 tests (22 database, 131 API against Postgres and Redis) |
+
+Acceptance coverage:
+
+- **T10:** an item can be reviewed only after delivery, and an appointment only after completion. Only the buyer can review it, and only once. Hidden reviews leave the public list and the average. Only admins with `reviews.moderate` can hide a review, with a reason, and the action is audited.
+- **T12:** a failed email backs off and is retried. A replay sends no duplicate email or in-app notification. After 6 failures the event is marked failed and shows on outbox health.
+- **Fulfillment:** version conflicts, shipping without tracking and invalid transitions are refused. A customer can cancel before processing, a merchant before dispatch; both restock and refund the whole suborder. Another business cannot act on a suborder (tenant isolation).
+- **Returns:** only after delivery and within 14 days, never more units than were bought, and the refund settles by webhook.
+- **Support:** internal notes are never shown to the customer. A ticket cannot point at someone else's order. A customer reply reopens a resolved ticket.
+- **Dashboards and exports:** figures match the orders in the range. Exports are CSV with no contact details, and each one is audited. Roles without the capability get 403.
+
+### Known limitations and follow-ups
+
+- The customer mobile app does not yet have cancel, return, review, support or notification screens. The API and client methods are ready.
+- No SMS notifications, and no real email provider (D14).
+- Returns are refunded only by the merchant marking them received. Admins can refund through Finance if a merchant does not respond.
+- Moderation guidelines for reviews are not written yet.
 
 ## Phase 5: Ledger, refunds, payouts and reconciliation (mock PSP)
 

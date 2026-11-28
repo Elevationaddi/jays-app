@@ -130,6 +130,7 @@ Acceptance coverage: T07, T08, T09, T13 (services), T14 and T06 (mock, bookings)
 
 - Shipments and tracking, returns workflow, reviews with moderation, support tickets with internal notes, notification templates and outbox delivery with retry, admin/business dashboards and logged exports.
 - Tests: T10, T12 (notification retry), dashboard metric definitions.
+- Built in phase 6 (ADR-0016). The return window (D7), support hours (D12) and email/SMS providers (D14) are assumptions awaiting founder approval.
 
 ### Phase 7: Hardening and pilot
 

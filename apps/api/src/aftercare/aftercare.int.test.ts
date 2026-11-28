@@ -793,23 +793,21 @@ describe('notifications (T12)', () => {
       .set('Authorization', ops)
       .send({ eventType: 'order.unknown', locale: 'en', title: 'Hi', body: 'x' })
       .expect(422);
-    const list = z
-      .array(notificationTemplateSchema)
-      .parse(
-        (
-          await h
-            .http()
-            .post('/v1/admin/notifications/templates')
-            .set('Authorization', ops)
-            .send({
-              eventType: 'ticket.replied',
-              locale: 'en',
-              title: 'New reply: {subject}',
-              body: 'Open the conversation to read it.',
-            })
-            .expect(201)
-        ).body,
-      );
+    const list = z.array(notificationTemplateSchema).parse(
+      (
+        await h
+          .http()
+          .post('/v1/admin/notifications/templates')
+          .set('Authorization', ops)
+          .send({
+            eventType: 'ticket.replied',
+            locale: 'en',
+            title: 'New reply: {subject}',
+            body: 'Open the conversation to read it.',
+          })
+          .expect(201)
+      ).body,
+    );
     const t = list.find((x) => x.eventType === 'ticket.replied' && x.locale === 'en');
     expect(t?.title).toBe('New reply: {subject}');
     expect(t?.version).toBeGreaterThan(1);

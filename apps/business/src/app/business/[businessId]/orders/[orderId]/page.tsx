@@ -4,13 +4,17 @@ import { notFound } from 'next/navigation';
 import { Workspace, loadBusiness, money } from '../../../../../components/Workspace';
 import { serverApi } from '../../../../../lib/api';
 import { translator } from '../../../../../lib/i18n';
+import { fulfil } from '../../aftercare-actions';
 
 export default async function MerchantOrderPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ businessId: string; orderId: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const { businessId, orderId } = await params;
+  const query = await searchParams;
   const { locale, tr } = await translator();
   const business = await loadBusiness(businessId);
   let order;
@@ -21,6 +25,21 @@ export default async function MerchantOrderPage({
     throw error;
   }
   const a = order.address;
+  const f = order.fulfillment;
+  const when = new Intl.DateTimeFormat(locale === 'ar' ? 'ar-AE' : 'en-AE', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Asia/Dubai',
+  });
+  const hidden = (
+    <>
+      <input type="hidden" name="businessId" value={businessId} />
+      <input type="hidden" name="merchantOrderId" value={order.id} />
+      <input type="hidden" name="expectedStatus" value={order.status} />
+    </>
+  );
+  const canStart = order.status === 'paid';
+  const canShip = order.status === 'paid' || order.status === 'processing';
   return (
     <Workspace
       locale={locale}
@@ -28,6 +47,8 @@ export default async function MerchantOrderPage({
       tab="orders"
       path={`/business/${businessId}/orders/${orderId}`}
       title={`#${order.orderId.slice(0, 8).toUpperCase()}`}
+      error={query['error']}
+      notice={query['saved'] ? tr('fulfil.saved') : undefined}
     >
       <p className="meta">
         <Link href={`/business/${businessId}/orders`}>{tr('orders.back')}</Link>
@@ -84,6 +105,101 @@ export default async function MerchantOrderPage({
               max: order.delivery.maxDays,
             })}
           </p>
+        </aside>
+      </div>
+      <div className="split" style={{ marginTop: 16 }}>
+        <section className="card">
+          <h2>{tr('fulfil.title')}</h2>
+          {f.carrier ? (
+            <p>
+              {tr('fulfil.shippedWith', { carrier: f.carrier })}{' '}
+              <span className="ltr">{f.trackingNumber}</span>
+              {f.trackingUrl ? (
+                <>
+                  {' · '}
+                  <a href={f.trackingUrl} rel="noreferrer noopener" target="_blank">
+                    {tr('fulfil.track')}
+                  </a>
+                </>
+              ) : null}
+            </p>
+          ) : null}
+          {canStart ? (
+            <form action={fulfil} className="inline-form">
+              {hidden}
+              <input type="hidden" name="action" value="process" />
+              <button className="btn secondary">{tr('fulfil.process')}</button>
+            </form>
+          ) : null}
+          {canShip ? (
+            <form action={fulfil} className="stack">
+              {hidden}
+              <input type="hidden" name="action" value="ship" />
+              <h3>{tr('fulfil.ship')}</h3>
+              <div className="grid2">
+                <div className="field">
+                  <label htmlFor="carrier">{tr('fulfil.carrier')}</label>
+                  <input id="carrier" name="carrier" required maxLength={80} />
+                </div>
+                <div className="field">
+                  <label htmlFor="trackingNumber">{tr('fulfil.trackingNumber')}</label>
+                  <input
+                    id="trackingNumber"
+                    name="trackingNumber"
+                    required
+                    maxLength={100}
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+              <div className="field">
+                <label htmlFor="trackingUrl">{tr('fulfil.trackingUrl')}</label>
+                <input
+                  id="trackingUrl"
+                  name="trackingUrl"
+                  type="url"
+                  pattern="https://.*"
+                  dir="ltr"
+                />
+              </div>
+              <button className="btn">{tr('fulfil.markShipped')}</button>
+            </form>
+          ) : null}
+          {order.status === 'shipped' ? (
+            <form action={fulfil} className="inline-form">
+              {hidden}
+              <input type="hidden" name="action" value="deliver" />
+              <button className="btn">{tr('fulfil.markDelivered')}</button>
+            </form>
+          ) : null}
+          {canShip ? (
+            <form action={fulfil} className="stack" style={{ marginTop: 16 }}>
+              {hidden}
+              <input type="hidden" name="action" value="cancel" />
+              <h3>{tr('fulfil.cancel')}</h3>
+              <p className="muted">{tr('fulfil.cancelHint')}</p>
+              <div className="field">
+                <label htmlFor="reason">{tr('fulfil.reason')}</label>
+                <input id="reason" name="reason" required minLength={3} maxLength={1000} />
+              </div>
+              <button className="btn danger">{tr('fulfil.cancelConfirm')}</button>
+            </form>
+          ) : null}
+          {order.status === 'delivered' || order.status === 'canceled' ? (
+            <p className="muted">{tr('fulfil.final')}</p>
+          ) : null}
+        </section>
+        <aside className="card">
+          <h2>{tr('fulfil.timeline')}</h2>
+          <ol className="timeline">
+            {f.timeline.map((e, i) => (
+              <li key={i}>
+                <strong>{tr(`merchantOrderStatus.${e.status as 'paid'}`)}</strong>
+                <span className="muted"> · {when.format(new Date(e.at))}</span>
+                {e.note ? <div className="muted">{e.note}</div> : null}
+              </li>
+            ))}
+          </ol>
         </aside>
       </div>
     </Workspace>

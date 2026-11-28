@@ -109,6 +109,11 @@ export function errorMessageKey(code: string | undefined): MessageKey | null {
       return 'error.holdActive';
     case 'NOT_REFUNDABLE':
       return 'error.notRefundable';
+    case 'UNKNOWN_PLACEHOLDER':
+    case 'UNKNOWN_EVENT':
+      return 'error.unknownPlaceholder';
+    case 'NO_OPEN_REPORT':
+      return 'error.noOpenReport';
     default:
       return 'common.error';
   }

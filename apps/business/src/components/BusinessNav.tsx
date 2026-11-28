@@ -14,6 +14,9 @@ export type Tab =
   | 'staff'
   | 'calendar'
   | 'finance'
+  | 'returns'
+  | 'reviews'
+  | 'dashboard'
   | 'team';
 
 /** Workspace tabs, shown only for what the member's capabilities allow. */
@@ -40,6 +43,12 @@ export function BusinessNav({
       href: `/business/${business.id}/onboarding`,
       label: t(locale, 'business.nav.verification'),
       show: can('onboarding.manage'),
+    },
+    {
+      key: 'dashboard',
+      href: `/business/${business.id}/dashboard`,
+      label: t(locale, 'business.nav.dashboard'),
+      show: can('dashboard.view'),
     },
     {
       key: 'storefront',
@@ -70,6 +79,18 @@ export function BusinessNav({
       href: `/business/${business.id}/orders`,
       label: t(locale, 'business.nav.orders'),
       show: can('orders.fulfill'),
+    },
+    {
+      key: 'returns',
+      href: `/business/${business.id}/returns`,
+      label: t(locale, 'business.nav.returns'),
+      show: can('returns.manage'),
+    },
+    {
+      key: 'reviews',
+      href: `/business/${business.id}/reviews`,
+      label: t(locale, 'business.nav.reviews'),
+      show: can('reviews.respond'),
     },
     {
       key: 'calendar',

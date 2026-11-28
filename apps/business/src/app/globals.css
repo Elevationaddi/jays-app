@@ -683,3 +683,50 @@ details.variant form {
 .card.stat .negative {
   color: var(--danger);
 }
+
+/* Phase 6: fulfillment timeline, daily charts and a destructive button. */
+.btn.danger {
+  background: #b42318;
+  border-color: #b42318;
+  color: #fff;
+}
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-inline-start: 2px solid #d0d5dd;
+}
+.timeline li {
+  padding: 4px 0 12px;
+  padding-inline-start: 12px;
+}
+.chart {
+  margin: 16px 0;
+}
+.chart figcaption {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.chart .bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 120px;
+  border-block-end: 1px solid #d0d5dd;
+}
+.chart .bars span {
+  flex: 1;
+  min-height: 1px;
+  background: #2e6f6a;
+  border-radius: 2px 2px 0 0;
+}
+.badge.requested,
+.badge.approved,
+.badge.received {
+  background: #fef6e7;
+  color: #8a5300;
+}
+.badge.rejected {
+  background: #f2f4f7;
+  color: #475467;
+}
