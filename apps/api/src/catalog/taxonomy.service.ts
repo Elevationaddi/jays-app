@@ -18,6 +18,7 @@ interface CategoryRow {
   depth: number;
   sort_order: number;
   status: 'active' | 'archived';
+  enabled: boolean;
 }
 
 const toCategory = (r: CategoryRow): CategoryView => ({
@@ -29,6 +30,7 @@ const toCategory = (r: CategoryRow): CategoryView => ({
   depth: r.depth,
   sortOrder: r.sort_order,
   status: r.status,
+  enabled: r.enabled,
 });
 
 const CATEGORY_COLUMNS = [
@@ -40,6 +42,7 @@ const CATEGORY_COLUMNS = [
   'depth',
   'sort_order',
   'status',
+  'enabled',
 ] as const;
 
 function isPgError(error: unknown, code: string): boolean {
@@ -54,14 +57,15 @@ export class TaxonomyService {
   async categories(options: { mode?: Mode; includeArchived?: boolean }) {
     let q = this.db.selectFrom('categories').select(CATEGORY_COLUMNS);
     if (options.mode) q = q.where('mode', '=', options.mode);
-    if (!options.includeArchived) q = q.where('status', '=', 'active');
+    // Customers see active, switched-on categories only; admins see everything.
+    if (!options.includeArchived) q = q.where('status', '=', 'active').where('enabled', '=', true);
     const rows = await q
       .orderBy('mode')
       .orderBy('depth')
       .orderBy('sort_order')
       .orderBy('slug')
       .execute();
-    // A public tree never shows a child whose parent is archived.
+    // A public tree never shows a child whose parent is archived or switched off.
     const active = new Set(rows.map((r) => r.id));
     const visible = options.includeArchived
       ? rows
@@ -152,6 +156,7 @@ export class TaxonomyService {
       name?: { en: string; ar: string } | undefined;
       sortOrder?: number | undefined;
       status?: 'active' | 'archived' | undefined;
+      enabled?: boolean | undefined;
     },
     meta: RequestMeta,
   ): Promise<CategoryView> {
@@ -198,6 +203,7 @@ export class TaxonomyService {
           ...(body.name ? { name: JSON.stringify(body.name) } : {}),
           ...(body.sortOrder !== undefined ? { sort_order: body.sortOrder } : {}),
           ...(body.status ? { status: body.status } : {}),
+          ...(body.enabled !== undefined ? { enabled: body.enabled } : {}),
         })
         .where('id', '=', id)
         .returning(CATEGORY_COLUMNS)
@@ -205,12 +211,29 @@ export class TaxonomyService {
       await writeAudit(trx, {
         actorType: 'admin',
         actorId: adminId,
-        action: body.status === 'archived' ? 'category.archived' : 'category.updated',
+        action:
+          body.status === 'archived'
+            ? 'category.archived'
+            : body.enabled === false
+              ? 'category.disabled'
+              : body.enabled === true && !before.enabled
+                ? 'category.enabled'
+                : 'category.updated',
         targetType: 'category',
         targetId: id,
         diff: {
-          before: { name: before.name, sortOrder: before.sort_order, status: before.status },
-          after: { name: row.name, sortOrder: row.sort_order, status: row.status },
+          before: {
+            name: before.name,
+            sortOrder: before.sort_order,
+            status: before.status,
+            enabled: before.enabled,
+          },
+          after: {
+            name: row.name,
+            sortOrder: row.sort_order,
+            status: row.status,
+            enabled: row.enabled,
+          },
         },
         requestId: meta.requestId,
       });

@@ -147,6 +147,8 @@ export const PLATFORM_CAPABILITIES = [
   'support.handle',
   'notifications.manage',
   'exports.run',
+  // Phase 8 (ADR-0020): switch marketplace operations on or off by emirate.
+  'operations.manage',
 ] as const;
 export type PlatformCapability = (typeof PLATFORM_CAPABILITIES)[number];
 
@@ -187,6 +189,7 @@ export const PLATFORM_GRANTS: Record<PlatformRole, readonly PlatformCapability[]
     'orders.view',
     'support.handle',
     'notifications.manage',
+    'operations.manage',
   ],
   finance: [
     'businesses.view',

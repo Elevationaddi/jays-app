@@ -1,5 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { HttpStatus } from '@nestjs/common';
 import { checkUpload, type ImageInfo, type MediaPurpose } from '@jays/domain';
+import { ApiError } from '../common/error.filter.js';
 import { extensionFor, type MalwareScanner, type ObjectStorage } from './storage.js';
 
 export type VerifyResult =
@@ -9,8 +11,47 @@ export type VerifyResult =
       reason: 'missing' | 'type_mismatch' | 'too_large' | 'empty' | 'malware' | 'dimensions';
     };
 
+/** The error a rejected upload answers with. */
+export const uploadFailure = (reason: string) => {
+  switch (reason) {
+    case 'missing':
+      return new ApiError(
+        HttpStatus.CONFLICT,
+        'UPLOAD_MISSING',
+        'We did not receive the file. Upload it again.',
+      );
+    case 'malware':
+      return new ApiError(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'FILE_INFECTED',
+        'This file failed our security scan and was deleted.',
+      );
+    case 'dimensions':
+      return new ApiError(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'IMAGE_DIMENSIONS',
+        'The image size or shape is not allowed for this use.',
+      );
+    case 'too_large':
+      return new ApiError(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'FILE_TOO_LARGE',
+        'The file is too large.',
+      );
+    case 'empty':
+      return new ApiError(HttpStatus.UNPROCESSABLE_ENTITY, 'FILE_EMPTY', 'The file is empty.');
+    default:
+      return new ApiError(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'FILE_TYPE_MISMATCH',
+        'The file content does not match its type.',
+      );
+  }
+};
+
 export function newObjectKey(
   prefix: 'private' | 'media',
+  /** A business id, or a ticket id for support attachments. */
   businessId: string,
   contentType: string,
 ): string {

@@ -22,6 +22,8 @@ export const categorySchema = z.object({
   depth: z.number().int(),
   sortOrder: z.number().int(),
   status: catalogStatus,
+  /** Switched off by an admin: hidden from customers with everything in it, but not archived. */
+  enabled: z.boolean(),
 });
 export type CategoryView = z.infer<typeof categorySchema>;
 export const categoryListSchema = z.object({ items: z.array(categorySchema) });
@@ -40,6 +42,7 @@ export const updateCategoryRequestSchema = z
     name: localizedInputSchema(1, 80).optional(),
     sortOrder: z.number().int().min(0).max(10000).optional(),
     status: catalogStatus.optional(),
+    enabled: z.boolean().optional(),
   })
   .refine((b) => Object.keys(b).length > 0, 'nothing to change');
 

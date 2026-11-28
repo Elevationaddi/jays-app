@@ -2,7 +2,7 @@ import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import type { ProductListQuery, PublicProduct, PublicProductListItem } from '@jays/contracts';
 import type { Database, Db } from '@jays/db';
 import { availableStock, DOWNLOAD_URL_TTL_SECONDS, type EmirateCode } from '@jays/domain';
-import { type ExpressionBuilder, sql, type Transaction } from 'kysely';
+import { type ExpressionBuilder, sql, type SqlBool, type Transaction } from 'kysely';
 import { z } from 'zod';
 import { API_ENV, type ApiEnv } from '../config.js';
 import { addSeconds, CLOCK, type Clock } from '../common/clock.js';
@@ -26,6 +26,8 @@ type Eb = ExpressionBuilder<
 export function productVisible(eb: Eb) {
   return eb.and([
     eb('p.status', '=', 'active'),
+    // An admin can switch a category (or its parent) off for everyone (D10, D11).
+    sql<SqlBool>`category_is_live(${eb.ref('p.live_category_id')})`,
     eb('b.status', '=', 'approved'),
     eb.exists(
       eb

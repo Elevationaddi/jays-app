@@ -1,4 +1,6 @@
 import {
+  adminEmirateListSchema,
+  supportInfoSchema,
   consentRecordSchema,
   dataExportSchema,
   privacySchema,
@@ -879,6 +881,33 @@ export function createApiClient(options: ApiClientOptions) {
       call('POST', '/support/tickets', ticketSchema, body),
     myTickets: (params: Page = {}) =>
       call('GET', `/support/tickets${query(params)}`, pageSchema(ticketListItemSchema)),
+    supportInfo: () => call('GET', '/support/info', supportInfoSchema),
+    ticketAttachmentUpload: (
+      id: string,
+      body: {
+        fileName: string;
+        contentType: 'application/pdf' | 'image/jpeg' | 'image/png';
+        sizeBytes: number;
+      },
+    ) =>
+      call(
+        'POST',
+        `/support/tickets/${encodeURIComponent(id)}/attachments`,
+        uploadTicketSchema,
+        body,
+      ),
+    completeTicketAttachment: (id: string, attachmentId: string) =>
+      call(
+        'POST',
+        `/support/tickets/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachmentId)}/complete`,
+        ticketSchema,
+      ),
+    ticketAttachment: (id: string, attachmentId: string) =>
+      call(
+        'GET',
+        `/support/tickets/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachmentId)}/download`,
+        signedUrlSchema,
+      ),
     myTicket: (id: string) =>
       call('GET', `/support/tickets/${encodeURIComponent(id)}`, ticketSchema),
     replyToTicket: (id: string, body: string) =>
@@ -954,10 +983,37 @@ export function createApiClient(options: ApiClientOptions) {
         adminTicketSchema,
         body,
       ),
-    adminTicketAction: (id: string, action: 'assign_to_me' | 'unassign' | 'resolve') =>
-      call('POST', `/admin/support/tickets/${encodeURIComponent(id)}/actions`, adminTicketSchema, {
-        action,
-      }),
+    adminTicketAction: (
+      id: string,
+      action:
+        | 'assign_to_me'
+        | 'unassign'
+        | 'resolve'
+        | { action: 'set_priority'; priority: 'low' | 'normal' | 'high' | 'urgent' }
+        | { action: 'escalate'; escalation: 'payment' | 'security' | 'operations'; reason: string },
+    ) =>
+      call(
+        'POST',
+        `/admin/support/tickets/${encodeURIComponent(id)}/actions`,
+        adminTicketSchema,
+        typeof action === 'string' ? { action } : action,
+      ),
+    adminTicketAttachment: (id: string, attachmentId: string) =>
+      call(
+        'GET',
+        `/admin/support/tickets/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachmentId)}/download`,
+        signedUrlSchema,
+      ),
+    adminEmirates: () => call('GET', '/admin/operations/emirates', adminEmirateListSchema),
+    adminSetEmirate: (code: string, enabled: boolean) =>
+      call(
+        'PATCH',
+        `/admin/operations/emirates/${encodeURIComponent(code)}`,
+        adminEmirateListSchema,
+        {
+          enabled,
+        },
+      ),
     adminNotificationTemplates: () =>
       call('GET', '/admin/notifications/templates', z.array(notificationTemplateSchema)),
     adminCreateNotificationTemplate: (body: z.input<typeof notificationTemplateInputSchema>) =>

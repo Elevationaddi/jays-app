@@ -7,6 +7,7 @@ import {
   adminReviewListQuerySchema,
   adminReviewSchema,
   adminTicketActionSchema,
+  signedUrlSchema,
   adminTicketListItemSchema,
   adminTicketListQuerySchema,
   adminTicketMessageSchema,
@@ -172,7 +173,11 @@ export class AdminAftercareController {
   @Post('support/tickets/:ticketId/actions')
   @RequirePlatformCapability('support.handle')
   @idParam('ticketId')
-  @ApiOperation({ summary: 'Assign to me, unassign or resolve a ticket' })
+  @ApiOperation({
+    summary: 'Assign to me, unassign, resolve, set the priority or escalate a ticket',
+    description:
+      'Payment and security escalations become urgent and keep the reason as an internal note.',
+  })
   @ApiZodBody(adminTicketActionSchema)
   @ApiZodResponse(201, adminTicketSchema, 'The ticket.')
   @ApiErrors(400, 401, 403, 404, 409)
@@ -182,7 +187,28 @@ export class AdminAftercareController {
     @ZodBody(adminTicketActionSchema) body: z.infer<typeof adminTicketActionSchema>,
     @Req() req: Request,
   ) {
-    return this.support.adminAction(admin.adminId, id, body.action, requestMeta(req));
+    return this.support.adminAction(admin.adminId, id, body, requestMeta(req));
+  }
+
+  @Get('support/tickets/:ticketId/attachments/:attachmentId/download')
+  @RequirePlatformCapability('support.handle')
+  @idParam('ticketId')
+  @idParam('attachmentId')
+  @ApiOperation({ summary: 'A five-minute download link for a scanned attachment (audited)' })
+  @ApiZodResponse(200, signedUrlSchema, 'The link.')
+  @ApiErrors(401, 403, 404)
+  attachmentDownload(
+    @CurrentAdmin() admin: AdminPrincipal,
+    @UuidParam('ticketId') id: string,
+    @UuidParam('attachmentId') attachmentId: string,
+    @Req() req: Request,
+  ) {
+    return this.support.attachmentDownload(
+      { adminId: admin.adminId },
+      id,
+      attachmentId,
+      requestMeta(req),
+    );
   }
 
   @Get('notifications/templates')

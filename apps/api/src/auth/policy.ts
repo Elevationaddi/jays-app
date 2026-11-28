@@ -55,4 +55,5 @@ export const LIMITS = {
   uploadPerBusiness: rule('upload-business', 200, 24 * 3600),
   deletionPerUser: rule('deletion-user', 5, 15 * 60),
   unsubscribePerIp: rule('unsubscribe-ip', 60, 3600),
+  ticketUploadPerUser: rule('ticket-upload-user', 30, 24 * 3600),
 } as const;

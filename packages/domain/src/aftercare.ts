@@ -101,6 +101,27 @@ export type TicketEvent = 'assign' | 'admin_reply' | 'customer_reply' | 'resolve
 /** Proposed default (ADR-0016; support hours are founder decision D12): first reply within 24 h. */
 export const TICKET_SLA_HOURS = 24;
 
+/** Proposed support hours (D12): 9 AM to 9 PM every day, UAE time (UTC+4, no daylight saving). */
+export const SUPPORT_HOURS = { opens: '09:00', closes: '21:00', timeZone: 'Asia/Dubai' } as const;
+
+export function supportOpenAt(now: Date): boolean {
+  const minutes = (now.getUTCHours() * 60 + now.getUTCMinutes() + 4 * 60) % (24 * 60);
+  return minutes >= 9 * 60 && minutes < 21 * 60;
+}
+
+export type TicketPriority = 'low' | 'normal' | 'high' | 'urgent';
+export type TicketEscalation = 'payment' | 'security' | 'operations';
+
+/** Payment questions start high; everything else normal (D12). */
+export function initialTicketPriority(type: string): TicketPriority {
+  return type === 'payment' ? 'high' : 'normal';
+}
+
+/** Payment and security escalations are always urgent (D12: separate escalation procedures). */
+export function escalatedPriority(escalation: TicketEscalation, current: TicketPriority) {
+  return escalation === 'operations' && current !== 'urgent' ? 'high' : 'urgent';
+}
+
 export function ticketTransition(status: TicketStatus, event: TicketEvent): TicketStatus | null {
   switch (event) {
     case 'assign':

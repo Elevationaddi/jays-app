@@ -147,6 +147,15 @@ export class CheckoutService {
       .where('archived_at', 'is', null)
       .executeTakeFirst();
     if (!address) throw notFound();
+    // D11: an emirate switched off by operations takes no new deliveries.
+    const emirateOn = await this.db
+      .selectFrom('emirates')
+      .select('enabled')
+      .where('code', '=', address.emirate_code)
+      .executeTakeFirst();
+    if (!emirateOn?.enabled) {
+      throw policy('EMIRATE_NOT_AVAILABLE', 'Delivery to this emirate is not available yet.');
+    }
     const cart = await this.db
       .selectFrom('carts')
       .select('id')

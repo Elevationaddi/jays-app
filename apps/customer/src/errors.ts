@@ -40,6 +40,13 @@ export function errorKey(error: unknown): { key: MessageKey; seconds: number } {
     DELETION_PENDING: 'error.deletionPending',
     ACCOUNT_HAS_OPEN_ACTIVITY: 'error.openActivity',
     INVALID_UNSUBSCRIBE_LINK: 'unsubscribe.invalid',
+    FILE_INFECTED: 'error.fileInfected',
+    FILE_TYPE_MISMATCH: 'error.fileType',
+    FILE_TOO_LARGE: 'error.fileTooLarge',
+    FILE_EMPTY: 'error.fileType',
+    UPLOAD_EXPIRED: 'error.uploadExpired',
+    UPLOAD_MISSING: 'error.uploadExpired',
+    TOO_MANY_ATTACHMENTS: 'error.tooManyAttachments',
   };
   return { key: map[error.code] ?? 'common.error', seconds };
 }

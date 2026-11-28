@@ -4,7 +4,13 @@ import { ErrorAlert } from '../../../components/ErrorAlert';
 import { Shell } from '../../../components/Shell';
 import { requireAdmin } from '../../../lib/admin';
 import { translator } from '../../../lib/i18n';
-import { createBrand, createCategory, setBrandStatus, setCategoryStatus } from './actions';
+import {
+  createBrand,
+  createCategory,
+  setBrandStatus,
+  setCategoryStatus,
+  setCategoryEnabled,
+} from './actions';
 
 type Search = Promise<Record<string, string | undefined>>;
 
@@ -73,6 +79,8 @@ export default async function ContentPage({ searchParams }: { searchParams: Sear
                     <td>
                       {c.status === 'archived' ? (
                         <span className="badge rejected">{tr('admin.content.archived')}</span>
+                      ) : !c.enabled ? (
+                        <span className="badge pending">{tr('admin.content.off')}</span>
                       ) : (
                         <span className="badge active">✓</span>
                       )}
@@ -91,6 +99,17 @@ export default async function ContentPage({ searchParams }: { searchParams: Sear
                             : tr('admin.content.restore')}
                         </button>
                       </form>
+                      {c.status === 'active' ? (
+                        <form action={setCategoryEnabled}>
+                          <input type="hidden" name="id" value={c.id} />
+                          <input type="hidden" name="enabled" value={c.enabled ? 'off' : 'on'} />
+                          <button className="btn ghost" type="submit">
+                            {c.enabled
+                              ? tr('admin.content.switchOff')
+                              : tr('admin.content.switchOn')}
+                          </button>
+                        </form>
+                      ) : null}
                     </td>
                   </tr>
                 ))}

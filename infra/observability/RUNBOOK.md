@@ -67,6 +67,16 @@ Reconciliation runs daily from the finance scheduler in the API. Start a run fro
 
 Tickets waiting past the 24-hour first-reply SLA (assumption D12). Admin console, Support, filter "Overdue". Assign and reply; a reply clears the overdue state.
 
+## Payment and security escalations
+
+Not an alert, but a procedure (ADR-0020). Support escalates a ticket from the ticket page with a reason. Payment and security escalations become **urgent**, the reason is kept as an internal note, and a `ticket.escalated` event goes to the outbox. The admin console's Support page lists them under "Escalated".
+
+- **Payment** (double charge, missing refund, chargeback): finance checks the payment in Finance and the provider's dashboard before replying. Never ask the customer for card numbers; JAYS never stores them.
+- **Security** (possible account takeover, leaked data): revoke the person's sessions from Security, confirm the account's email with them, and record what happened in the ticket. If personal data may have leaked, the founder decides on notifying people and authorities; the legal duties are not yet confirmed.
+- **Operations** (a business or area problem): operations may switch off a category or an emirate from Operations. This stops new orders and bookings there; existing ones carry on.
+
+The first reply target is 24 hours, from 09:00 to 21:00 UAE time every day (proposed, D12).
+
 ## BackupMissing
 
 The nightly `infra/backup/backup.sh` has not succeeded for 26 hours.
