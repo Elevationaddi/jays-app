@@ -2,6 +2,19 @@ import { type DynamicModule, Module } from '@nestjs/common';
 import type { Db } from '@jays/db';
 import { LoggerModule } from 'nestjs-pino';
 import { AdminAuthGuard } from './admin/admin.guard.js';
+import { AdminAftercareController } from './aftercare/admin-aftercare.controller.js';
+import { BusinessAftercareController } from './aftercare/business-aftercare.controller.js';
+import {
+  CustomerAftercareController,
+  PublicReviewsController,
+} from './aftercare/customer-aftercare.controller.js';
+import { DashboardsService } from './aftercare/dashboards.service.js';
+import { ExportsService } from './aftercare/exports.service.js';
+import { FulfillmentService } from './aftercare/fulfillment.service.js';
+import { NotificationScheduler, NotificationsService } from './aftercare/notifications.service.js';
+import { ReturnsService } from './aftercare/returns.service.js';
+import { ReviewsService } from './aftercare/reviews.service.js';
+import { SupportService } from './aftercare/support.service.js';
 import { AdminBusinessesController } from './admin/admin-businesses.controller.js';
 import { AdminBusinessesService } from './admin/admin-businesses.service.js';
 import { AdminProductsController } from './admin/admin-products.controller.js';
@@ -174,6 +187,10 @@ export class AppModule {
         AdminBookingsController,
         BusinessFinanceController,
         AdminFinanceController,
+        PublicReviewsController,
+        CustomerAftercareController,
+        BusinessAftercareController,
+        AdminAftercareController,
         WebhooksController,
         // The mock provider's hosted payment step. Production cannot run the mock (ADR-0006).
         ...(env.PSP_PROVIDER === 'mock' ? [MockPspController] : []),
@@ -240,6 +257,14 @@ export class AppModule {
         PayoutsService,
         ReconciliationService,
         FinanceScheduler,
+        FulfillmentService,
+        ReturnsService,
+        ReviewsService,
+        SupportService,
+        NotificationsService,
+        NotificationScheduler,
+        DashboardsService,
+        ExportsService,
         UserAuthGuard,
         OptionalUserAuthGuard,
         BusinessAccessGuard,

@@ -29,7 +29,7 @@ export interface RefundJob {
 }
 
 export type RefundReason =
-  'late_payment' | 'customer_cancellation' | 'business_cancellation' | 'admin';
+  'late_payment' | 'customer_cancellation' | 'business_cancellation' | 'admin' | 'return';
 
 type LateRefund = RefundJob;
 
@@ -325,7 +325,15 @@ export class PaymentsService {
     if (!event.refundId) return { result: 'unknown_refund' };
     const refund = await trx
       .selectFrom('refunds')
-      .select(['id', 'payment_id', 'status', 'amount_fils', 'reason', 'merchant_order_id'])
+      .select([
+        'id',
+        'payment_id',
+        'status',
+        'amount_fils',
+        'reason',
+        'merchant_order_id',
+        'return_request_id',
+      ])
       .where('provider_ref', '=', event.refundId)
       .forUpdate()
       .executeTakeFirst();
@@ -389,8 +397,29 @@ export class PaymentsService {
         .where('id', '=', payment.id)
         .execute();
     }
+    if (refund.return_request_id) {
+      await this.settleReturn(trx, refund.return_request_id, ok, now);
+    }
     const status = await this.refreshStatus(trx, payment.id);
     return { result: ok ? status : 'refund_failed' };
+  }
+
+  /** A return's refund was confirmed or refused by the provider (ADR-0016). */
+  private async settleReturn(trx: Trx, returnRequestId: string, ok: boolean, now: Date) {
+    const rr = await trx
+      .updateTable('return_requests')
+      .set({ status: ok ? 'refunded' : 'refund_failed' })
+      .where('id', '=', returnRequestId)
+      .where('status', '=', 'refund_pending')
+      .returning(['id', 'order_id', 'merchant_order_id'])
+      .executeTakeFirst();
+    if (!rr) return;
+    await this.outbox(
+      trx,
+      ok ? 'return.refunded' : 'payment.manual_exception',
+      { returnId: rr.id, orderId: rr.order_id, merchantOrderId: rr.merchant_order_id },
+      now,
+    );
   }
 
   /** Recomputes a settled payment's status from its refunds. The payment row must be locked. */
@@ -431,6 +460,7 @@ export class PaymentsService {
       target: RefundJob['target'];
       merchantOrderId?: string | null;
       refundRequestId?: string | null;
+      returnRequestId?: string | null;
     },
     now: Date,
   ): Promise<RefundJob | null> {
@@ -453,6 +483,7 @@ export class PaymentsService {
           reason: input.reason,
           merchant_order_id: input.merchantOrderId ?? null,
           refund_request_id: input.refundRequestId ?? null,
+          return_request_id: input.returnRequestId ?? null,
         })
         .returning('id')
         .executeTakeFirstOrThrow();
@@ -629,6 +660,12 @@ export class PaymentsService {
           .set({ status: 'failed', failure_code: 'provider_refused' })
           .where('id', '=', r.refundId)
           .where('status', '=', 'pending')
+          .execute();
+        await trx
+          .updateTable('return_requests')
+          .set({ status: 'refund_failed' })
+          .where('refund_id', '=', r.refundId)
+          .where('status', '=', 'refund_pending')
           .execute();
         await trx
           .selectFrom('payments')

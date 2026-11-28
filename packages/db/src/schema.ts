@@ -494,6 +494,12 @@ export interface MerchantOrdersTable extends Totals {
   created_at: CreatedAt;
   updated_at: UpdatedAt;
   delivered_at: Timestamp | null;
+  processing_at: Timestamp | null;
+  shipped_at: Timestamp | null;
+  canceled_at: Timestamp | null;
+  carrier: string | null;
+  tracking_number: string | null;
+  tracking_url: string | null;
 }
 
 export interface OrderItemsTable {
@@ -557,7 +563,7 @@ export interface PaymentsTable {
 }
 
 export type RefundReason =
-  'late_payment' | 'customer_cancellation' | 'business_cancellation' | 'admin';
+  'late_payment' | 'customer_cancellation' | 'business_cancellation' | 'admin' | 'return';
 
 export interface RefundsTable {
   id: Id;
@@ -571,6 +577,7 @@ export interface RefundsTable {
   updated_at: UpdatedAt;
   merchant_order_id: string | null;
   refund_request_id: string | null;
+  return_request_id: string | null;
 }
 
 export interface WebhookEventsTable {
@@ -944,6 +951,161 @@ export interface ReconciliationItemsTable {
   created_at: CreatedAt;
 }
 
+// Phase 6 -----------------------------------------------------------------------------------------
+
+export type MerchantOrderEventStatus =
+  | 'paid'
+  | 'processing'
+  | 'shipped'
+  | 'delivered'
+  | 'canceled'
+  | 'return_requested'
+  | 'return_approved'
+  | 'return_rejected'
+  | 'return_received'
+  | 'refunded';
+
+export interface MerchantOrderEventsTable {
+  id: Id;
+  merchant_order_id: string;
+  status: MerchantOrderEventStatus;
+  actor_type: 'user' | 'admin' | 'system';
+  actor_id: string | null;
+  note: string | null;
+  created_at: CreatedAt;
+}
+
+export type ReturnStatus =
+  | 'requested'
+  | 'approved'
+  | 'rejected'
+  | 'received'
+  | 'refund_pending'
+  | 'refunded'
+  | 'refund_failed';
+
+export interface ReturnRequestsTable {
+  id: Id;
+  merchant_order_id: string;
+  order_id: string;
+  business_id: string;
+  user_id: string;
+  status: Generated<ReturnStatus>;
+  reason: string;
+  amount_fils: number;
+  decision_reason: string | null;
+  decided_by: string | null;
+  decided_at: Timestamp | null;
+  received_at: Timestamp | null;
+  refund_id: string | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface ReturnItemsTable {
+  id: Id;
+  return_request_id: string;
+  order_item_id: string;
+  qty: number;
+  amount_fils: number;
+}
+
+export interface ReviewsTable {
+  id: Id;
+  user_id: string;
+  business_id: string;
+  target_type: 'product' | 'booking';
+  order_item_id: string | null;
+  product_id: string | null;
+  booking_id: string | null;
+  service_id: string | null;
+  rating: number;
+  body: string | null;
+  status: Generated<'published' | 'hidden'>;
+  hidden_reason: string | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface ReviewRepliesTable {
+  id: Id;
+  review_id: string;
+  author_id: string;
+  body: string;
+  created_at: CreatedAt;
+}
+
+export interface ReviewReportsTable {
+  id: Id;
+  review_id: string;
+  business_id: string;
+  reported_by: string;
+  reason: string;
+  resolved_at: Timestamp | null;
+  resolved_by: string | null;
+  created_at: CreatedAt;
+}
+
+export type TicketStatus = 'open' | 'assigned' | 'awaiting_reply' | 'resolved' | 'reopened';
+export type TicketType = 'order' | 'booking' | 'payment' | 'account' | 'other';
+
+export interface SupportTicketsTable {
+  id: Id;
+  user_id: string;
+  type: TicketType;
+  order_id: string | null;
+  booking_id: string | null;
+  subject: string;
+  status: Generated<TicketStatus>;
+  assigned_admin_id: string | null;
+  sla_due_at: Timestamp;
+  last_message_at: Generated<Date>;
+  resolved_at: Timestamp | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface TicketMessagesTable {
+  id: Id;
+  ticket_id: string;
+  author_type: 'customer' | 'admin';
+  author_id: string;
+  body: string;
+  internal: Generated<boolean>;
+  created_at: CreatedAt;
+}
+
+export interface NotificationTemplatesTable {
+  id: Id;
+  event_type: string;
+  locale: 'en' | 'ar';
+  version: number;
+  title: string;
+  body: string;
+  created_by: string | null;
+  created_at: CreatedAt;
+}
+
+export interface NotificationsTable {
+  id: Id;
+  user_id: string;
+  outbox_id: string;
+  event_type: string;
+  title: string;
+  body: string;
+  link: string | null;
+  read_at: Timestamp | null;
+  created_at: CreatedAt;
+}
+
+export interface NotificationDeliveriesTable {
+  id: Id;
+  outbox_id: string;
+  user_id: string;
+  channel: 'email' | 'sms';
+  sent_at: CreatedAt;
+}
+
 export interface Database {
   emirates: EmiratesTable;
   users: UsersTable;
@@ -1002,6 +1164,17 @@ export interface Database {
   payout_holds: PayoutHoldsTable;
   reconciliation_runs: ReconciliationRunsTable;
   reconciliation_items: ReconciliationItemsTable;
+  merchant_order_events: MerchantOrderEventsTable;
+  return_requests: ReturnRequestsTable;
+  return_items: ReturnItemsTable;
+  reviews: ReviewsTable;
+  review_replies: ReviewRepliesTable;
+  review_reports: ReviewReportsTable;
+  support_tickets: SupportTicketsTable;
+  ticket_messages: TicketMessagesTable;
+  notification_templates: NotificationTemplatesTable;
+  notifications: NotificationsTable;
+  notification_deliveries: NotificationDeliveriesTable;
 }
 
 /** Every column of every table, used by the drift test. Keep in the same order as above. */
@@ -1376,6 +1549,12 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'created_at',
     'updated_at',
     'delivered_at',
+    'processing_at',
+    'shipped_at',
+    'canceled_at',
+    'carrier',
+    'tracking_number',
+    'tracking_url',
   ],
   order_items: [
     'id',
@@ -1437,6 +1616,7 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'updated_at',
     'merchant_order_id',
     'refund_request_id',
+    'return_request_id',
   ],
   webhook_events: [
     'id',
@@ -1716,6 +1896,106 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'resolution_note',
     'created_at',
   ],
+  merchant_order_events: [
+    'id',
+    'merchant_order_id',
+    'status',
+    'actor_type',
+    'actor_id',
+    'note',
+    'created_at',
+  ],
+  return_requests: [
+    'id',
+    'merchant_order_id',
+    'order_id',
+    'business_id',
+    'user_id',
+    'status',
+    'reason',
+    'amount_fils',
+    'decision_reason',
+    'decided_by',
+    'decided_at',
+    'received_at',
+    'refund_id',
+    'created_at',
+    'updated_at',
+  ],
+  return_items: ['id', 'return_request_id', 'order_item_id', 'qty', 'amount_fils'],
+  reviews: [
+    'id',
+    'user_id',
+    'business_id',
+    'target_type',
+    'order_item_id',
+    'product_id',
+    'booking_id',
+    'service_id',
+    'rating',
+    'body',
+    'status',
+    'hidden_reason',
+    'created_at',
+    'updated_at',
+  ],
+  review_replies: ['id', 'review_id', 'author_id', 'body', 'created_at'],
+  review_reports: [
+    'id',
+    'review_id',
+    'business_id',
+    'reported_by',
+    'reason',
+    'resolved_at',
+    'resolved_by',
+    'created_at',
+  ],
+  support_tickets: [
+    'id',
+    'user_id',
+    'type',
+    'order_id',
+    'booking_id',
+    'subject',
+    'status',
+    'assigned_admin_id',
+    'sla_due_at',
+    'last_message_at',
+    'resolved_at',
+    'created_at',
+    'updated_at',
+  ],
+  ticket_messages: [
+    'id',
+    'ticket_id',
+    'author_type',
+    'author_id',
+    'body',
+    'internal',
+    'created_at',
+  ],
+  notification_templates: [
+    'id',
+    'event_type',
+    'locale',
+    'version',
+    'title',
+    'body',
+    'created_by',
+    'created_at',
+  ],
+  notifications: [
+    'id',
+    'user_id',
+    'outbox_id',
+    'event_type',
+    'title',
+    'body',
+    'link',
+    'read_at',
+    'created_at',
+  ],
+  notification_deliveries: ['id', 'outbox_id', 'user_id', 'channel', 'sent_at'],
 };
 
 export type User = Selectable<UsersTable>;
