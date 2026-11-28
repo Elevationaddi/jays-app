@@ -10,6 +10,7 @@ import {
   type LedgerLine,
   postings,
   settingAt,
+  promotionApplies,
 } from '@jays/domain';
 import type {
   CommissionDetailLine,
@@ -115,6 +116,18 @@ export async function feeRules(
   return feeRuleFor(rules, mode, businessId, at, categoryPath);
 }
 
+/** The pilot promotion in force for a business at a time, if any (ADR-0034). */
+export async function activePromotion(db: Conn, businessId: string, at: Date) {
+  const row = await db
+    .selectFrom('pilot_promotions')
+    .select(['id', 'starts_at', 'ends_at', 'cancelled_at'])
+    .where('business_id', '=', businessId)
+    .executeTakeFirst();
+  if (!row) return null;
+  const window = { startsAt: row.starts_at, endsAt: row.ends_at, cancelledAt: row.cancelled_at };
+  return promotionApplies(window, at) ? { id: row.id } : null;
+}
+
 /** A category and its ancestors, nearest first (the tree is at most three levels deep). */
 export async function categoryPath(db: Conn, categoryId: string | null): Promise<string[]> {
   if (!categoryId) return [];
@@ -177,9 +190,13 @@ async function recordEarning(
   now: Date,
 ) {
   const detail: CommissionDetailLine[] = [];
+  // A pilot merchant's first 30 days carry 0% commission (ADR-0034), decided at capture time.
+  const promotion = await activePromotion(trx, input.businessId, now);
   for (const line of input.lines) {
     const path = await categoryPath(trx, line.categoryId);
-    const rule = await feeRules(trx, input.mode, input.businessId, now, path);
+    const rule = promotion
+      ? undefined
+      : await feeRules(trx, input.mode, input.businessId, now, path);
     const bps = rule?.commissionBps ?? 0;
     detail.push({
       ref: line.ref,
@@ -216,6 +233,7 @@ async function recordEarning(
       commission_vat_bps: vatBps,
       commission_vat_fils: vat,
       commission_detail: JSON.stringify(detail),
+      pilot_promotion_id: promotion?.id ?? null,
     })
     .onConflict((oc) => oc.doNothing())
     .returning('id')

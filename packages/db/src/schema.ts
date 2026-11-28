@@ -968,6 +968,22 @@ export interface PayoutsTable {
 
 export type EarningStatus = 'pending' | 'eligible' | 'in_payout' | 'paid_out';
 
+/** 0% commission for a pilot merchant's first 30 days (ADR-0025, ADR-0034). */
+export interface PilotPromotionsTable {
+  id: Id;
+  business_id: string;
+  starts_at: Timestamp;
+  ends_at: Timestamp;
+  founder_approval: string;
+  created_by: string;
+  created_at: CreatedAt;
+  cancelled_at: Timestamp | null;
+  cancelled_by: string | null;
+  cancel_reason: string | null;
+  notified_7d_at: Timestamp | null;
+  notified_1d_at: Timestamp | null;
+}
+
 export interface MerchantEarningsTable {
   id: Id;
   business_id: string;
@@ -994,6 +1010,7 @@ export interface MerchantEarningsTable {
   commission_detail: ColumnType<CommissionDetailLine[], string | undefined, string>;
   non_commissionable_fils: Generated<number>;
   non_commissionable_refunded_fils: Generated<number>;
+  pilot_promotion_id: string | null;
 }
 
 /** How one line's commission was worked out, copied onto the earning at capture. */
@@ -1553,6 +1570,7 @@ export interface Database {
   notification_deliveries: NotificationDeliveriesTable;
   email_usage: EmailUsageTable;
   rate_limit_counters: RateLimitCountersTable;
+  pilot_promotions: PilotPromotionsTable;
   push_devices: PushDevicesTable;
   consent_records: ConsentRecordsTable;
   account_deletion_requests: AccountDeletionRequestsTable;
@@ -2237,6 +2255,21 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'commission_detail',
     'non_commissionable_fils',
     'non_commissionable_refunded_fils',
+    'pilot_promotion_id',
+  ],
+  pilot_promotions: [
+    'id',
+    'business_id',
+    'starts_at',
+    'ends_at',
+    'founder_approval',
+    'created_by',
+    'created_at',
+    'cancelled_at',
+    'cancelled_by',
+    'cancel_reason',
+    'notified_7d_at',
+    'notified_1d_at',
   ],
   ledger_transactions: [
     'id',

@@ -40,7 +40,7 @@ export default async function FinancePage({
   const page = { limit: 50, ...(query['cursor'] ? { cursor: query['cursor'] } : {}) };
   // Back from the provider's onboarding: read the account's status from the provider again.
   const returning = query['payoutAccount'] === 'return';
-  const [summary, account, earnings, payouts, ledger, documents] = await Promise.all([
+  const [summary, account, earnings, payouts, ledger, documents, pilot] = await Promise.all([
     api.financeSummary(businessId),
     (returning ? api.refreshPayoutAccount(businessId) : api.payoutAccount(businessId)).catch(
       () => null,
@@ -49,6 +49,7 @@ export default async function FinancePage({
     view === 'payouts' ? api.financePayouts(businessId, page) : null,
     view === 'ledger' ? api.financeLedger(businessId, page) : null,
     view === 'documents' ? api.businessDocuments(businessId, page) : null,
+    api.pilotPromotion(businessId).catch(() => null),
   ]);
   const date = new Intl.DateTimeFormat(locale === 'ar' ? 'ar-AE' : 'en-AE', {
     dateStyle: 'medium',
@@ -75,6 +76,25 @@ export default async function FinancePage({
       intro={tr('finance.intro', { days: summary.disputeWindowDays })}
       error={query['error']}
     >
+      {pilot?.promotion &&
+      (pilot.promotion.state === 'active' || pilot.promotion.state === 'scheduled') ? (
+        <div className="alert info" role="status" style={{ marginBottom: 16 }}>
+          <strong>{tr('finance.pilot.title')}</strong>{' '}
+          {tr(
+            pilot.promotion.state === 'active' ? 'finance.pilot.active' : 'finance.pilot.scheduled',
+            {
+              start: when(pilot.promotion.startsAt),
+              end: when(pilot.promotion.endsAt),
+              days: pilot.promotion.daysLeft,
+              rate:
+                [...new Set([pilot.standardBps.shop, pilot.standardBps.services])]
+                  .filter((b): b is number => b !== null)
+                  .map((b) => `${b / 100}%`)
+                  .join(' / ') || '—',
+            },
+          )}
+        </div>
+      ) : null}
       {account ? (
         <section className="card" aria-labelledby="payout-account" style={{ marginBottom: 16 }}>
           <h2 id="payout-account">{tr('finance.payoutAccount.title')}</h2>

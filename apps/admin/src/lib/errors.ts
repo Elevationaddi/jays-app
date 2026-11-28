@@ -103,6 +103,10 @@ export function errorMessageKey(code: string | undefined): MessageKey | null {
       return 'error.alreadyDecided';
     case 'EFFECTIVE_IN_PAST':
       return 'error.effectiveInPast';
+    case 'PROMOTION_EXISTS':
+      return 'error.promotionExists';
+    case 'BUSINESS_NOT_APPROVED':
+      return 'error.pilotNotApproved';
     case 'RULE_EXISTS':
       return 'error.ruleExists';
     case 'PERIOD_NOT_OVER':

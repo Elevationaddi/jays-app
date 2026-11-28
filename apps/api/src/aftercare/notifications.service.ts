@@ -25,6 +25,7 @@ import { ApiError } from '../common/error.filter.js';
 import { afterCursor, cursorTs, decodeCursor, toPage } from '../common/pagination.js';
 import type { RequestMeta } from '../common/request-context.js';
 import { DB, NOTIFIER } from '../common/tokens.js';
+import { feeRules } from '../finance/ledger.js';
 import { API_ENV, type ApiEnv } from '../config.js';
 
 type Localized = { en: string; ar: string };
@@ -411,6 +412,29 @@ export class NotificationsService {
           },
         };
       }
+      case 'pilot.promotion_ending': {
+        const businessId = str('businessId');
+        const endsAt = str('endsAt');
+        if (!businessId || !endsAt) return null;
+        const recipients = await this.members(
+          businessId,
+          'finance.view',
+          `/business/${businessId}/finance`,
+        );
+        const at = new Date(endsAt);
+        const rates = await Promise.all(
+          (['shop', 'services'] as const).map((mode) => feeRules(this.db, mode, businessId, at)),
+        );
+        const unique = [...new Set(rates.filter((r) => r).map((r) => r!.commissionBps))];
+        const locale = recipients[0]?.locale ?? 'en';
+        return {
+          recipients,
+          params: {
+            when: dubaiTime(at, locale),
+            rate: unique.length > 0 ? unique.map((bps) => `${bps / 100}%`).join(' / ') : '—',
+          },
+        };
+      }
       default:
         return null; // Internal events (payment.*, merchant_order.paid ...) notify no one.
     }
@@ -466,7 +490,11 @@ export class NotificationsService {
       }));
   }
 
-  private async members(businessId: string, capability: 'returns.manage', link: string) {
+  private async members(
+    businessId: string,
+    capability: 'returns.manage' | 'finance.view',
+    link: string,
+  ) {
     const rows = await this.db
       .selectFrom('memberships')
       .select(['user_id', 'permissions'])
