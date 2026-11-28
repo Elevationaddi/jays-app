@@ -48,6 +48,8 @@ export function errorKey(error: unknown): { key: MessageKey; seconds: number } {
     ACCOUNT_HAS_OPEN_ACTIVITY: 'error.openActivity',
     INVALID_UNSUBSCRIBE_LINK: 'unsubscribe.invalid',
     FILE_INFECTED: 'error.fileInfected',
+    UPLOAD_FAILED: 'error.uploadFailed',
+    SCANNER_UNAVAILABLE: 'error.scannerUnavailable',
     FILE_TYPE_MISMATCH: 'error.fileType',
     FILE_TOO_LARGE: 'error.fileTooLarge',
     FILE_EMPTY: 'error.fileType',

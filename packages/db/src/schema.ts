@@ -1378,6 +1378,13 @@ export interface EmailUsageTable {
   updated_at: Generated<Date>;
 }
 
+/** Fixed-window request counters when rate limits are kept in PostgreSQL (ADR-0033). */
+export interface RateLimitCountersTable {
+  key: string;
+  count: number;
+  reset_at: Date;
+}
+
 export type PushPlatform = 'ios' | 'android' | 'web';
 
 export interface PushDevicesTable {
@@ -1545,6 +1552,7 @@ export interface Database {
   notifications: NotificationsTable;
   notification_deliveries: NotificationDeliveriesTable;
   email_usage: EmailUsageTable;
+  rate_limit_counters: RateLimitCountersTable;
   push_devices: PushDevicesTable;
   consent_records: ConsentRecordsTable;
   account_deletion_requests: AccountDeletionRequestsTable;
@@ -2445,6 +2453,7 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
   ],
   notification_deliveries: ['id', 'outbox_id', 'user_id', 'channel', 'sent_at'],
   email_usage: ['day', 'essential', 'other', 'updated_at'],
+  rate_limit_counters: ['key', 'count', 'reset_at'],
   push_devices: [
     'id',
     'user_id',

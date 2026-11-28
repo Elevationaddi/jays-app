@@ -138,6 +138,9 @@ When the team asks, after the projects exist:
 | `FCM_SERVICE_ACCOUNT_JSON`                                                                | API              | Firebase service account (step 5.4)                                           |
 | `NOTIFY_PROVIDER`, `PUSH_PROVIDER`                                                        | API              | `resend` (step 3.5) and `fcm` (step 5.4)                                      |
 | `CRON_SECRET`                                                                             | API              | A random value you generate (Vercel sends it with each cron call)             |
+| `RATE_LIMIT_STORE=postgres`, `SCHEDULERS=off`, `DB_POOL_MAX=3`, `TRUST_PROXY_HOPS=1`      | API              | Fixed values for Vercel (docs/DEPLOYMENT.md)                                  |
+| `STORAGE_PROVIDER=supabase`, `STORAGE_BUCKET=jays-files`                                  | API              | Fixed values once the bucket exists (step 2.7)                                |
+| `EXPO_PUBLIC_API_URL`                                                                     | Web              | The API's address (not a secret)                                              |
 | `JWT_KEYS`, `OTP_SECRET`, `MFA_ENCRYPTION_KEY`, `STORAGE_SIGNING_SECRET`, `METRICS_TOKEN` | API              | Random values the team's script generates for you. Never reuse the local ones |
 | `API_URL`                                                                                 | Business, admin  | The API's address                                                             |
 

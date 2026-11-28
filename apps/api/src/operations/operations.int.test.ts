@@ -1,6 +1,7 @@
 import {
   adminTicketSchema,
   categorySchema,
+  platformUsageSchema,
   supportInfoSchema,
   ticketSchema,
 } from '@jays/contracts';
@@ -320,5 +321,22 @@ describe('support operations (D12)', () => {
       .where('target_id', '=', ticket.id)
       .execute();
     expect(audit.map((a) => a.action)).toContain('ticket.attachment_viewed');
+  });
+});
+
+describe('free-tier usage (ADR-0033)', () => {
+  it('shows database, files and email against the plan limits to operations admins only', async () => {
+    const ops = bearer(await adminLogin(h, await provisionAdmin(h, ['operations'])));
+    const usage = platformUsageSchema.parse(
+      (await h.http().get('/v1/admin/operations/usage').set('Authorization', ops).expect(200)).body,
+    );
+    expect(usage.databaseBytes.used).toBeGreaterThan(0);
+    expect(usage.databaseBytes.limit).toBe(500 * 1024 * 1024);
+    expect(usage.storageBytes.limit).toBe(1024 * 1024 * 1024);
+    expect(usage.emailsToday.limit).toBe(100);
+    expect(usage.emailsThisMonth.limit).toBe(3000);
+    expect(usage.warnAt).toBe(0.8);
+    const analyst = bearer(await adminLogin(h, await provisionAdmin(h, ['analyst'])));
+    await h.http().get('/v1/admin/operations/usage').set('Authorization', analyst).expect(403);
   });
 });

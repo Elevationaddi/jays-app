@@ -1,5 +1,7 @@
 import { HttpStatus } from '@nestjs/common';
+import type { Db } from '@jays/db';
 import type { Redis } from 'ioredis';
+import { sql } from 'kysely';
 import { ApiError } from './error.filter.js';
 
 export interface RateLimitRule {
@@ -54,6 +56,65 @@ export class RedisRateLimiter implements RateLimiter {
         'Please try again shortly.',
       );
     }
+  }
+}
+
+/**
+ * Fixed-window counters in PostgreSQL (ADR-0033), for Vercel where there is no Redis. One atomic
+ * upsert per check: a window that has ended restarts at 1, otherwise the count goes up. Expired
+ * rows are removed by the cleanup cron. Fails closed like the Redis limiter.
+ */
+export class PostgresRateLimiter implements RateLimiter {
+  constructor(
+    private readonly db: Db,
+    private readonly namespace: string,
+  ) {}
+
+  async consume(rule: RateLimitRule, subject: string): Promise<RateLimitResult> {
+    const key = `${this.namespace}:${rule.name}:${subject}`.slice(0, 512);
+    try {
+      const row = await this.db
+        .insertInto('rate_limit_counters')
+        .values({
+          key,
+          count: 1,
+          reset_at: sql<Date>`now() + make_interval(secs => ${rule.windowSeconds})`,
+        })
+        .onConflict((oc) =>
+          oc.column('key').doUpdateSet({
+            count: sql<number>`CASE WHEN rate_limit_counters.reset_at <= now() THEN 1
+              ELSE rate_limit_counters.count + 1 END`,
+            reset_at: sql<Date>`CASE WHEN rate_limit_counters.reset_at <= now()
+              THEN excluded.reset_at ELSE rate_limit_counters.reset_at END`,
+          }),
+        )
+        .returning([
+          'count',
+          sql<number>`greatest(1, ceil(extract(epoch FROM reset_at - now())))::int`.as('ttl'),
+        ])
+        .executeTakeFirstOrThrow();
+      const allowed = row.count <= rule.limit;
+      return {
+        allowed,
+        remaining: Math.max(0, rule.limit - row.count),
+        retryAfterSeconds: allowed ? 0 : row.ttl,
+      };
+    } catch {
+      throw new ApiError(
+        HttpStatus.SERVICE_UNAVAILABLE,
+        'DEPENDENCY_UNAVAILABLE',
+        'Please try again shortly.',
+      );
+    }
+  }
+
+  /** Deletes windows that ended more than a minute ago. */
+  static async cleanup(db: Db): Promise<number> {
+    const res = await db
+      .deleteFrom('rate_limit_counters')
+      .where('reset_at', '<', sql<Date>`now() - interval '1 minute'`)
+      .executeTakeFirst();
+    return Number(res.numDeletedRows);
   }
 }
 

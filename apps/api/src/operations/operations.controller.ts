@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import {
   adminEmirateListSchema,
   emirateCodeSchema,
+  platformUsageSchema,
   updateEmirateRequestSchema,
 } from '@jays/contracts';
 import type { Request } from 'express';
@@ -17,6 +18,7 @@ import { ApiError } from '../common/error.filter.js';
 import { requestMeta } from '../common/request-context.js';
 import { ApiErrors, ApiZodBody, ApiZodResponse, ZodBody } from '../common/zod.js';
 import { OperationsService } from './operations.service.js';
+import { UsageService } from './usage.service.js';
 
 /** Operations by emirate (D11). Operations admins and superadmins. */
 @ApiTags('admin-operations')
@@ -24,7 +26,19 @@ import { OperationsService } from './operations.service.js';
 @UseGuards(AdminAuthGuard)
 @Controller('admin/operations')
 export class AdminOperationsController {
-  constructor(@Inject(OperationsService) private readonly ops: OperationsService) {}
+  constructor(
+    @Inject(OperationsService) private readonly ops: OperationsService,
+    @Inject(UsageService) private readonly usageService: UsageService,
+  ) {}
+
+  @Get('usage')
+  @RequirePlatformCapability('operations.manage')
+  @ApiOperation({ summary: 'Free-tier usage: database, stored files and email against limits' })
+  @ApiZodResponse(200, platformUsageSchema, 'Usage.')
+  @ApiErrors(401, 403)
+  usage() {
+    return this.usageService.usage();
+  }
 
   @Get('emirates')
   @RequirePlatformCapability('operations.manage')

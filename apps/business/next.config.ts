@@ -1,11 +1,28 @@
 import type { NextConfig } from 'next';
 
+/** Security headers on every page (docs/09-security-testing.md; phase 11 hardening). */
+const SECURITY_HEADERS = [
+  {
+    key: 'Content-Security-Policy',
+    value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'",
+  },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=()' },
+  { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' },
+];
+
 const config: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  async headers() {
+    return [{ source: '/:path*', headers: SECURITY_HEADERS }];
+  },
   experimental: {
-    // Document (10 MB) and image (5 MB) uploads pass through Server Actions to signed URLs.
-    serverActions: { bodySizeLimit: '11mb' },
+    // Documents go straight from the browser to storage (ADR-0033). Images (4 MB at most) still
+    // pass through Server Actions, which stays under Vercel's 4.5 MB request limit.
+    serverActions: { bodySizeLimit: '4.5mb' },
   },
 };
 

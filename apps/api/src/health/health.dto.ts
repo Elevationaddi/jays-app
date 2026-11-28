@@ -15,8 +15,9 @@ export class ReadinessChecksDto {
   @ApiProperty({ enum: ['up', 'down'] })
   database!: 'up' | 'down';
 
-  @ApiProperty({ enum: ['up', 'down'] })
-  redis!: 'up' | 'down';
+  /** `not_used` when rate limits are kept in PostgreSQL (ADR-0033). */
+  @ApiProperty({ enum: ['up', 'down', 'not_used'] })
+  redis!: 'up' | 'down' | 'not_used';
 }
 
 export class ReadinessDto {

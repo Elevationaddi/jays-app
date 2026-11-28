@@ -171,3 +171,16 @@ export function safeFileName(name: string): string {
     .slice(0, 200);
   return cleaned === '' ? 'file' : cleaned;
 }
+
+/**
+ * Free-plan limits the admin usage card measures against (ADR-0024; checked 28 November 2026).
+ * Changing the plan is a founder decision, so these change only with it.
+ */
+export const FREE_TIER_LIMITS = {
+  /** Supabase Free database size. */
+  databaseBytes: 500 * 1024 * 1024,
+  /** Supabase Free file storage. */
+  storageBytes: 1024 * 1024 * 1024,
+  /** The dashboard warns at 80% of any limit. */
+  warnAt: 0.8,
+} as const;

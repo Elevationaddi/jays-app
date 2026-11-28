@@ -22,6 +22,7 @@ import {
   waitlistEntrySchema,
   waitlistListSchema,
   adminEmirateListSchema,
+  platformUsageSchema,
   supportInfoSchema,
   consentRecordSchema,
   dataExportSchema,
@@ -1251,6 +1252,7 @@ export function createApiClient(options: ApiClientOptions) {
         signedUrlSchema,
       ),
     adminEmirates: () => call('GET', '/admin/operations/emirates', adminEmirateListSchema),
+    adminUsage: () => call('GET', '/admin/operations/usage', platformUsageSchema),
     adminLegal: () => call('GET', '/admin/legal', adminLegalListSchema),
     adminLegalDocument: (id: string) =>
       call('GET', `/admin/legal/${encodeURIComponent(id)}`, adminLegalDocumentSchema),

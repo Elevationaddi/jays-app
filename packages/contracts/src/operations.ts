@@ -25,3 +25,20 @@ export const supportInfoSchema = z.object({
   checkedAt: isoDateTime,
 });
 export type SupportInfo = z.infer<typeof supportInfoSchema>;
+
+const usageMeter = z.object({ used: z.number().int(), limit: z.number().int() });
+
+/** Free-tier usage against the plan limits (ADR-0024, ADR-0033), for the admin dashboard. */
+export const platformUsageSchema = z.object({
+  /** PostgreSQL database size in bytes (Supabase Free: 500 MB). */
+  databaseBytes: usageMeter,
+  /** Accepted files in bytes, from the API's own records (Supabase Free: 1 GB). */
+  storageBytes: usageMeter,
+  /** Emails today (UTC) and this month (Resend Free: 100 a day, 3,000 a month). */
+  emailsToday: usageMeter,
+  emailsThisMonth: usageMeter,
+  /** Share of a limit at which the dashboard warns. */
+  warnAt: z.number(),
+  checkedAt: isoDateTime,
+});
+export type PlatformUsage = z.infer<typeof platformUsageSchema>;

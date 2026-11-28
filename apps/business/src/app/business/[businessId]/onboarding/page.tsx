@@ -12,9 +12,11 @@ import {
   acceptAgreement,
   removeDocument,
   saveLegalProfile,
+  finishDocumentUpload,
+  prepareDocumentUpload,
   submitForReview,
-  uploadDocument,
 } from './actions';
+import { DirectUploadForm } from '../../../../components/DirectUploadForm';
 
 type Search = Promise<Record<string, string | undefined>>;
 
@@ -286,7 +288,11 @@ export default async function OnboardingPage({
                 </ul>
               )}
               {view.editable ? (
-                <form action={uploadDocument} className="upload">
+                <DirectUploadForm
+                  prepare={prepareDocumentUpload}
+                  finish={finishDocumentUpload}
+                  className="upload"
+                >
                   <input type="hidden" name="businessId" value={businessId} />
                   <div className="grid2">
                     <div className="field">
@@ -313,7 +319,7 @@ export default async function OnboardingPage({
                   <button className="btn secondary" type="submit">
                     {tr('onboarding.documents.upload')}
                   </button>
-                </form>
+                </DirectUploadForm>
               ) : null}
             </section>
 

@@ -4,6 +4,8 @@ import { ApiClientError } from '@jays/api-client';
 import { EMIRATE_CODES } from '@jays/domain';
 import { redirect } from 'next/navigation';
 import { serverApi } from '../../../lib/api';
+import type { DirectUploadTarget } from '../../../components/DirectUploadForm';
+import { fileMeta, uploadTarget } from '../../../lib/uploads';
 import { parseAed } from '../../../lib/workspace';
 
 const UUID = /^[0-9a-f-]{36}$/i;
@@ -62,20 +64,33 @@ export async function saveHomeServices(f: FormData) {
   redirect(`${path}?saved=1`);
 }
 
-export async function uploadHomeLicence(f: FormData) {
+/** Step 1 of a direct upload of the home-visit licence (ADR-0033). */
+export async function prepareHomeLicenceUpload(f: FormData): Promise<DirectUploadTarget> {
   const { id, path } = businessPath(f);
-  const file = f.get('file');
-  if (!(file instanceof File) || file.size === 0) redirect(`${path}?error=VALIDATION_FAILED`);
+  const meta = fileMeta(f);
+  if (!meta) redirect(`${path}?error=VALIDATION_FAILED`);
   try {
-    const api = await serverApi();
-    const ticket = await api.createDocumentUpload(id, {
+    const ticket = await (
+      await serverApi()
+    ).createDocumentUpload(id, {
       kind: 'home_service_license',
-      fileName: file.name || 'licence',
-      contentType: file.type as never,
-      sizeBytes: file.size,
+      fileName: meta.fileName || 'licence',
+      contentType: meta.contentType as never,
+      sizeBytes: meta.sizeBytes,
     });
-    await api.upload(ticket, new Uint8Array(await file.arrayBuffer()));
-    await api.completeDocument(id, ticket.id);
+    return uploadTarget(ticket);
+  } catch (error) {
+    fail(path, error);
+  }
+}
+
+/** Step 3: the API checks and scans the licence before it counts. */
+export async function finishHomeLicenceUpload(f: FormData) {
+  const { id, path } = businessPath(f);
+  const failed = String(f.get('uploadError') ?? '');
+  if (failed) redirect(`${path}?error=${encodeURIComponent(failed)}`);
+  try {
+    await (await serverApi()).completeDocument(id, String(f.get('ticketId') ?? ''));
   } catch (error) {
     fail(path, error);
   }

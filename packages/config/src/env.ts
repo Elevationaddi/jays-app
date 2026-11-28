@@ -54,6 +54,10 @@ export const MALWARE_SCANNERS = ['mock', 'clamav'] as const;
  * books fictional shipments for local testing; production refuses it. No paid provider is wired.
  */
 export const DELIVERY_PARTNERS = ['none', 'mock'] as const;
+/** Where request rate limits are counted (ADR-0033): Redis, or PostgreSQL on Vercel (no Redis). */
+export const RATE_LIMIT_STORES = ['redis', 'postgres'] as const;
+/** `off` on Vercel: background jobs run from the protected cron routes instead of timers. */
+export const SCHEDULER_MODES = ['on', 'off'] as const;
 
 /** Marker that every committed example secret carries, so production can reject copied examples. */
 export const LOCAL_SECRET_MARKER = 'local-dev-only';
@@ -117,6 +121,14 @@ const baseShape = {
 
 const apiShape = {
   ...baseShape,
+  /** Only needed when RATE_LIMIT_STORE=redis. */
+  REDIS_URL: redisUrl.optional(),
+  RATE_LIMIT_STORE: z.enum(RATE_LIMIT_STORES).default('redis'),
+  SCHEDULERS: z.enum(SCHEDULER_MODES).default('on'),
+  /** Connections per API instance. Keep small (3) on Vercel, behind Supabase's pooler. */
+  DB_POOL_MAX: z.coerce.number().int().min(1).max(50).default(10),
+  /** Bearer secret Vercel Cron sends to /v1/internal/cron/*. Unset disables those routes. */
+  CRON_SECRET: z.string().min(32, 'must be at least 32 characters').optional(),
   API_PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   CORS_ORIGINS: commaList,
   JWT_KEYS: jwtKeysSchema,
@@ -312,6 +324,24 @@ function withProductionGuards<T extends z.ZodRawShape>(shape: T) {
           message: 'must be true in production (files are sent to the scanner)',
         });
       }
+    }
+    if (
+      record['RATE_LIMIT_STORE'] === 'redis' &&
+      'RATE_LIMIT_STORE' in shape &&
+      !record['REDIS_URL']
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['REDIS_URL'],
+        message: 'is required when RATE_LIMIT_STORE=redis',
+      });
+    }
+    if (record['SCHEDULERS'] === 'off' && record['APP_ENV'] !== 'test' && !record['CRON_SECRET']) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['CRON_SECRET'],
+        message: 'is required when SCHEDULERS=off, or no background job would run',
+      });
     }
     if (record['NOTIFY_PROVIDER'] === 'resend') {
       for (const key of ['EMAIL_KEY', 'EMAIL_FROM'] as const) {

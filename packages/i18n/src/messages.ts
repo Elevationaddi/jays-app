@@ -240,6 +240,14 @@ const en = {
   'admin.operations.switchOn': 'Switch on',
   'admin.operations.switchOff': 'Switch off',
   'admin.dashboard.title': 'Dashboard',
+  'admin.usage.title': 'Free-plan usage',
+  'admin.usage.intro':
+    'Usage against the free plans. Cards turn amber at 80%. Upgrading any plan needs the founder’s approval.',
+  'admin.usage.database': 'Database (Supabase)',
+  'admin.usage.storage': 'Stored files (Supabase)',
+  'admin.usage.emailsToday': 'Emails today (Resend)',
+  'admin.usage.emailsMonth': 'Emails this month (Resend)',
+  'admin.usage.mb': 'MB',
   'admin.dashboard.note':
     'Marketplace metrics (GMV by mode, merchants, orders, bookings) arrive with phase 6. Nothing here is estimated or simulated.',
   'admin.roles': 'Roles',
@@ -274,6 +282,8 @@ const en = {
   'error.fileType': 'The file content does not match its type. Upload a PDF, JPEG or PNG.',
   'error.fileTooLarge': 'The file is too large.',
   'error.fileInfected': 'This file failed our security scan and was deleted.',
+  'error.uploadFailed': 'The file could not be uploaded. Please try again.',
+  'error.scannerUnavailable': 'We could not check the file just now. Try again in a few minutes.',
   'error.imageDimensions':
     'The image size or shape is not allowed here. Check the guidance under the field.',
   'error.uploadExpired': 'The upload link expired. Please try again.',
@@ -2068,6 +2078,14 @@ const ar: Record<MessageKey, string> = {
   'admin.operations.switchOn': 'تشغيل',
   'admin.operations.switchOff': 'إيقاف',
   'admin.dashboard.title': 'لوحة المعلومات',
+  'admin.usage.title': 'استخدام الخطط المجانية',
+  'admin.usage.intro':
+    'الاستخدام مقارنة بحدود الخطط المجانية. تتحول البطاقات إلى اللون الكهرماني عند 80%. ترقية أي خطة تتطلب موافقة المؤسس.',
+  'admin.usage.database': 'قاعدة البيانات (Supabase)',
+  'admin.usage.storage': 'الملفات المخزنة (Supabase)',
+  'admin.usage.emailsToday': 'رسائل البريد اليوم (Resend)',
+  'admin.usage.emailsMonth': 'رسائل البريد هذا الشهر (Resend)',
+  'admin.usage.mb': 'ميغابايت',
   'admin.dashboard.note':
     'تتوفر مؤشرات السوق (إجمالي المبيعات حسب الوضع، التجار، الطلبات، الحجوزات) في المرحلة السادسة. لا توجد هنا أي أرقام تقديرية أو محاكاة.',
   'admin.roles': 'الأدوار',
@@ -2100,6 +2118,8 @@ const ar: Record<MessageKey, string> = {
   'error.fileType': 'محتوى الملف لا يطابق نوعه. ارفع ملف PDF أو JPEG أو PNG.',
   'error.fileTooLarge': 'حجم الملف كبير جدًا.',
   'error.fileInfected': 'لم يجتز هذا الملف الفحص الأمني وتم حذفه.',
+  'error.uploadFailed': 'تعذر رفع الملف. يرجى المحاولة مرة أخرى.',
+  'error.scannerUnavailable': 'تعذر فحص الملف الآن. حاول مرة أخرى بعد بضع دقائق.',
   'error.imageDimensions': 'حجم الصورة أو أبعادها غير مسموح بها هنا. راجع الإرشادات أسفل الحقل.',
   'error.uploadExpired': 'انتهت صلاحية رابط الرفع. يرجى المحاولة مرة أخرى.',
   'error.versionConflict':

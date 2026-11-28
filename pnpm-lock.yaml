@@ -264,6 +264,9 @@ importers:
       '@jays/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@jays/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       ioredis:
         specifier: ^6.1.0
         version: 6.1.0

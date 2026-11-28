@@ -24,6 +24,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
     ...(DATE.test(params['to'] ?? '') ? { to: params['to'] } : {}),
   };
   const d = can('orders.view') ? await api.adminDashboard(range) : null;
+  const usage = can('operations.manage') ? await api.adminUsage() : null;
+  const mb = (n: number) =>
+    new Intl.NumberFormat(locale === 'ar' ? 'ar-AE' : 'en-AE', { maximumFractionDigits: 1 }).format(
+      n / (1024 * 1024),
+    );
+  const num = (n: number) => new Intl.NumberFormat(locale === 'ar' ? 'ar-AE' : 'en-AE').format(n);
   const m = (n: number) => formatAed(fils(n), locale);
   const max = d ? Math.max(1, ...d.daily.map((x) => x.shop + x.services)) : 1;
   return (
@@ -105,6 +111,39 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
       ) : (
         <div className="alert info">{tr('admin.dashboard.note')}</div>
       )}
+      {usage ? (
+        <section className="card" style={{ marginTop: 24 }} aria-labelledby="usage-title">
+          <h2 id="usage-title">{tr('admin.usage.title')}</h2>
+          <p className="muted">{tr('admin.usage.intro')}</p>
+          <div className="stats">
+            {(
+              [
+                ['admin.usage.database', usage.databaseBytes, mb, 'admin.usage.mb'],
+                ['admin.usage.storage', usage.storageBytes, mb, 'admin.usage.mb'],
+                ['admin.usage.emailsToday', usage.emailsToday, num, null],
+                ['admin.usage.emailsMonth', usage.emailsThisMonth, num, null],
+              ] as [
+                MessageKey,
+                { used: number; limit: number },
+                (n: number) => string,
+                MessageKey | null,
+              ][]
+            ).map(([k, meter, fmt, unit]) => {
+              const share = meter.limit > 0 ? meter.used / meter.limit : 0;
+              return (
+                <div key={k} className={`card stat${share >= usage.warnAt ? ' attention' : ''}`}>
+                  <span className="muted">{tr(k)}</span>
+                  <strong>
+                    {fmt(meter.used)} / {fmt(meter.limit)}
+                    {unit ? ` ${tr(unit)}` : ''}
+                  </strong>
+                  <meter min={0} max={1} high={usage.warnAt} value={Math.min(1, share)} />
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
       {can('exports.run') ? (
         <section className="card" style={{ marginTop: 24 }}>
           <h2>{tr('admin.exports.title')}</h2>
