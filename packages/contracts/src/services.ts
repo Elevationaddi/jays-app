@@ -1,4 +1,9 @@
-import { BOOKING_LOCATIONS, SERVICE_LOCATION_MODES, SERVICE_SORTS } from '@jays/domain';
+import {
+  BOOKING_LOCATIONS,
+  IMAGE_MAX_BYTES,
+  SERVICE_LOCATION_MODES,
+  SERVICE_SORTS,
+} from '@jays/domain';
 import { z } from 'zod';
 import { emirateCodeSchema, isoDateTime } from './identity.js';
 import { localizedInputSchema } from './onboarding.js';
@@ -89,11 +94,7 @@ export const portfolioListSchema = z.object({ items: z.array(portfolioItemSchema
 
 export const portfolioImageUploadRequestSchema = z.strictObject({
   contentType: z.enum(['image/jpeg', 'image/png', 'image/webp']),
-  sizeBytes: z
-    .number()
-    .int()
-    .min(1)
-    .max(5 * 1024 * 1024),
+  sizeBytes: z.number().int().min(1).max(IMAGE_MAX_BYTES),
 });
 
 // ---------------------------------------------------------------------------------------------

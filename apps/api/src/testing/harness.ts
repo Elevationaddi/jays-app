@@ -20,6 +20,7 @@ import type { Clock } from '../common/clock.js';
 import { MockPaymentProvider, type WebhookDelivery } from '../payments/mock-provider.js';
 import type { PaymentProvider } from '../payments/provider.js';
 import { MockPushSender } from '../notify/push.js';
+import type { MalwareScanner } from '../storage/storage.js';
 import type { ApiEnv } from '../config.js';
 import { testEnv } from './test-env.js';
 
@@ -91,6 +92,8 @@ export interface HarnessOptions {
   paymentProvider?: (env: ApiEnv, clock: TestClock) => PaymentProvider;
   /** Extra environment variables. */
   env?: Record<string, string>;
+  /** Replaces the mock malware scanner. */
+  scanner?: MalwareScanner;
 }
 
 export async function startHarness(options: HarnessOptions = {}): Promise<Harness> {
@@ -115,6 +118,7 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
     clock,
     paymentProvider: options.paymentProvider?.(env, clock) ?? psp,
     pushSender: push,
+    ...(options.scanner ? { scanner: options.scanner } : {}),
     rateLimitNamespace: `it-${process.pid}-${Date.now()}`,
   });
   await app.init();

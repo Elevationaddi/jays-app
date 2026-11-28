@@ -382,10 +382,10 @@ const en = {
   'storefront.description.en': 'About the store (English)',
   'storefront.description.ar': 'About the store (Arabic)',
   'storefront.logo': 'Logo',
-  'storefront.logo.hint': 'JPEG, PNG or WebP up to 5 MB. Square, at least 200 × 200 pixels.',
+  'storefront.logo.hint': 'JPEG, PNG or WebP up to 4 MB. Square, at least 200 × 200 pixels.',
   'storefront.banner': 'Banner',
   'storefront.banner.hint':
-    'JPEG, PNG or WebP up to 5 MB. Wide, at least 1200 × 300 pixels (2:1 to 5:1).',
+    'JPEG, PNG or WebP up to 4 MB. Wide, at least 1200 × 300 pixels (2:1 to 5:1).',
   'storefront.save': 'Save storefront',
   'storefront.preview': 'Preview',
   'storefront.live': 'Live version',
@@ -1687,7 +1687,7 @@ const en = {
   'portfolio.add': 'Add a photo',
   'portfolio.file': 'Photo',
   'portfolio.hint':
-    'JPEG, PNG or WebP, up to 5 MB, at least 600 × 600 pixels. Only post photos you have the right to use, with the client’s permission.',
+    'JPEG, PNG or WebP, up to 4 MB, at least 600 × 600 pixels. Only post photos you have the right to use, with the client’s permission.',
   'portfolio.service': 'Service (optional)',
   'portfolio.anyService': 'Not tied to a service',
   'portfolio.staff': 'Professional (optional)',
@@ -2204,10 +2204,10 @@ const ar: Record<MessageKey, string> = {
   'storefront.description.ar': 'نبذة عن المتجر (بالعربية)',
   'storefront.logo': 'الشعار',
   'storefront.logo.hint':
-    'JPEG أو PNG أو WebP بحجم حتى 5 ميغابايت. مربع، 200 × 200 بكسل على الأقل.',
+    'JPEG أو PNG أو WebP بحجم حتى 4 ميغابايت. مربع، 200 × 200 بكسل على الأقل.',
   'storefront.banner': 'صورة الغلاف',
   'storefront.banner.hint':
-    'JPEG أو PNG أو WebP بحجم حتى 5 ميغابايت. عريضة، 1200 × 300 بكسل على الأقل (من 2:1 إلى 5:1).',
+    'JPEG أو PNG أو WebP بحجم حتى 4 ميغابايت. عريضة، 1200 × 300 بكسل على الأقل (من 2:1 إلى 5:1).',
   'storefront.save': 'حفظ واجهة المتجر',
   'storefront.preview': 'معاينة',
   'storefront.live': 'النسخة المنشورة',
@@ -3487,7 +3487,7 @@ const ar: Record<MessageKey, string> = {
   'portfolio.add': 'إضافة صورة',
   'portfolio.file': 'الصورة',
   'portfolio.hint':
-    'JPEG أو PNG أو WebP، حتى 5 ميغابايت، بحد أدنى 600 × 600 بكسل. انشر فقط صوراً يحق لك استخدامها وبإذن العميل.',
+    'JPEG أو PNG أو WebP، حتى 4 ميغابايت، بحد أدنى 600 × 600 بكسل. انشر فقط صوراً يحق لك استخدامها وبإذن العميل.',
   'portfolio.service': 'الخدمة (اختياري)',
   'portfolio.anyService': 'غير مرتبطة بخدمة',
   'portfolio.staff': 'المختص (اختياري)',

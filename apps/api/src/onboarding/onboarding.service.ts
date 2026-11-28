@@ -264,7 +264,7 @@ export class OnboardingService {
       });
       return row.id;
     });
-    const signed = this.storage.signUpload(key, {
+    const signed = await this.storage.signUpload(key, {
       contentType: body.contentType,
       maxBytes: body.sizeBytes,
       expiresAt,
@@ -375,7 +375,7 @@ export class OnboardingService {
       businessId: ctx.businessId,
       requestId: meta.requestId,
     });
-    const signed = this.storage.signDownload(doc.object_key, {
+    const signed = await this.storage.signDirectDownload(doc.object_key, {
       expiresAt: addSeconds(this.clock.now(), DOWNLOAD_URL_TTL_SECONDS),
       fileName: doc.file_name,
       disposition: 'attachment',
@@ -579,7 +579,7 @@ export class OnboardingService {
       })
       .returning('id')
       .executeTakeFirstOrThrow();
-    const signed = this.storage.signUpload(key, {
+    const signed = await this.storage.signUpload(key, {
       contentType: body.contentType,
       maxBytes: body.sizeBytes,
       expiresAt,

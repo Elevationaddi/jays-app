@@ -13803,7 +13803,7 @@
                   "sizeBytes": {
                     "type": "integer",
                     "minimum": 1,
-                    "maximum": 5242880
+                    "maximum": 4194304
                   }
                 },
                 "required": [
@@ -25149,7 +25149,7 @@
                   "sizeBytes": {
                     "type": "integer",
                     "minimum": 1,
-                    "maximum": 5242880
+                    "maximum": 4194304
                   }
                 },
                 "required": [
@@ -40103,7 +40103,7 @@
                   "sizeBytes": {
                     "type": "integer",
                     "minimum": 1,
-                    "maximum": 5242880
+                    "maximum": 4194304
                   }
                 },
                 "required": [

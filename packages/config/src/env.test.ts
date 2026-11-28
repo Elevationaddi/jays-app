@@ -82,6 +82,34 @@ describe('apiEnvSchema', () => {
     ).toEqual(['PSP_API_KEY', 'PSP_PUBLISHABLE_KEY']);
   });
 
+  it('needs Supabase credentials, and a ClamAV host with TLS in production', () => {
+    expect(
+      issuesOf(() => parseEnv(apiEnvSchema, { ...local, STORAGE_PROVIDER: 'supabase' })),
+    ).toEqual(['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY']);
+    expect(issuesOf(() => parseEnv(apiEnvSchema, { ...local, MALWARE_SCANNER: 'clamav' }))).toEqual(
+      ['CLAMAV_HOST'],
+    );
+    const env = parseEnv(apiEnvSchema, {
+      ...local,
+      STORAGE_PROVIDER: 'supabase',
+      SUPABASE_URL: 'https://fictional.supabase.co',
+      SUPABASE_SERVICE_ROLE_KEY: 'fictional-service-role-key-000',
+      MALWARE_SCANNER: 'clamav',
+      CLAMAV_HOST: 'scanner.example.test',
+    });
+    expect(env.CLAMAV_PORT).toBe(3310);
+    const paths = issuesOf(() =>
+      parseEnv(apiEnvSchema, {
+        ...local,
+        APP_ENV: 'production',
+        MALWARE_SCANNER: 'clamav',
+        CLAMAV_HOST: 'scanner.example.test',
+      }),
+    );
+    expect(paths).toContain('CLAMAV_TLS');
+    expect(paths).not.toContain('MALWARE_SCANNER');
+  });
+
   it('needs a key and sender for Resend, and a service account for FCM', () => {
     expect(issuesOf(() => parseEnv(apiEnvSchema, { ...local, NOTIFY_PROVIDER: 'resend' }))).toEqual(
       ['EMAIL_KEY', 'EMAIL_FROM'],

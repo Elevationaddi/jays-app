@@ -213,7 +213,7 @@ export class AdminBusinessesService {
       diff: { kind: doc.kind },
       requestId: meta.requestId,
     });
-    const signed = this.storage.signDownload(doc.object_key, {
+    const signed = await this.storage.signDirectDownload(doc.object_key, {
       expiresAt: addSeconds(this.clock.now(), DOWNLOAD_URL_TTL_SECONDS),
       fileName: doc.file_name,
       disposition: 'attachment',

@@ -91,13 +91,15 @@ import { TaxonomyService } from './catalog/taxonomy.service.js';
 import { OnboardingController } from './onboarding/onboarding.controller.js';
 import { OnboardingService } from './onboarding/onboarding.service.js';
 import { LocalObjectStorage } from './storage/local-storage.js';
+import { ClamavScanner } from './storage/clamav-scanner.js';
+import { SupabaseObjectStorage } from './storage/supabase-storage.js';
 import { MockMalwareScanner } from './storage/scanner.js';
 import {
   DELIVERY_PARTNER,
   type DeliveryPartner,
   MockDeliveryPartner,
 } from './commerce/delivery-partner.js';
-import { LocalStorageController } from './storage/storage.controller.js';
+import { StorageController } from './storage/storage.controller.js';
 import {
   MALWARE_SCANNER,
   type MalwareScanner,
@@ -273,8 +275,8 @@ export class AppModule {
         PushDevicesController,
         // The mock provider's hosted payment step. Production cannot run the mock (ADR-0006).
         ...(env.PSP_PROVIDER === 'mock' ? [MockPspController] : []),
-        // Signed URLs of the local storage adapter are served by the API itself.
-        ...(env.STORAGE_PROVIDER === 'local' ? [LocalStorageController] : []),
+        // The API serves its own signed storage URLs (images with every adapter, ADR-0032).
+        StorageController,
       ],
       providers: [
         { provide: API_ENV, useValue: env },
@@ -334,13 +336,28 @@ export class AppModule {
           provide: OBJECT_STORAGE,
           useValue:
             storage ??
-            new LocalObjectStorage(
-              env.STORAGE_LOCAL_DIR,
-              env.STORAGE_SIGNING_SECRET,
-              env.API_PUBLIC_URL,
-            ),
+            (env.STORAGE_PROVIDER === 'supabase'
+              ? new SupabaseObjectStorage(
+                  env.SUPABASE_URL as string,
+                  env.SUPABASE_SERVICE_ROLE_KEY as string,
+                  env.STORAGE_BUCKET,
+                  env.STORAGE_SIGNING_SECRET,
+                  env.API_PUBLIC_URL,
+                )
+              : new LocalObjectStorage(
+                  env.STORAGE_LOCAL_DIR,
+                  env.STORAGE_SIGNING_SECRET,
+                  env.API_PUBLIC_URL,
+                )),
         },
-        { provide: MALWARE_SCANNER, useValue: scanner ?? new MockMalwareScanner() },
+        {
+          provide: MALWARE_SCANNER,
+          useValue:
+            scanner ??
+            (env.MALWARE_SCANNER === 'clamav'
+              ? new ClamavScanner(env.CLAMAV_HOST as string, env.CLAMAV_PORT, env.CLAMAV_TLS)
+              : new MockMalwareScanner()),
+        },
         {
           provide: DELIVERY_PARTNER,
           useValue:

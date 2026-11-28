@@ -14,7 +14,7 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 | 7     | RTL/accessibility, hardening, backups, observability, pilot  | Merged (PR #8); pilot not started     |
 
 | 8 | Complete application functionality | 8.1 to 8.8 merged (PRs #9 to #14, #16 to #19) |
-| 9 | Provider integrations in test mode (Stripe, Resend, FCM, Supabase) | 9.1 merged (PR #20); 9.2 email and push in progress |
+| 9 | Provider integrations in test mode (Stripe, Resend, FCM, Supabase) | 9.1 merged (PR #20); 9.2 merged (PR #21); 9.3 storage and scanning in progress |
 | 10 | Vercel deployment architecture (replaces AWS) | Not started; nothing deployed |
 | 11 | Security, QA, app store preparation | Not started |
 | 12 | Pilot preparation (Abu Dhabi) | Not started; pilot needs approval |
@@ -30,6 +30,16 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 ## Phase 9: Provider integrations in test mode
 
 Each part is its own PR. Tests that use a fake of a provider are **mock tests**; tests against a provider's real test mode are in `*.provider.test.ts`, run with `pnpm --filter @jays/api test:providers`, and are skipped without credentials. No real-provider result is claimed without them.
+
+### 9.3 File storage and malware scanning
+
+Decision: [ADR-0032](adr/0032-supabase-storage-and-malware-scanning.md).
+
+- **Storage:** Supabase adapter with one private bucket, reached only by the API. Uploads go straight from the client to Supabase, then the API checks size, real type, image shape and malware, and deletes anything that fails.
+- **Downloads:** images through the API's signed URLs so the CDN caches them (images now limited to 4 MB because of Vercel's response limit); private documents and attachments through Supabase's short-lived signed URLs.
+- **Malware scanning:** ClamAV adapter over clamd's protocol with no new dependency. It fails closed: when the scanner is down, uploads stay pending with a "try again" error and are never accepted unscanned. Production refuses the mock scanner and ClamAV without TLS.
+- **Tests:** 12 unit and 1 integration mock tests. No real-provider test was run (no Supabase project or ClamAV yet).
+- **Blocked on the founder:** where ClamAV runs (production blocker), and approval to add an image library to strip photo metadata.
 
 ### 9.2 Email and push
 

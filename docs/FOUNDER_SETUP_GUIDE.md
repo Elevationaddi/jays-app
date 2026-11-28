@@ -38,10 +38,15 @@ You will create **two** projects: one for staging and one for production. Supaba
    - **Direct connection** (port 5432): this becomes `DATABASE_DIRECT_URL`, used only for migrations.
 6. In each project, open **Project Settings → API**. Copy the **Project URL** (`SUPABASE_URL`) and the **service_role** key (`SUPABASE_SERVICE_ROLE_KEY`).
    - The service role key bypasses all security. It goes **only** into the API project's server-side variables in Vercel, never into a mobile app or a public website.
-7. **Storage:**
-   - The team's setup script creates the private buckets.
-   - Do not create public buckets by hand.
-8. **Free projects pause after a week with no activity.** Staging may pause. Restore it from the dashboard when needed. Production will have regular traffic during the pilot.
+7. **Storage:** in each project, open **Storage → New bucket**.
+   - **Name:** `jays-files`. Leave **Public bucket** switched **off**.
+   - Under the bucket's settings, set **File size limit** to `10 MB` and **Allowed MIME types** to `application/pdf, image/jpeg, image/png, image/webp`. The API checks every file anyway; this is a second guard.
+   - Do not create public buckets. In Vercel (step 7), set `STORAGE_PROVIDER=supabase` and `STORAGE_BUCKET=jays-files` on the API project.
+8. **Malware scanner (needed before production):**
+   - Uploaded files are scanned by ClamAV, which is free and open source but needs a computer that stays on. It cannot run on Vercel or Supabase.
+   - Where it runs is your decision. The options are in `docs/adr/0032-supabase-storage-and-malware-scanning.md`. Do not sign up for anything for it until you have chosen.
+   - Once it runs, set `MALWARE_SCANNER=clamav`, `CLAMAV_HOST`, `CLAMAV_PORT` and `CLAMAV_TLS=true` on the API project. Production will not start without it. Staging can use `MALWARE_SCANNER=mock` until then.
+9. **Free projects pause after a week with no activity.** Staging may pause. Restore it from the dashboard when needed. Production will have regular traffic during the pilot.
 
 ## 3. Resend: email (Free)
 

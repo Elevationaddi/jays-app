@@ -1,4 +1,3 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
 import { mkdir, open, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { z } from 'zod';
@@ -9,17 +8,9 @@ import {
   type SignedUpload,
   type StoredObject,
 } from './storage.js';
+import { type StorageClaims, UrlSigner } from './signed-urls.js';
 
-const claimsSchema = z.object({
-  k: z.string().regex(OBJECT_KEY),
-  m: z.enum(['GET', 'PUT']),
-  e: z.number().int(),
-  ct: z.string().optional(),
-  max: z.number().int().positive().optional(),
-  fn: z.string().optional(),
-  d: z.enum(['inline', 'attachment']).optional(),
-});
-export type StorageClaims = z.infer<typeof claimsSchema>;
+export type { StorageClaims } from './signed-urls.js';
 
 /**
  * Local adapter: objects on disk, URLs signed with HMAC-SHA256 and served by the API's storage
@@ -27,14 +18,13 @@ export type StorageClaims = z.infer<typeof claimsSchema>;
  * fixed content type and maximum size. Not for production (the environment schema refuses it).
  */
 export class LocalObjectStorage implements ObjectStorage {
+  readonly name = 'local' as const;
   private readonly root: string;
+  private readonly signer: UrlSigner;
 
-  constructor(
-    directory: string,
-    private readonly secret: string,
-    private readonly publicBaseUrl: string,
-  ) {
+  constructor(directory: string, secret: string, publicBaseUrl: string) {
     this.root = resolve(directory);
+    this.signer = new UrlSigner(secret, publicBaseUrl);
   }
 
   private path(key: string): string {
@@ -43,30 +33,18 @@ export class LocalObjectStorage implements ObjectStorage {
   }
 
   private sign(claims: StorageClaims): string {
-    const body = Buffer.from(JSON.stringify(claims)).toString('base64url');
-    const mac = createHmac('sha256', this.secret).update(body).digest('base64url');
-    return `${this.publicBaseUrl.replace(/\/$/, '')}/storage/objects/${body}.${mac}`;
+    return this.signer.sign(claims);
   }
 
   /** Verifies a token from a signed URL. Returns null when forged, malformed or expired. */
   verify(token: string, now: Date): StorageClaims | null {
-    const [body, mac, extra] = token.split('.');
-    if (!body || !mac || extra !== undefined) return null;
-    const expected = createHmac('sha256', this.secret).update(body).digest();
-    const given = Buffer.from(mac, 'base64url');
-    if (given.length !== expected.length || !timingSafeEqual(given, expected)) return null;
-    try {
-      const claims = claimsSchema.parse(JSON.parse(Buffer.from(body, 'base64url').toString()));
-      return claims.e * 1000 > now.getTime() ? claims : null;
-    } catch {
-      return null;
-    }
+    return this.signer.verify(token, now);
   }
 
-  signUpload(
+  async signUpload(
     key: string,
     options: { contentType: string; maxBytes: number; expiresAt: Date },
-  ): SignedUpload {
+  ): Promise<SignedUpload> {
     const url = this.sign({
       k: key,
       m: 'PUT',
@@ -94,6 +72,14 @@ export class LocalObjectStorage implements ObjectStorage {
     };
     if (options.fileName) claims.fn = options.fileName;
     return { url: this.sign(claims), expiresAt: options.expiresAt };
+  }
+
+  /** Locally, a direct download is the same signed API URL. */
+  async signDirectDownload(
+    key: string,
+    options: { expiresAt: Date; fileName?: string; disposition: 'inline' | 'attachment' },
+  ): Promise<SignedDownload> {
+    return this.signDownload(key, options);
   }
 
   async head(key: string): Promise<StoredObject | null> {

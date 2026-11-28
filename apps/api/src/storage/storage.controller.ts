@@ -28,19 +28,20 @@ async function readBody(req: Request, max: number): Promise<Buffer> {
 }
 
 /**
- * Serves signed URLs for the local storage adapter only (a real provider serves its own URLs).
- * Excluded from OpenAPI: these URLs are opaque and come from upload tickets and download links.
+ * Serves the API's signed storage URLs (ADR-0012, ADR-0032). Downloads work with every adapter,
+ * so images go through the API and its CDN; uploads here are for the local adapter only (with
+ * Supabase, clients upload straight to storage). Excluded from OpenAPI: these URLs are opaque.
  */
 @ApiExcludeController()
 @Controller('storage/objects')
-export class LocalStorageController {
+export class StorageController {
   constructor(
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   private claims(token: string, method: 'GET' | 'PUT') {
-    if (!(this.storage instanceof LocalObjectStorage)) throw denied();
+    if (method === 'PUT' && !(this.storage instanceof LocalObjectStorage)) throw denied();
     const claims = this.storage.verify(token, this.clock.now());
     if (!claims || claims.m !== method) throw denied();
     return claims;
