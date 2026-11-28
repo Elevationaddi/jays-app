@@ -14,6 +14,8 @@ export function errorMessageKey(code: string | undefined): MessageKey | null {
       return 'auth.error.otpExpired';
     case 'OTP_ATTEMPTS_EXCEEDED':
       return 'auth.error.otpLocked';
+    case 'SMS_UNAVAILABLE':
+      return 'auth.error.smsUnavailable';
     case 'RATE_LIMITED':
     case 'OTP_RESEND_COOLDOWN':
     case 'OTP_SEND_LIMIT':

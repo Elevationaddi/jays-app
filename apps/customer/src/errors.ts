@@ -14,6 +14,7 @@ export function errorKey(error: unknown): { key: MessageKey; seconds: number } {
     OTP_RESEND_COOLDOWN: 'auth.error.rateLimited',
     OTP_SEND_LIMIT: 'auth.error.rateLimited',
     VALIDATION_FAILED: 'auth.error.validation',
+    SMS_UNAVAILABLE: 'auth.error.smsUnavailable',
     OUT_OF_STOCK: 'error.outOfStock',
     INSUFFICIENT_STOCK: 'error.outOfStock',
     QUOTE_STALE: 'error.quoteStale',

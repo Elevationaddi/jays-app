@@ -14,7 +14,7 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 | 7     | RTL/accessibility, hardening, backups, observability, pilot  | Merged (PR #8); pilot not started     |
 
 | 8 | Complete application functionality | 8.1 to 8.8 merged (PRs #9 to #14, #16 to #19) |
-| 9 | Provider integrations in test mode (Stripe, Resend, FCM, Supabase) | 9.1 Stripe Connect in progress |
+| 9 | Provider integrations in test mode (Stripe, Resend, FCM, Supabase) | 9.1 merged (PR #20); 9.2 email and push in progress |
 | 10 | Vercel deployment architecture (replaces AWS) | Not started; nothing deployed |
 | 11 | Security, QA, app store preparation | Not started |
 | 12 | Pilot preparation (Abu Dhabi) | Not started; pilot needs approval |
@@ -30,6 +30,16 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 ## Phase 9: Provider integrations in test mode
 
 Each part is its own PR. Tests that use a fake of a provider are **mock tests**; tests against a provider's real test mode are in `*.provider.test.ts`, run with `pnpm --filter @jays/api test:providers`, and are skipped without credentials. No real-provider result is claimed without them.
+
+### 9.2 Email and push
+
+Decision: [ADR-0031](adr/0031-resend-email-and-fcm-push.md).
+
+- **Email:** Resend adapter with English and Arabic templates (right to left for Arabic, escaped values, https links only). A daily and monthly budget keeps within Resend Free: non-essential email stops at 80%, the rest is kept for sign-in codes and security email, and held notifications are sent in the next window.
+- **No SMS:** with Resend, sign-up and password recovery by phone are refused with a clear message.
+- **Push:** devices register Firebase tokens. Each event is pushed once to every active device of a person who has push on. Dead tokens are revoked, and deleting an account removes its tokens. The Firebase HTTP v1 adapter signs its own credentials, so no Google SDK is added.
+- **Tests:** 6 unit and 5 integration mock tests. 2 real-provider tests were not run, because no Resend or Firebase credentials are available.
+- **Not done:** registering devices in the apps, which needs the Firebase project and a development build, and Resend bounce webhooks.
 
 ### 9.1 Stripe Connect (test mode)
 

@@ -68,6 +68,7 @@ export class AuthService {
    */
   async register(body: RegisterRequest, meta: RequestMeta): Promise<Challenge> {
     const channel: ContactChannel = body.email ? 'email' : 'sms';
+    this.requireChannel(channel);
     const destination = (body.email ?? body.phone) as string;
     await enforce(this.limiter, [
       [LIMITS.registerPerIp, meta.ip],
@@ -303,6 +304,7 @@ export class AuthService {
     if (user.status === 'pending_verification') {
       // The password proves who this is, so it is safe to send a new code to the registered contact.
       const channel: ContactChannel = user.email ? 'email' : 'sms';
+      this.requireChannel(channel);
       const destination = (user.email ?? user.phone) as string;
       await enforce(this.limiter, [[LIMITS.otpSendPerDestination, sha256(destination)]]);
       const now = this.clock.now();
@@ -361,6 +363,8 @@ export class AuthService {
       [LIMITS.otpSendPerDestination, sha256(value)],
     ]);
     const channel: ContactChannel = kind === 'email' ? 'email' : 'sms';
+    // Decided by the kind of identifier only, so the answer reveals nothing about accounts.
+    this.requireChannel(channel);
     const user = await findUserByIdentifier(this.db, identifier);
     const now = this.clock.now();
     const eligible = user && user.status !== 'deactivated';
@@ -571,6 +575,20 @@ export class AuthService {
       );
     }
     return outcome.userId;
+  }
+
+  /**
+   * There is no SMS provider (ADR-0024, ADR-0031): with one that cannot send text messages,
+   * codes go to email only, so sign-up and recovery by phone number are refused up front.
+   */
+  private requireChannel(channel: ContactChannel) {
+    if (channel === 'sms' && !this.notifier.supports('sms')) {
+      throw new ApiError(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'SMS_UNAVAILABLE',
+        'Text messages are not available. Use an email address instead.',
+      );
+    }
   }
 
   private async deliver(send: PendingSend): Promise<void> {

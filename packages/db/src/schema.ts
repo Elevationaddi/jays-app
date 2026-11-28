@@ -1366,8 +1366,29 @@ export interface NotificationDeliveriesTable {
   id: Id;
   outbox_id: string;
   user_id: string;
-  channel: 'email' | 'sms';
+  channel: 'email' | 'sms' | 'push';
   sent_at: CreatedAt;
+}
+
+/** Emails sent per UTC day, split by priority (ADR-0031). */
+export interface EmailUsageTable {
+  day: string;
+  essential: Generated<number>;
+  other: Generated<number>;
+  updated_at: Generated<Date>;
+}
+
+export type PushPlatform = 'ios' | 'android' | 'web';
+
+export interface PushDevicesTable {
+  id: Id;
+  user_id: string;
+  token: string;
+  platform: PushPlatform;
+  created_at: CreatedAt;
+  last_seen_at: Generated<Date>;
+  revoked_at: Timestamp | null;
+  revoke_reason: 'signed_out' | 'invalid' | 'replaced' | null;
 }
 
 export type ConsentPurpose = 'marketing_email' | 'marketing_sms' | 'marketing_push';
@@ -1523,6 +1544,8 @@ export interface Database {
   notification_templates: NotificationTemplatesTable;
   notifications: NotificationsTable;
   notification_deliveries: NotificationDeliveriesTable;
+  email_usage: EmailUsageTable;
+  push_devices: PushDevicesTable;
   consent_records: ConsentRecordsTable;
   account_deletion_requests: AccountDeletionRequestsTable;
   document_sequences: DocumentSequencesTable;
@@ -2421,6 +2444,17 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'created_at',
   ],
   notification_deliveries: ['id', 'outbox_id', 'user_id', 'channel', 'sent_at'],
+  email_usage: ['day', 'essential', 'other', 'updated_at'],
+  push_devices: [
+    'id',
+    'user_id',
+    'token',
+    'platform',
+    'created_at',
+    'last_seen_at',
+    'revoked_at',
+    'revoke_reason',
+  ],
   consent_records: [
     'id',
     'user_id',

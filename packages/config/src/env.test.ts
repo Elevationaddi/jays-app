@@ -82,6 +82,29 @@ describe('apiEnvSchema', () => {
     ).toEqual(['PSP_API_KEY', 'PSP_PUBLISHABLE_KEY']);
   });
 
+  it('needs a key and sender for Resend, and a service account for FCM', () => {
+    expect(issuesOf(() => parseEnv(apiEnvSchema, { ...local, NOTIFY_PROVIDER: 'resend' }))).toEqual(
+      ['EMAIL_KEY', 'EMAIL_FROM'],
+    );
+    expect(issuesOf(() => parseEnv(apiEnvSchema, { ...local, PUSH_PROVIDER: 'fcm' }))).toEqual([
+      'FCM_SERVICE_ACCOUNT_JSON',
+    ]);
+    const env = parseEnv(apiEnvSchema, {
+      ...local,
+      NOTIFY_PROVIDER: 'resend',
+      EMAIL_KEY: 're_fictional',
+      EMAIL_FROM: 'JAYS <no-reply@mail.example.test>',
+      PUSH_PROVIDER: 'fcm',
+      FCM_SERVICE_ACCOUNT_JSON: JSON.stringify({
+        project_id: 'jays-fictional',
+        client_email: 'push@jays-fictional.iam.gserviceaccount.com',
+        private_key: '-----BEGIN PRIVATE KEY-----\\nfictional\\n-----END PRIVATE KEY-----\\n',
+      }),
+    });
+    expect(env.EMAIL_DAILY_LIMIT).toBe(100);
+    expect(env.EMAIL_MONTHLY_LIMIT).toBe(3000);
+  });
+
   it('refuses mock payments, dev switches and example secrets in production', () => {
     const paths = issuesOf(() =>
       parseEnv(apiEnvSchema, {
@@ -89,6 +112,7 @@ describe('apiEnvSchema', () => {
         APP_ENV: 'production',
         MOCK_PAYMENT_OUTCOMES: 'true',
         DELIVERY_PARTNER: 'mock',
+        PUSH_PROVIDER: 'mock',
         CORS_ORIGINS: 'http://example.test',
       }),
     );
@@ -111,6 +135,7 @@ describe('apiEnvSchema', () => {
         'STORAGE_SIGNING_SECRET',
         'MALWARE_SCANNER',
         'DELIVERY_PARTNER',
+        'PUSH_PROVIDER',
         'API_PUBLIC_URL',
       ]),
     );

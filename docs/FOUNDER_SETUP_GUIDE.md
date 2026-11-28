@@ -55,6 +55,8 @@ You will create **two** projects: one for staging and one for production. Supaba
    - Choose **Sending access** only, and restrict the key to your domain.
    - Create one key for staging and one for production. Each key is shown once: put it straight into Vercel (step 7).
 4. The sender address becomes `EMAIL_FROM`, for example `JAYS <no-reply@mail.yourdomain.ae>`.
+5. Set `NOTIFY_PROVIDER=resend`. JAYS counts its own email and stops non-essential email at 80 a day (80% of the allowance), keeping the rest for sign-in codes. Leave `EMAIL_DAILY_LIMIT` and `EMAIL_MONTHLY_LIMIT` at their defaults (100 and 3,000), which match the Free plan.
+6. There is no SMS. With Resend, customers sign up and reset passwords with an email address only.
 
 ## 4. Stripe: payments (test mode only)
 
@@ -89,6 +91,7 @@ You will create **two** projects: one for staging and one for production. Supaba
 4. **Create the server key:**
    - Go to **Project settings → Service accounts → Generate new private key**.
    - This downloads a JSON file. Its whole content becomes `FCM_SERVICE_ACCOUNT_JSON`, set only on the API project in Vercel.
+   - Set `PUSH_PROVIDER=fcm`. Keep the project on **Spark**: sending push messages is free there.
 5. **iOS push:** this needs an APNs key from your Apple Developer account (see section 9).
    - Upload it under **Project settings → Cloud Messaging → Apple app configuration**.
 
@@ -128,6 +131,7 @@ When the team asks, after the projects exist:
 | `PSP_PUBLISHABLE_KEY`                                                                     | API              | Stripe test publishable key (step 4.4)                                        |
 | `BUSINESS_WEB_URL`                                                                        | API              | The business portal's address, for Stripe's return links                      |
 | `FCM_SERVICE_ACCOUNT_JSON`                                                                | API              | Firebase service account (step 5.4)                                           |
+| `NOTIFY_PROVIDER`, `PUSH_PROVIDER`                                                        | API              | `resend` (step 3.5) and `fcm` (step 5.4)                                      |
 | `CRON_SECRET`                                                                             | API              | A random value you generate (Vercel sends it with each cron call)             |
 | `JWT_KEYS`, `OTP_SECRET`, `MFA_ENCRYPTION_KEY`, `STORAGE_SIGNING_SECRET`, `METRICS_TOKEN` | API              | Random values the team's script generates for you. Never reuse the local ones |
 | `API_URL`                                                                                 | Business, admin  | The API's address                                                             |

@@ -36,3 +36,4 @@ Status values: **Accepted** (engineering decision, in force), **Proposed** (need
 | [0028](0028-legal-documents-and-acceptance-records.md)            | Legal documents: drafts, versions, frozen published text, acceptance records; no approval recorded           | Accepted (all texts are drafts)         |
 | [0029](0029-delivery-methods-return-policies-delivery-partner.md) | Delivery methods, return policies per business and category, optional delivery-partner interface             | Accepted (return rules proposed)        |
 | [0030](0030-stripe-connect-test-mode.md)                          | Stripe Connect in test mode: adapter, connected payout accounts, transfers, live keys refused                | Accepted (funds flow proposed)          |
+| [0031](0031-resend-email-and-fcm-push.md)                         | Resend email with bilingual templates and a daily budget, Firebase push devices and delivery, no SMS         | Accepted                                |
