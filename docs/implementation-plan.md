@@ -138,6 +138,42 @@ Acceptance coverage: T07, T08, T09, T13 (services), T14 and T06 (mock, bookings)
 - Tests: T11, T12, full regression of T01–T16.
 - Status (2026-11-28): hardening, observability, backups and a staging stack are built ([ADR-0017](adr/0017-hardening-observability-backups.md)). Hosting a staging server and running the pilot wait on hosting and pilot-scope decisions.
 
+## Phases 8 to 12 (revised 28 November 2026)
+
+The founder's revised decisions ([ADR-0024](adr/0024-cost-constraints-and-vercel-first-architecture.md), [ADR-0025](adr/0025-travel-fees-home-cancellations-pilot-promotion.md), [register](FOUNDER_DECISIONS.md)) make one rule mandatory: **no paid software subscriptions beyond Vercel, ChatGPT and Claude**. AWS and Twilio are removed.
+
+- **Phase 8, complete functionality.**
+  - 8.1 to 8.6 are merged.
+  - 8.7: service discovery, add-ons, reminders, waitlist, rebooking, staff and venue discovery, availability and portfolios.
+  - 8.8: cancellation and return policies with booking snapshots, refund workflows, home-visit travel status, merchant delivery methods, zones and tracking links, an optional logistics adapter (no paid partner), draft legal documents with versions and acceptance records, the legal review checklist and the tax review document.
+- **Phase 9, provider integrations (test mode).**
+  - Adapters: Stripe Connect test mode, Resend Free email (English and Arabic templates, email budget), Firebase Cloud Messaging (device tokens, preferences), Supabase PostgreSQL and Storage (signed URLs, private buckets), image re-encoding.
+  - Malware scanning: the feasible architecture, or a recorded blocker.
+  - Mock tests and real-provider tests are labelled separately.
+- **Phase 10, Vercel deployment architecture.** Nothing is deployed without approval.
+  - Vercel projects and configuration;
+  - cron routes in place of the worker and in-process timers;
+  - a PostgreSQL rate limiter in place of Redis;
+  - pooled database connections;
+  - environment documentation, kept separate for staging and production;
+  - a scheduled encrypted backup workflow and restore drill;
+  - monitoring and alerts;
+  - a usage card and cost controls;
+  - rollback and disaster-recovery procedures.
+- **Phase 11, security and QA.**
+  - Audits: security and dependency audits, API and tenant-isolation tests, payment security.
+  - Concurrency: booking and inventory concurrency tests.
+  - Money: reconciliation tests.
+  - Interface: accessibility, RTL and bilingual UI tests.
+  - Operations: performance and restore tests.
+  - Stores: App Store and Google Play preparation, with store fees documented.
+- **Phase 12, pilot preparation.** The pilot does not launch without approval.
+  - Merchants: onboarding and verification, training guides, invitations.
+  - Operations: admin and support procedures.
+  - Pilot terms: the 0% commission promotion for approved pilot merchants.
+  - Tracking: pilot dashboards and feedback.
+  - Readiness: incident response and the launch checklist.
+
 ## Founder decisions that block later phases
 
 See [ADR-0007](adr/0007-founder-decisions-and-mvp-defaults.md). None block phases 0–4 (phase 4 assumptions are listed in ADR-0014); the PSP and merchant-of-record decisions block the real-provider part of phase 5 (assumptions in ADR-0015), and all of them block production.

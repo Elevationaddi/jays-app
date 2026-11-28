@@ -4,6 +4,8 @@ Status: Accepted (engineering). Hosting, the alerting tool and the on-call rota 
 
 Date: 2026-11-28
 
+> **Hosting superseded by [ADR-0024](0024-cost-constraints-and-vercel-first-architecture.md)** (Vercel-first, no AWS, no paid monitoring). The metrics endpoint, runbook, backup scripts and restore drill stay, and backups run from a scheduled GitHub Actions workflow.
+
 ## Context
 
 Phase 7 (docs/10-build-plan.md) asks for:

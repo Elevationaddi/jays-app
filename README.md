@@ -17,7 +17,10 @@ Copy these files into repository root. Start Claude Code in that directory and i
 
 - [Phased implementation plan](docs/implementation-plan.md)
 - [Implementation status](docs/IMPLEMENTATION_STATUS.md)
-- [Architecture decision records](docs/adr/README.md), including [founder decisions still needing approval](docs/adr/0007-founder-decisions-and-mvp-defaults.md)
+- [Architecture decision records](docs/adr/README.md)
+- [Founder decision register](docs/FOUNDER_DECISIONS.md): includes the mandatory rule of **no paid software subscriptions beyond Vercel, ChatGPT and Claude**
+- [Infrastructure costs](docs/INFRASTRUCTURE_COSTS.md), the [founder setup guide](docs/FOUNDER_SETUP_GUIDE.md) and the [launch checklist](docs/LAUNCH_CHECKLIST.md)
+- Hosting target: Vercel, with Supabase Free for PostgreSQL and storage, Resend Free and Firebase Cloud Messaging ([ADR-0024](docs/adr/0024-cost-constraints-and-vercel-first-architecture.md)). AWS and Twilio are no longer planned
 - Full combined specification and storyboard: [`reference/`](reference/)
 
 ## Local development
@@ -29,7 +32,7 @@ Requirements: Node.js 22 (`.nvmrc`), pnpm 10 (`corepack enable`), Docker.
 ```sh
 pnpm install            # also builds the shared packages
 cp .env.example .env    # fictional local values only
-pnpm dev:deps           # PostgreSQL 17 and Redis 7 on 127.0.0.1
+pnpm dev:deps           # PostgreSQL 17 and Redis 7 on 127.0.0.1 (Redis is local-only; phase 10 replaces it with PostgreSQL)
 pnpm db:migrate         # applies packages/db/migrations
 pnpm db:seed            # fictional local accounts and businesses (idempotent, refuses production)
 ```

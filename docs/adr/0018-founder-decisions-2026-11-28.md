@@ -4,6 +4,8 @@ Status: Accepted as direction. Technical work on each decision is approved. Comm
 
 Date: 2026-11-28
 
+> **Revised later on 28 November 2026.** [ADR-0024](0024-cost-constraints-and-vercel-first-architecture.md) supersedes the AWS target and the Twilio/SMS part of D14: JAYS uses Vercel, Supabase Free, Resend Free and Firebase Cloud Messaging, with no SMS. [ADR-0025](0025-travel-fees-home-cancellations-pilot-promotion.md) takes travel fees out of commission (D2, D9) and adds the pilot's 0% commission promotion (D11). The current register is [docs/FOUNDER_DECISIONS.md](../FOUNDER_DECISIONS.md).
+
 ## Context
 
 ADR-0007 listed fifteen founder decisions, and ADRs 0012–0017 built on documented assumptions where a decision was missing. On 28 November 2026 the CEO answered all fifteen and set out phases 8–12. This ADR records the answers. It says which earlier assumptions they replace, what still needs sign-off, and which phase implements each one.
