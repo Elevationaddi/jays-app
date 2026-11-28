@@ -18,13 +18,16 @@ export default async function FinanceOverviewPage({ searchParams }: { searchPara
       </Shell>
     );
   }
-  const o = await api.adminFinanceOverview();
+  const [o, categories] = await Promise.all([api.adminFinanceOverview(), api.adminCategories()]);
   const when = dateTime(locale);
   const manage = can(admin, 'finance.manage');
-  const settingValue = (key: string, value: number) =>
-    key === 'payout_dispute_window_days'
-      ? tr('admin.finance.days', { n: value })
-      : money(value, locale);
+  const settingValue = (key: string, value: number) => {
+    if (key === 'payout_dispute_window_days') return tr('admin.finance.days', { n: value });
+    if (key === 'platform_vat_registered') return tr(value === 1 ? 'common.yes' : 'common.no');
+    if (key === 'commission_vat_bps') return `${(value / 100).toFixed(2)}%`;
+    if (key === 'payout_weekday') return tr(`admin.finance.weekday.${value}` as MessageKey);
+    return money(value, locale);
+  };
   const attention: { key: MessageKey; n: number; href: string }[] = [
     {
       key: 'admin.finance.attn.refunds',
@@ -58,6 +61,7 @@ export default async function FinanceOverviewPage({ searchParams }: { searchPara
     ['admin.finance.balance.payable', o.balances.merchantPayableFils],
     ['admin.finance.balance.inTransit', o.balances.payoutsInTransitFils],
     ['admin.finance.balance.commission', o.balances.platformCommissionFils],
+    ['admin.finance.balance.outputVat', o.balances.platformOutputVatFils],
     ['admin.finance.balance.unallocated', o.balances.unallocatedReceiptsFils],
   ];
   return (
@@ -212,7 +216,14 @@ export default async function FinanceOverviewPage({ searchParams }: { searchPara
               {o.feeRules.map((r) => (
                 <tr key={r.id}>
                   <td>{tr(r.mode === 'shop' ? 'mode.shop' : 'mode.services')}</td>
-                  <td>{r.business ? r.business.name[locale] : tr('admin.finance.platform')}</td>
+                  <td>
+                    {r.business ? r.business.name[locale] : tr('admin.finance.platform')}
+                    {r.category ? (
+                      <div className="muted">
+                        {tr('admin.finance.categoryLabel', { name: r.category.name[locale] })}
+                      </div>
+                    ) : null}
+                  </td>
                   <td>
                     <bdi>{(r.commissionBps / 100).toFixed(2)}%</bdi>
                     {r.inForce ? (
@@ -245,6 +256,25 @@ export default async function FinanceOverviewPage({ searchParams }: { searchPara
           <div className="field">
             <label htmlFor="rule-business">{tr('admin.finance.businessIdOptional')}</label>
             <input id="rule-business" name="businessId" className="ltr" />
+          </div>
+          <div className="field">
+            <label htmlFor="rule-category">{tr('admin.finance.categoryOptional')}</label>
+            <select id="rule-category" name="categoryId" defaultValue="">
+              <option value="">{tr('admin.finance.allCategories')}</option>
+              {(['shop', 'services'] as const).map((m) => (
+                <optgroup key={m} label={tr(m === 'shop' ? 'mode.shop' : 'mode.services')}>
+                  {categories.items
+                    .filter((c) => c.mode === m)
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.parentId ? '— ' : ''}
+                        {c.name[locale]}
+                      </option>
+                    ))}
+                </optgroup>
+              ))}
+            </select>
+            <small className="muted">{tr('admin.finance.categoryHint')}</small>
           </div>
           <div className="field">
             <label htmlFor="rule-percent">{tr('admin.finance.ratePercent')}</label>

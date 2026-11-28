@@ -433,10 +433,19 @@ export class BookingsService {
   }
 
   private async priceOf(conn: Conn, service: ServiceRow, now: Date) {
-    const rates = await currentTaxRates(conn, now);
+    const [rates, business] = await Promise.all([
+      currentTaxRates(conn, now),
+      conn
+        .selectFrom('businesses')
+        .select('tax_registered')
+        .where('id', '=', service.business_id)
+        .executeTakeFirstOrThrow(),
+    ]);
+    // D4: prices include VAT; a business that is not VAT registered charges none.
+    const bps = business.tax_registered ? rates[service.tax_class] : 0;
     return {
       price_fils: service.price_fils,
-      tax_fils: extractInclusiveTax(fils(service.price_fils), rates[service.tax_class], 'half_up'),
+      tax_fils: extractInclusiveTax(fils(service.price_fils), bps, 'half_up'),
     };
   }
 

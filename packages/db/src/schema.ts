@@ -780,10 +780,16 @@ export interface FeeRulesTable {
   reason: string;
   created_by: string | null;
   created_at: CreatedAt;
+  category_id: string | null;
 }
 
 export type FinanceSettingKey =
-  'refund_approval_threshold_fils' | 'payout_dispute_window_days' | 'payout_minimum_fils';
+  | 'refund_approval_threshold_fils'
+  | 'payout_dispute_window_days'
+  | 'payout_minimum_fils'
+  | 'platform_vat_registered'
+  | 'commission_vat_bps'
+  | 'payout_weekday';
 
 export interface FinanceSettingsTable {
   id: Id;
@@ -836,6 +842,79 @@ export interface MerchantEarningsTable {
   payout_id: string | null;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+  commission_vat_bps: Generated<number>;
+  commission_vat_fils: Generated<number>;
+  commission_vat_refunded_fils: Generated<number>;
+  commission_detail: ColumnType<CommissionDetailLine[], string | undefined, string>;
+}
+
+/** How one line's commission was worked out, copied onto the earning at capture. */
+export interface CommissionDetailLine {
+  ref: string;
+  categoryId: string | null;
+  feeRuleId: string | null;
+  commissionBps: number;
+  baseFils: number;
+  commissionFils: number;
+}
+
+export type TaxDocumentKind =
+  'customer_invoice' | 'customer_credit_note' | 'commission_invoice' | 'commission_credit_note';
+
+export interface TaxDocumentLine {
+  description: { en: string; ar: string };
+  qty: number;
+  totalFils: number;
+  vatRateBps: number;
+  vatFils: number;
+}
+
+export interface TaxParty {
+  name: { en: string; ar: string };
+  trn: string | null;
+  address?: string | null;
+  email?: string | null;
+}
+
+export interface DocumentSequencesTable {
+  issuer_key: string;
+  prefix: string;
+  year: number;
+  last_number: number;
+}
+
+export interface TaxDocumentsTable {
+  id: Id;
+  kind: TaxDocumentKind;
+  issuer: 'business' | 'platform';
+  business_id: string;
+  customer_user_id: string | null;
+  number: string;
+  earning_id: string;
+  source_type: 'merchant_earning' | 'refund' | 'dispute';
+  source_id: string;
+  credits_document_id: string | null;
+  tax_document: boolean;
+  seller: ColumnType<TaxParty, string, never>;
+  buyer: ColumnType<TaxParty, string, never>;
+  lines: ColumnType<TaxDocumentLine[], string, never>;
+  net_fils: number;
+  vat_fils: number;
+  total_fils: number;
+  currency: Generated<'AED'>;
+  rules_approved: boolean;
+  issued_at: Timestamp;
+  created_at: CreatedAt;
+}
+
+export interface PayoutRunsTable {
+  id: Id;
+  scheduled_for: ColumnType<Date, string, string>;
+  made_eligible: number | null;
+  payouts: number | null;
+  skipped: number | null;
+  finished_at: Timestamp | null;
+  created_at: CreatedAt;
 }
 
 export type LedgerKind =
@@ -853,6 +932,7 @@ export type LedgerAccount =
   | 'merchant_payable'
   | 'payouts_in_transit'
   | 'platform_commission'
+  | 'platform_output_vat'
   | 'unallocated_receipts';
 
 export interface LedgerTransactionsTable {
@@ -1243,6 +1323,9 @@ export interface Database {
   notification_deliveries: NotificationDeliveriesTable;
   consent_records: ConsentRecordsTable;
   account_deletion_requests: AccountDeletionRequestsTable;
+  document_sequences: DocumentSequencesTable;
+  tax_documents: TaxDocumentsTable;
+  payout_runs: PayoutRunsTable;
 }
 
 /** Every column of every table, used by the drift test. Keep in the same order as above. */
@@ -1840,6 +1923,7 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'reason',
     'created_by',
     'created_at',
+    'category_id',
   ],
   finance_settings: ['id', 'key', 'value', 'effective_at', 'reason', 'created_by', 'created_at'],
   payouts: [
@@ -1878,6 +1962,10 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'payout_id',
     'created_at',
     'updated_at',
+    'commission_vat_bps',
+    'commission_vat_fils',
+    'commission_vat_refunded_fils',
+    'commission_detail',
   ],
   ledger_transactions: [
     'id',
@@ -2115,6 +2203,39 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'postponed_reason',
     'created_at',
     'updated_at',
+  ],
+  document_sequences: ['issuer_key', 'prefix', 'year', 'last_number'],
+  tax_documents: [
+    'id',
+    'kind',
+    'issuer',
+    'business_id',
+    'customer_user_id',
+    'number',
+    'earning_id',
+    'source_type',
+    'source_id',
+    'credits_document_id',
+    'tax_document',
+    'seller',
+    'buyer',
+    'lines',
+    'net_fils',
+    'vat_fils',
+    'total_fils',
+    'currency',
+    'rules_approved',
+    'issued_at',
+    'created_at',
+  ],
+  payout_runs: [
+    'id',
+    'scheduled_for',
+    'made_eligible',
+    'payouts',
+    'skipped',
+    'finished_at',
+    'created_at',
   ],
 };
 

@@ -165,7 +165,9 @@ describe('capture and the ledger (T06)', () => {
     expect(e).toMatchObject({
       gross_fils: 10_500,
       commission_bps: 1_000,
-      commission_fils: 1_050,
+      // D2: commission on the price before VAT (10,500 includes 500 VAT).
+      commission_base_fils: 10_000,
+      commission_fils: 1_000,
       status: 'pending',
     });
     const txs = await h.db
@@ -174,7 +176,7 @@ describe('capture and the ledger (T06)', () => {
       .where('source_id', '=', e.id)
       .execute();
     expect(txs).toEqual([{ kind: 'capture' }]);
-    expect(await ledgerFor(v.businessId)).toEqual({ payable: 9_450, inTransit: 0 });
+    expect(await ledgerFor(v.businessId)).toEqual({ payable: 9_500, inTransit: 0 });
     expect(await unbalancedTransactions()).toBe(0);
   });
 
@@ -198,9 +200,11 @@ describe('capture and the ledger (T06)', () => {
       .where('mo.order_id', '=', order.orderId)
       .execute();
     const byBiz = Object.fromEntries(earnings.map((e) => [e.business_id, e]));
-    expect(byBiz[shopA.businessId]).toMatchObject({ gross_fils: 21_500, commission_fils: 2_000 });
-    expect(byBiz[shopB.businessId]).toMatchObject({ gross_fils: 6_000, commission_fils: 200 });
-    expect(await ledgerFor(shopA.businessId)).toEqual({ payable: 19_500, inTransit: 0 });
+    // Goods before VAT: A 20,000 - 952 VAT = 19,048 at 10%; B 4,000 - 190 VAT = 3,810 at 5%.
+    // Delivery carries no commission (D2).
+    expect(byBiz[shopA.businessId]).toMatchObject({ gross_fils: 21_500, commission_fils: 1_905 });
+    expect(byBiz[shopB.businessId]).toMatchObject({ gross_fils: 6_000, commission_fils: 191 });
+    expect(await ledgerFor(shopA.businessId)).toEqual({ payable: 19_595, inTransit: 0 });
     expect(await unbalancedTransactions()).toBe(0);
   });
 
@@ -239,9 +243,9 @@ describe('refunds (T09, T16)', () => {
       .expect(200);
     await h.deliverWebhooks();
     const e = await earningOf(booking.id);
-    expect(e).toMatchObject({ refunded_fils: 5_250, commission_refunded_fils: 525 });
-    // 10,500 - 1,050 commission - (5,250 - 525) returned = 4,725 still owed to the venue.
-    expect(await ledgerFor(v.businessId)).toEqual({ payable: 4_725, inTransit: 0 });
+    expect(e).toMatchObject({ refunded_fils: 5_250, commission_refunded_fils: 500 });
+    // 10,500 - 1,000 commission - (5,250 - 500) returned = 4,750 still owed to the venue.
+    expect(await ledgerFor(v.businessId)).toEqual({ payable: 4_750, inTransit: 0 });
     expect(await unbalancedTransactions()).toBe(0);
   });
 
@@ -368,8 +372,8 @@ describe('payouts', () => {
     const run = await runPayouts();
     const mine = run.payouts.filter((p) => p.business.id === v.businessId);
     expect(mine).toHaveLength(1);
-    expect(mine[0]).toMatchObject({ amountFils: 9_450, status: 'pending', earningCount: 1 });
-    expect(await ledgerFor(v.businessId)).toEqual({ payable: 9_450, inTransit: 9_450 });
+    expect(mine[0]).toMatchObject({ amountFils: 9_500, status: 'pending', earningCount: 1 });
+    expect(await ledgerFor(v.businessId)).toEqual({ payable: 9_500, inTransit: 9_500 });
 
     // A second run finds nothing new for this business.
     const second = await runPayouts();
@@ -378,7 +382,7 @@ describe('payouts', () => {
     await h.deliverWebhooks();
     expect((await earningOf(done.booking.id)).status).toBe('paid_out');
     expect((await earningOf(upcoming.booking.id)).status).toBe('pending');
-    expect(await ledgerFor(v.businessId)).toEqual({ payable: 9_450, inTransit: 0 });
+    expect(await ledgerFor(v.businessId)).toEqual({ payable: 9_500, inTransit: 0 });
 
     const summary = financeSummarySchema.parse(
       (
@@ -390,12 +394,12 @@ describe('payouts', () => {
       ).body,
     );
     expect(summary).toMatchObject({
-      paidOutFils: 9_450,
-      pendingFils: 9_450,
+      paidOutFils: 9_500,
+      pendingFils: 9_500,
       eligibleFils: 0,
-      payableBalanceFils: 9_450,
+      payableBalanceFils: 9_500,
       inTransitFils: 0,
-      commissionFils: 2_100,
+      commissionFils: 2_000,
     });
     expect(await unbalancedTransactions()).toBe(0);
   });

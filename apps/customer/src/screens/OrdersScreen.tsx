@@ -3,6 +3,7 @@ import { colors, minTouchTarget, radius, spacing } from '@jays/ui';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ShipmentCare } from '../components/AfterSales';
+import { Invoices } from '../components/Invoices';
 import { Tabs } from '../components/Tabs';
 import { Totals } from '../components/Totals';
 import { Banner, Body, Button, Screen, Title } from '../components/ui';
@@ -136,6 +137,7 @@ export function OrderScreen() {
             </View>
           ))}
           <Totals t={order} />
+          <Invoices orderId={order.id} back="/orders/detail" />
         </>
       )}
     </Screen>

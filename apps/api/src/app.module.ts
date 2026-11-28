@@ -48,6 +48,12 @@ import { AdminFinanceService } from './finance/admin-finance.service.js';
 import { BusinessFinanceController } from './finance/business-finance.controller.js';
 import { FinanceScheduler } from './finance/finance-scheduler.js';
 import { FinanceService } from './finance/finance.service.js';
+import {
+  AdminTaxController,
+  BusinessDocumentsController,
+  CustomerDocumentsController,
+} from './finance/tax.controller.js';
+import { TaxService } from './finance/tax.service.js';
 import { PayoutsService } from './finance/payouts.service.js';
 import { ReconciliationService } from './finance/reconciliation.service.js';
 import { CatalogController } from './catalog/catalog.controller.js';
@@ -198,6 +204,9 @@ export class AppModule {
         AdminBookingsController,
         BusinessFinanceController,
         AdminFinanceController,
+        AdminTaxController,
+        BusinessDocumentsController,
+        CustomerDocumentsController,
         PublicReviewsController,
         SupportInfoController,
         CustomerAftercareController,
@@ -269,6 +278,7 @@ export class AppModule {
         AdminBookingsService,
         FinanceService,
         AdminFinanceService,
+        TaxService,
         PayoutsService,
         ReconciliationService,
         FinanceScheduler,

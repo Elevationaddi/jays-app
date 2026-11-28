@@ -12,6 +12,7 @@ import { BookScreen } from './screens/BookScreen';
 import { CartScreen } from './screens/CartScreen';
 import { CheckoutScreen } from './screens/CheckoutScreen';
 import { ModeHome } from './screens/ModeHome';
+import { DocumentScreen } from './screens/DocumentScreen';
 import { NotificationsScreen } from './screens/NotificationsScreen';
 import { OrderScreen, OrdersScreen } from './screens/OrdersScreen';
 import { PrivacyScreen, UnsubscribeScreen } from './screens/PrivacyScreens';
@@ -128,6 +129,8 @@ export function App() {
         return <NewTicketScreen />;
       case '/support/detail':
         return <TicketScreen />;
+      case '/documents/detail':
+        return <DocumentScreen />;
       case '/notifications':
         return <NotificationsScreen />;
       case '/privacy':

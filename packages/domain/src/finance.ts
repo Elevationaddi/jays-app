@@ -6,6 +6,25 @@ import { applyBasisPoints, fils, MoneyError } from './money.js';
  * All amounts are integer fils; rounding is stated explicitly (half-up, ADR-0007 D4 proposed).
  */
 
+/**
+ * D4: tax documents are drafts until a UAE tax professional approves the tax rules. Changing this
+ * to true is a founder decision recorded in an ADR, never a configuration switch; every document
+ * stores the value it was issued under.
+ */
+export const TAX_RULES_APPROVED = false;
+
+/**
+ * The platform's VAT registration number. Null until JAYS registers for VAT (D4); commission VAT
+ * is only charged once `platform_vat_registered` is set, which also needs this number.
+ */
+export const PLATFORM_TRN: string | null = null;
+
+/** Share of `vatTotal` that a refund of `amount` out of `gross` carries, capped at what is left. */
+export function proportionalVat(vatTotal: number, amount: number, gross: number, left: number) {
+  if (amount >= gross) return left;
+  return proportional(vatTotal, amount, gross, left, false);
+}
+
 export const FINANCE_MODES = ['shop', 'services'] as const;
 export type FinanceMode = (typeof FINANCE_MODES)[number];
 
@@ -14,6 +33,7 @@ export const LEDGER_ACCOUNTS = [
   'merchant_payable',
   'payouts_in_transit',
   'platform_commission',
+  'platform_output_vat',
   'unallocated_receipts',
 ] as const;
 export type LedgerAccount = (typeof LEDGER_ACCOUNTS)[number];
@@ -28,6 +48,9 @@ export const FINANCE_SETTING_KEYS = [
   'refund_approval_threshold_fils',
   'payout_dispute_window_days',
   'payout_minimum_fils',
+  'platform_vat_registered',
+  'commission_vat_bps',
+  'payout_weekday',
 ] as const;
 export type FinanceSettingKey = (typeof FINANCE_SETTING_KEYS)[number];
 
@@ -40,12 +63,21 @@ export const FINANCE_SETTING_DEFAULTS: Record<FinanceSettingKey, number> = {
   refund_approval_threshold_fils: 50_000,
   payout_dispute_window_days: 7,
   payout_minimum_fils: 0,
+  // D4: VAT on commission only once the platform is VAT registered (proposed; needs a UAE tax
+  // professional before any production use).
+  platform_vat_registered: 0,
+  commission_vat_bps: 500,
+  // D6: weekly payouts, ISO weekday (1 = Monday).
+  payout_weekday: 1,
 };
 
 export const FINANCE_SETTING_LIMITS: Record<FinanceSettingKey, { min: number; max: number }> = {
   refund_approval_threshold_fils: { min: 0, max: 100_000_000 },
   payout_dispute_window_days: { min: 0, max: 120 },
   payout_minimum_fils: { min: 0, max: 100_000_000 },
+  platform_vat_registered: { min: 0, max: 1 },
+  commission_vat_bps: { min: 0, max: 10_000 },
+  payout_weekday: { min: 1, max: 7 },
 };
 
 export interface EffectiveRow {
@@ -66,30 +98,44 @@ export interface FeeRule extends EffectiveRow {
   id: string;
   mode: FinanceMode;
   businessId: string | null;
+  /** Null applies to every category. */
+  categoryId?: string | null;
   commissionBps: number;
 }
 
 /**
- * The commission rule for a business and mode at a time. A rule for the business beats the
- * platform rule (docs/06-architecture-data.md: merchant > platform). No rule means no commission.
+ * The commission rule for a sale at a time (D2). `mode` is the transaction type (product sale or
+ * booking). `categoryPath` is the item's category and its ancestors, nearest first. The most
+ * specific rule wins: business and category, then business, then category, then the platform
+ * default. Within each level, the nearer category wins, then the latest rule in force. No rule
+ * means no commission.
  */
 export function feeRuleFor(
   rules: readonly FeeRule[],
   mode: FinanceMode,
   businessId: string,
   at: Date,
+  categoryPath: readonly string[] = [],
 ): FeeRule | undefined {
   const forMode = rules.filter((r) => r.mode === mode);
-  return (
+  const pick = (business: string | null, category: string | null) =>
     inForce(
-      forMode.filter((r) => r.businessId === businessId),
+      forMode.filter((r) => r.businessId === business && (r.categoryId ?? null) === category),
       at,
-    ) ??
-    inForce(
-      forMode.filter((r) => r.businessId === null),
-      at,
-    )
-  );
+    );
+  const byCategory = (business: string | null) => {
+    for (const c of categoryPath) {
+      const rule = pick(business, c);
+      if (rule) return rule;
+    }
+    return undefined;
+  };
+  return byCategory(businessId) ?? pick(businessId, null) ?? byCategory(null) ?? pick(null, null);
+}
+
+/** VAT the platform charges the merchant on its commission (D4); zero unless registered. */
+export function commissionVatFor(commissionFils: number, vatBps: number, registered: boolean) {
+  return registered ? applyBasisPoints(fils(commissionFils), vatBps, 'half_up') : 0;
 }
 
 export function settingAt(
@@ -115,11 +161,25 @@ export interface Earning {
   commissionFils: number;
   refundedFils: number;
   commissionRefundedFils: number;
+  /** VAT on the commission, charged to the merchant (D4). */
+  commissionVatFils?: number;
+  commissionVatRefundedFils?: number;
 }
 
 /** What the merchant is owed from one earning after refunds. Can be zero, never negative. */
 export function netOf(e: Earning): number {
-  return e.grossFils - e.commissionFils - (e.refundedFils - e.commissionRefundedFils);
+  const vat = (e.commissionVatFils ?? 0) - (e.commissionVatRefundedFils ?? 0);
+  return e.grossFils - e.commissionFils - (e.refundedFils - e.commissionRefundedFils) - vat;
+}
+
+/** `part` of `total` in proportion to `amount / gross`, rounded half-up, capped at `left`. */
+function proportional(total: number, amount: number, gross: number, left: number, last: boolean) {
+  if (last) return left;
+  const numerator = BigInt(total) * BigInt(amount);
+  const denominator = BigInt(gross);
+  const q = numerator / denominator;
+  const r = numerator % denominator;
+  return Math.min(Number(r * 2n >= denominator ? q + 1n : q), left);
 }
 
 /**
@@ -136,19 +196,23 @@ export function allocateRefund(e: Earning, amountFils: number) {
   if (amountFils > remaining) {
     throw new MoneyError(`Refund of ${amountFils} exceeds the ${remaining} fils left to refund`);
   }
-  const commissionLeft = e.commissionFils - e.commissionRefundedFils;
-  let commission: number;
-  if (amountFils === remaining) {
-    commission = commissionLeft;
-  } else {
-    const numerator = BigInt(e.commissionFils) * BigInt(amountFils);
-    const denominator = BigInt(e.grossFils);
-    const q = numerator / denominator;
-    const r = numerator % denominator;
-    commission = Number(r * 2n >= denominator ? q + 1n : q);
-    commission = Math.min(commission, commissionLeft);
-  }
-  return { merchantFils: amountFils - commission, commissionFils: commission };
+  const last = amountFils === remaining;
+  const commission = proportional(
+    e.commissionFils,
+    amountFils,
+    e.grossFils,
+    e.commissionFils - e.commissionRefundedFils,
+    last,
+  );
+  const vatTotal = e.commissionVatFils ?? 0;
+  const vat = proportional(
+    vatTotal,
+    amountFils,
+    e.grossFils,
+    vatTotal - (e.commissionVatRefundedFils ?? 0),
+    last,
+  );
+  return { merchantFils: amountFils - commission - vat, commissionFils: commission, vatFils: vat };
 }
 
 export interface LedgerLine {
@@ -212,11 +276,12 @@ const cr = (account: LedgerAccount, businessId: string | null, amount: number): 
 /** Postings for each money movement. Every one balances by construction. */
 export const postings = {
   /** A paid suborder or booking: the money sits at the provider, owed to merchant and platform. */
-  capture: (businessId: string, grossFils: number, commissionFils: number) =>
+  capture: (businessId: string, grossFils: number, commissionFils: number, vatFils = 0) =>
     balanced([
       dr('psp_clearing', null, grossFils),
-      cr('merchant_payable', businessId, grossFils - commissionFils),
+      cr('merchant_payable', businessId, grossFils - commissionFils - vatFils),
       cr('platform_commission', null, commissionFils),
+      cr('platform_output_vat', null, vatFils),
     ]),
   /** A payment that arrived after its order or hold ended; it is refunded automatically. */
   lateCapture: (amountFils: number) =>
@@ -224,11 +289,15 @@ export const postings = {
   lateRefund: (amountFils: number) =>
     balanced([dr('unallocated_receipts', null, amountFils), cr('psp_clearing', null, amountFils)]),
   /** A refund or lost dispute, split between the merchant and the commission. */
-  reversal: (businessId: string, split: { merchantFils: number; commissionFils: number }) =>
+  reversal: (
+    businessId: string,
+    split: { merchantFils: number; commissionFils: number; vatFils?: number },
+  ) =>
     balanced([
       dr('merchant_payable', businessId, split.merchantFils),
       dr('platform_commission', null, split.commissionFils),
-      cr('psp_clearing', null, split.merchantFils + split.commissionFils),
+      dr('platform_output_vat', null, split.vatFils ?? 0),
+      cr('psp_clearing', null, split.merchantFils + split.commissionFils + (split.vatFils ?? 0)),
     ]),
   payoutInitiated: (businessId: string, amountFils: number) =>
     balanced([

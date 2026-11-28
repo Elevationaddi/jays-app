@@ -56,11 +56,13 @@ export async function createFeeRule(f: FormData) {
   const back = backTo(f, '/admin/finance');
   const mode = str(f, 'mode');
   const businessId = str(f, 'businessId');
+  const categoryId = str(f, 'categoryId');
   const bps = bpsOf(str(f, 'percent'));
   const effectiveAt = instantOf(str(f, 'effectiveAt'));
   if (
     (mode !== 'shop' && mode !== 'services') ||
     (businessId && !UUID.test(businessId)) ||
+    (categoryId && !UUID.test(categoryId)) ||
     bps === null ||
     effectiveAt === null
   ) {
@@ -70,6 +72,7 @@ export async function createFeeRule(f: FormData) {
     (await serverApi()).adminCreateFeeRule({
       mode: mode as 'shop' | 'services',
       businessId: businessId || null,
+      categoryId: categoryId || null,
       commissionBps: bps as number,
       ...(effectiveAt ? { effectiveAt } : {}),
       reason: str(f, 'reason'),
@@ -82,17 +85,27 @@ export async function createFinanceSetting(f: FormData) {
   const key = str(f, 'key');
   const raw = str(f, 'value');
   const effectiveAt = instantOf(str(f, 'effectiveAt'));
-  const value =
-    key === 'payout_dispute_window_days'
-      ? /^\d{1,3}$/.test(raw)
-        ? Number(raw)
-        : null
+  // Days, yes/no (1/0) and weekday (1 = Monday) are whole numbers; the VAT rate is a percentage;
+  // the rest are AED amounts.
+  const value = [
+    'payout_dispute_window_days',
+    'platform_vat_registered',
+    'payout_weekday',
+  ].includes(key)
+    ? /^\d{1,3}$/.test(raw)
+      ? Number(raw)
+      : null
+    : key === 'commission_vat_bps'
+      ? bpsOf(raw)
       : filsOf(raw);
   if (
     ![
       'refund_approval_threshold_fils',
       'payout_dispute_window_days',
       'payout_minimum_fils',
+      'platform_vat_registered',
+      'commission_vat_bps',
+      'payout_weekday',
     ].includes(key) ||
     value === null ||
     effectiveAt === null
@@ -218,5 +231,23 @@ export async function resolveReconciliationItem(f: FormData) {
   if (!UUID.test(id)) invalid(back);
   await run(back, async () =>
     (await serverApi()).adminResolveReconciliationItem(id, str(f, 'note')),
+  );
+}
+
+/** Records a seller's VAT registration and TRN (D4). */
+export async function setBusinessTax(f: FormData) {
+  const back = backTo(f, '/admin/finance/tax');
+  const businessId = str(f, 'businessId');
+  const registered = str(f, 'taxRegistered') === 'yes';
+  const taxId = str(f, 'taxId');
+  if (!UUID.test(businessId) || (taxId && !/^[0-9]{15}$/.test(taxId)) || (registered && !taxId)) {
+    invalid(back);
+  }
+  await run(back, async () =>
+    (await serverApi()).adminSetBusinessTax(businessId, {
+      taxRegistered: registered,
+      taxId: taxId || null,
+      reason: str(f, 'reason'),
+    }),
   );
 }

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { ReviewForm } from '../components/AfterSales';
 import { Chips, cardStyles as s } from '../components/Picker';
+import { Invoices } from '../components/Invoices';
 import { Tabs } from '../components/Tabs';
 import { Banner, Body, Button, Screen, Title } from '../components/ui';
 import { useApp } from '../context';
@@ -337,6 +338,7 @@ export function AppointmentScreen() {
           />
         </View>
       ) : null}
+      <Invoices bookingId={b.id} back="/appointments/detail" />
       <Button
         variant="ghost"
         label={tr('care.help')}

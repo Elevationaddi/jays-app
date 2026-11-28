@@ -24,6 +24,7 @@ export type Route =
   | '/support'
   | '/support/new'
   | '/support/detail'
+  | '/documents/detail'
   | '/notifications'
   | '/privacy'
   | '/unsubscribe';
@@ -56,6 +57,9 @@ export interface AppState {
   /** The support ticket open in /support/detail, and the draft for /support/new. */
   ticketId: string | null;
   ticketDraft: TicketDraft;
+  /** The invoice or credit note open in /documents/detail, and where its back button goes. */
+  documentId: string | null;
+  documentBack: Route;
   /** The token from a marketing unsubscribe link opened in the app. */
   unsubscribeToken: string | null;
   /** A guest cart's token, merged into the account cart after sign-in. */
@@ -78,6 +82,7 @@ export type Action =
   | { type: 'openBooking'; bookingId: string }
   | { type: 'openTicket'; ticketId: string }
   | { type: 'newTicket'; draft: TicketDraft }
+  | { type: 'openDocument'; documentId: string; back: Route }
   | { type: 'openUnsubscribe'; token: string }
   | { type: 'cart'; cartToken: string | null; count: number }
   | { type: 'requireSignIn'; returnTo: Route }
@@ -104,6 +109,8 @@ export function initialState(locale: Locale): AppState {
     bookingId: null,
     ticketId: null,
     ticketDraft: { type: 'other' },
+    documentId: null,
+    documentBack: '/orders',
     unsubscribeToken: null,
     cartToken: null,
     cartCount: 0,
@@ -192,6 +199,13 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, route: '/support/detail', ticketId: action.ticketId };
     case 'newTicket':
       return { ...state, route: '/support/new', ticketDraft: action.draft };
+    case 'openDocument':
+      return {
+        ...state,
+        route: '/documents/detail',
+        documentId: action.documentId,
+        documentBack: action.back,
+      };
     case 'openUnsubscribe':
       // Works signed out: the link itself identifies the person.
       return { ...state, route: '/unsubscribe', unsubscribeToken: action.token };

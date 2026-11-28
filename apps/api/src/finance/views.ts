@@ -31,7 +31,7 @@ export const actorOf = (names: Map<string, string>, id: string | null | undefine
   id ? { id, name: names.get(id) ?? '' } : null;
 
 /** Net still owed on earnings, as SQL. */
-export const netSql = sql<string>`coalesce(sum(e.gross_fils - e.commission_fils - (e.refunded_fils - e.commission_refunded_fils)), 0)`;
+export const netSql = sql<string>`coalesce(sum(e.gross_fils - e.commission_fils - (e.refunded_fils - e.commission_refunded_fils) - (e.commission_vat_fils - e.commission_vat_refunded_fils)), 0)`;
 
 export const EARNING_COLUMNS = [
   'e.id',
@@ -45,6 +45,8 @@ export const EARNING_COLUMNS = [
   'e.commission_fils',
   'e.refunded_fils',
   'e.commission_refunded_fils',
+  'e.commission_vat_fils',
+  'e.commission_vat_refunded_fils',
   'e.status',
   'e.eligible_at',
   'e.payout_id',
@@ -75,6 +77,8 @@ export interface EarningRow {
   commission_fils: number;
   refunded_fils: number;
   commission_refunded_fils: number;
+  commission_vat_fils: number;
+  commission_vat_refunded_fils: number;
   status: 'pending' | 'eligible' | 'in_payout' | 'paid_out';
   eligible_at: Date | null;
   payout_id: string | null;
@@ -94,12 +98,15 @@ export function earningView(r: EarningRow): EarningView {
     grossFils: r.gross_fils,
     commissionBps: r.commission_bps,
     commissionFils: r.commission_fils,
+    commissionVatFils: r.commission_vat_fils - r.commission_vat_refunded_fils,
     refundedFils: r.refunded_fils,
     netFils: netOf({
       grossFils: r.gross_fils,
       commissionFils: r.commission_fils,
       refundedFils: r.refunded_fils,
       commissionRefundedFils: r.commission_refunded_fils,
+      commissionVatFils: r.commission_vat_fils,
+      commissionVatRefundedFils: r.commission_vat_refunded_fils,
     }),
     status: r.status,
     eligibleAt: iso(r.eligible_at),
