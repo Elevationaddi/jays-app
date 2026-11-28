@@ -10,7 +10,7 @@ import { useApp } from '../context';
 import { errorKey } from '../errors';
 import type { Route, TicketDraft } from '../state';
 
-type TicketItem = Omit<TicketView, 'messages'>;
+type TicketItem = Omit<TicketView, 'messages' | 'attachments'>;
 const TYPES: TicketDraft['type'][] = ['order', 'booking', 'payment', 'account', 'other'];
 
 const stamp = (iso: string, locale: 'en' | 'ar') =>
