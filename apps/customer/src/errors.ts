@@ -36,6 +36,10 @@ export function errorKey(error: unknown): { key: MessageKey; seconds: number } {
     NOT_REVIEWABLE: 'error.notReviewable',
     INVALID_TRANSITION: 'care.changed',
     VERSION_CONFLICT: 'care.changed',
+    PASSWORD_INCORRECT: 'error.passwordIncorrect',
+    DELETION_PENDING: 'error.deletionPending',
+    ACCOUNT_HAS_OPEN_ACTIVITY: 'error.openActivity',
+    INVALID_UNSUBSCRIBE_LINK: 'unsubscribe.invalid',
   };
   return { key: map[error.code] ?? 'common.error', seconds };
 }

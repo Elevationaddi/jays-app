@@ -317,7 +317,7 @@ export class NotificationsService {
     if (ids.length === 0) return [];
     const rows = await this.db
       .selectFrom('users')
-      .select(['id', 'locale', 'email', 'email_verified_at', 'status'])
+      .select(['id', 'locale', 'email', 'email_verified_at', 'status', 'notify_email'])
       .where('id', 'in', ids)
       .execute();
     return rows
@@ -325,7 +325,8 @@ export class NotificationsService {
       .map((u) => ({
         userId: u.id,
         locale: u.locale,
-        email: u.email_verified_at ? u.email : null,
+        // In-app always; email only to a verified address the person has not switched off (D14).
+        email: u.email_verified_at && u.notify_email ? u.email : null,
         link,
       }));
   }

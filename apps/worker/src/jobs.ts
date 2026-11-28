@@ -66,3 +66,21 @@ export function markEarningsEligibleJob(db: SqlRunner, intervalMs = 600_000): Jo
     },
   };
 }
+
+/**
+ * Anonymises accounts whose deletion grace period has ended (ADR-0019). The rule is the database
+ * function `complete_account_deletions` (migration 0008), which postpones a request by a day if an
+ * order, appointment, return or membership became active during the grace period.
+ */
+export function completeAccountDeletionsJob(db: SqlRunner, intervalMs = 3_600_000): Job {
+  return {
+    name: 'complete-account-deletions',
+    intervalMs,
+    async run() {
+      const { rows } = await db.query<{ n: number }>(
+        'SELECT complete_account_deletions(now(), 50) AS n',
+      );
+      return Number(rows[0]?.n ?? 0);
+    },
+  };
+}

@@ -17,6 +17,20 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 
 Founder decisions: [ADR-0018](adr/0018-founder-decisions-2026-11-28.md). Phase 8 ships as slices. Each slice is its own PR, merged once CI passes.
 
+### 8.2 Account and privacy (D14, D15)
+
+Decision: [ADR-0019](adr/0019-account-privacy-consent-deletion.md). Consent wording, the 14-day grace period and the retention list are proposed, pending legal approval.
+
+- **Marketing consent per channel:** email, SMS and push, chosen separately at sign-up (never pre-ticked) and in settings. An append-only history records each grant and withdrawal with its source, language and policy version.
+- **Notification preferences:** order and appointment updates by email, SMS and push. The dispatcher now skips email for people who switched it off. In-app notices and security codes always send.
+- **One-click unsubscribe:** signed links that work without signing in (`/v1/unsubscribe`). The customer app has a screen for them.
+- **Data export** as JSON (`GET /me/export`).
+- **Account deletion:**
+  - Needs the password and cannot go ahead with open orders, upcoming appointments, open returns or a business membership.
+  - It can be canceled during 14 days. After that the worker anonymises the account and keeps financial records.
+- **Screens:** Privacy and notifications (customer app), Unsubscribe, and per-channel sign-up choices in the customer app and the business portal.
+- **API:** 5 new paths (165 in total), migration 0008.
+
 ### 8.1 Customer app after-sales, branding, decisions record
 
 - **Customer app:**

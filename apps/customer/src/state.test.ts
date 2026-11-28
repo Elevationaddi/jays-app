@@ -1,6 +1,6 @@
 import type { Me, TokenPair } from '@jays/contracts';
 import { describe, expect, it } from 'vitest';
-import { initialState, reducer, type AppState, type Action } from './state';
+import { initialState, reducer, unsubscribeTokenFrom, type AppState, type Action } from './state';
 
 const run = (actions: Action[], start: AppState = initialState('en')) =>
   actions.reduce(reducer, start);
@@ -15,7 +15,7 @@ const user: Me = {
   locale: 'ar',
   emirate: null,
   preferredMode: null,
-  marketingConsent: false,
+  marketing: { email: false, sms: false, push: false },
   hasBusinessMembership: false,
   createdAt: '2026-11-27T00:00:00.000Z',
 };
@@ -150,5 +150,21 @@ describe('after-sales navigation', () => {
   it('opens a ticket by id', () => {
     const s = run([{ type: 'openTicket', ticketId: 't-1' }]);
     expect(s).toMatchObject({ route: '/support/detail', ticketId: 't-1' });
+  });
+});
+
+describe('privacy navigation', () => {
+  it('opens an unsubscribe link without signing in', () => {
+    const s = run([{ type: 'openUnsubscribe', token: 'abc.def' }]);
+    expect(s.route).toBe('/unsubscribe');
+    expect(s.unsubscribeToken).toBe('abc.def');
+    expect(s.session).toBeNull();
+  });
+
+  it('reads the token from an unsubscribe link and ignores other URLs', () => {
+    expect(unsubscribeTokenFrom('https://jays.example/unsubscribe?token=abc.d-_')).toBe('abc.d-_');
+    expect(unsubscribeTokenFrom('jays://unsubscribe?lang=ar&token=x%2Ey')).toBe('x.y');
+    expect(unsubscribeTokenFrom('https://jays.example/shop?token=abc')).toBeNull();
+    expect(unsubscribeTokenFrom('https://jays.example/unsubscribe')).toBeNull();
   });
 });

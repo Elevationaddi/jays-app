@@ -57,6 +57,11 @@ export function AccountScreen() {
             label={tr('support.title')}
             onPress={() => dispatch({ type: 'navigate', route: '/support' })}
           />
+          <Button
+            variant="secondary"
+            label={tr('account.privacy')}
+            onPress={() => dispatch({ type: 'navigate', route: '/privacy' })}
+          />
         </>
       ) : null}
       <Button

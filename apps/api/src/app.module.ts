@@ -98,6 +98,8 @@ import { DEPENDENCY_PROBES, type DependencyProbe } from './health/dependencies.j
 import { HealthController } from './health/health.controller.js';
 import { Infrastructure } from './health/infrastructure.js';
 import { MeController } from './me/me.controller.js';
+import { PrivacyController, UnsubscribeController } from './privacy/privacy.controller.js';
+import { PrivacyService } from './privacy/privacy.service.js';
 import { HttpMetrics } from './observability/http-metrics.js';
 import { MetricsController } from './observability/metrics.controller.js';
 import { MeService } from './me/me.service.js';
@@ -175,6 +177,8 @@ export class AppModule {
         ReferenceController,
         AuthController,
         MeController,
+        PrivacyController,
+        UnsubscribeController,
         BusinessesController,
         AdminAuthController,
         AdminController,
@@ -239,6 +243,7 @@ export class AppModule {
         sessionStore('admin'),
         AuthService,
         MeService,
+        PrivacyService,
         BusinessesService,
         AdminService,
         OnboardingService,

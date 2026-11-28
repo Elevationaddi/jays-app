@@ -27,6 +27,7 @@ import {
   OTP_MAX_SENDS,
   OTP_RESEND_COOLDOWN_SECONDS,
   OTP_TTL_SECONDS,
+  MARKETING_POLICY_VERSION,
   TERMS_VERSION,
 } from './policy.js';
 import { refreshFailure, type SessionStore } from './sessions.js';
@@ -108,18 +109,36 @@ export class AuthService {
           locale: body.locale,
           terms_version: TERMS_VERSION,
           terms_accepted_at: now,
-          marketing_consent: body.marketingConsent,
-          marketing_consent_at: body.marketingConsent ? now : null,
+          marketing_email: body.marketing.email === true,
+          marketing_sms: body.marketing.sms === true,
+          marketing_push: body.marketing.push === true,
         })
         .returning(['id'])
         .executeTakeFirstOrThrow();
+      const granted = (['email', 'sms', 'push'] as const).filter((c) => body.marketing[c]);
+      if (granted.length > 0) {
+        await trx
+          .insertInto('consent_records')
+          .values(
+            granted.map((c) => ({
+              user_id: user.id,
+              purpose: `marketing_${c}` as const,
+              granted: true,
+              source: 'signup' as const,
+              locale: body.locale,
+              policy_version: MARKETING_POLICY_VERSION,
+              request_id: meta.requestId,
+            })),
+          )
+          .execute();
+      }
       await writeAudit(trx, {
         actorType: 'user',
         actorId: user.id,
         action: 'user.registered',
         targetType: 'user',
         targetId: user.id,
-        diff: { channel, termsVersion: TERMS_VERSION, marketingConsent: body.marketingConsent },
+        diff: { channel, termsVersion: TERMS_VERSION, marketing: granted },
         requestId: meta.requestId,
       });
       const real = await this.createChallenge(
