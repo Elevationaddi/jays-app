@@ -131,6 +131,11 @@ export const PLATFORM_CAPABILITIES = [
   // Phase 4 (ADR-0014): booking monitoring and service takedowns.
   'bookings.view',
   'services.takedown',
+  // Phase 5 (ADR-0015): finance. View money, issue and approve refunds, manage fee rules,
+  // settings, payout holds, disputes, payout runs and reconciliation.
+  'finance.view',
+  'finance.refund',
+  'finance.manage',
 ] as const;
 export type PlatformCapability = (typeof PLATFORM_CAPABILITIES)[number];
 
@@ -147,6 +152,7 @@ export const PLATFORM_GRANTS: Record<PlatformRole, readonly PlatformCapability[]
     'products.takedown',
     'bookings.view',
     'services.takedown',
+    'finance.view',
   ],
   catalog: [
     'businesses.view',
@@ -164,9 +170,10 @@ export const PLATFORM_GRANTS: Record<PlatformRole, readonly PlatformCapability[]
     'bookings.view',
     'services.takedown',
   ],
-  finance: [],
-  support: ['businesses.view', 'products.view', 'bookings.view'],
-  analyst: [],
+  finance: ['businesses.view', 'bookings.view', 'finance.view', 'finance.refund', 'finance.manage'],
+  // Support can request refunds; above the threshold a second admin must approve (T16).
+  support: ['businesses.view', 'products.view', 'bookings.view', 'finance.view', 'finance.refund'],
+  analyst: ['finance.view'],
 };
 
 export function isPlatformRole(value: unknown): value is PlatformRole {

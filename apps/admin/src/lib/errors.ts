@@ -89,6 +89,26 @@ export function errorMessageKey(code: string | undefined): MessageKey | null {
       return 'error.cartNotReady';
     case 'PAYMENT_PROVIDER_UNAVAILABLE':
       return 'error.paymentUnavailable';
+    case 'REFUND_EXCEEDS_CAPTURE':
+      return 'error.refundExceeds';
+    case 'SAME_APPROVER':
+      return 'error.sameApprover';
+    case 'ALREADY_DECIDED':
+      return 'error.alreadyDecided';
+    case 'EFFECTIVE_IN_PAST':
+      return 'error.effectiveInPast';
+    case 'RULE_EXISTS':
+      return 'error.ruleExists';
+    case 'PERIOD_NOT_OVER':
+      return 'error.periodNotOver';
+    case 'ALREADY_RECONCILED':
+      return 'error.alreadyReconciled';
+    case 'DISPUTE_OPEN':
+      return 'error.disputeOpen';
+    case 'HOLD_EXISTS':
+      return 'error.holdActive';
+    case 'NOT_REFUNDABLE':
+      return 'error.notRefundable';
     default:
       return 'common.error';
   }

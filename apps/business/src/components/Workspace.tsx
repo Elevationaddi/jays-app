@@ -67,4 +67,12 @@ export function Workspace({
 export const aedInput = (fils: number) => (fils / 100).toFixed(2);
 
 /** Formats integer fils as AED for display in the locale. */
-export const money = (amount: number, locale: Locale) => formatAed(fils(amount), locale);
+/** AED from fils; signed, because a balance goes negative after a chargeback. */
+export const money = (amount: number, locale: Locale) =>
+  amount < 0
+    ? new Intl.NumberFormat(locale === 'ar' ? 'ar-AE' : 'en-AE', {
+        style: 'currency',
+        currency: 'AED',
+        minimumFractionDigits: 2,
+      }).format(amount / 100)
+    : formatAed(fils(amount), locale);

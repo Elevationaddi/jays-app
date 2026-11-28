@@ -13,6 +13,7 @@ export type Tab =
   | 'services'
   | 'staff'
   | 'calendar'
+  | 'finance'
   | 'team';
 
 /** Workspace tabs, shown only for what the member's capabilities allow. */
@@ -87,6 +88,12 @@ export function BusinessNav({
       href: `/business/${business.id}/staff`,
       label: t(locale, 'business.nav.staff'),
       show: services && (can('services.manage') || can('bookings.schedule')),
+    },
+    {
+      key: 'finance',
+      href: `/business/${business.id}/finance`,
+      label: t(locale, 'business.nav.finance'),
+      show: can('finance.view'),
     },
     {
       key: 'team',

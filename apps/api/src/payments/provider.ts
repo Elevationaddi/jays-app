@@ -12,7 +12,9 @@ export type ProviderEventType =
   | 'payment_intent.succeeded'
   | 'payment_intent.payment_failed'
   | 'refund.succeeded'
-  | 'refund.failed';
+  | 'refund.failed'
+  | 'payout.paid'
+  | 'payout.failed';
 
 export interface ProviderEvent {
   id: string;
@@ -21,7 +23,22 @@ export interface ProviderEvent {
   amountFils: number;
   currency: string;
   refundId: string | null;
+  payoutId: string | null;
+  /** Our own id passed when the payout was created, echoed back by the provider. */
+  reference: string | null;
   failureCode: string | null;
+}
+
+/** One record from the provider's own books, used by daily reconciliation (T15). */
+export interface ProviderRecord {
+  kind: 'payment' | 'refund' | 'payout';
+  /** Intent id for payments, refund id for refunds, payout id for payouts. */
+  ref: string;
+  intentId: string | null;
+  amountFils: number;
+  currency: string;
+  status: 'succeeded' | 'failed' | 'pending' | 'paid';
+  at: Date;
 }
 
 export class ProviderUnavailableError extends Error {
@@ -44,6 +61,20 @@ export interface PaymentProvider {
   refund(input: { intentId: string; amountFils: number; idempotencyKey: string }): Promise<{
     refundId: string;
   }>;
+  /**
+   * Sends money to a merchant's payout destination. Idempotent per key. The result arrives as a
+   * signed `payout.paid` or `payout.failed` webhook. Throws when refused or unreachable.
+   */
+  createPayout(input: {
+    /** Our payout id; echoed back in webhooks so they match even before we store the ref. */
+    reference: string;
+    businessId: string;
+    amountFils: number;
+    currency: 'AED';
+    idempotencyKey: string;
+  }): Promise<{ payoutId: string }>;
+  /** The provider's records that changed in [from, to), for reconciliation. */
+  listRecords(input: { from: Date; to: Date }): Promise<ProviderRecord[]>;
   /** Verifies the signature over the raw body and parses the event; null when not authentic. */
   verifyWebhook(rawBody: Buffer, signature: string | undefined, now: Date): ProviderEvent | null;
 }

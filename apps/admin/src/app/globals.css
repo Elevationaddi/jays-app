@@ -619,3 +619,56 @@ td input[type='text'] {
 .badge.archived {
   color: var(--text-muted);
 }
+
+/* Finance (phase 5). */
+.badge.payout-paid,
+.badge.earning-paid_out,
+.badge.dispute-won,
+.badge.recon-completed,
+.badge.succeeded,
+.badge.refunded {
+  color: var(--success);
+}
+.badge.payout-pending,
+.badge.earning-pending,
+.badge.earning-in_payout,
+.badge.pending_approval,
+.badge.refund_pending,
+.badge.partially_refunded,
+.badge.recon-running,
+.badge.dispute-open,
+.badge.running {
+  color: #8a5a00;
+}
+.badge.earning-eligible,
+.badge.completed {
+  color: var(--success);
+}
+.badge.payout-failed,
+.badge.dispute-lost,
+.badge.recon-failed,
+.badge.refund_failed,
+.badge.failed {
+  color: var(--danger);
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+.card.stat {
+  padding: 16px;
+  gap: 4px;
+}
+.card.stat strong {
+  font-size: 1.5rem;
+}
+.card.stat .negative {
+  color: var(--danger);
+}
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}

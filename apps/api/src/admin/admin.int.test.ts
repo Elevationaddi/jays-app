@@ -94,7 +94,13 @@ describe('admin sign-in requires MFA (T03)', () => {
       roles: ['support'],
       // Support can read merchant records (phase 2), listings (phase 3) and bookings (phase 4) but
       // holds no admin or audit capability.
-      capabilities: ['businesses.view', 'products.view', 'bookings.view'],
+      capabilities: [
+        'businesses.view',
+        'products.view',
+        'bookings.view',
+        'finance.view',
+        'finance.refund',
+      ],
     });
     await h.http().get('/v1/admin/me').set('Authorization', bearer(session)).expect(200);
   });

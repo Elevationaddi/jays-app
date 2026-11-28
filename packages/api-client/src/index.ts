@@ -109,6 +109,31 @@ import {
   sessionSchema,
   tokenPairSchema,
 } from '@jays/contracts';
+import type {
+  disputeInputSchema,
+  disputeResolutionSchema,
+  feeRuleInputSchema,
+  financeSettingInputSchema,
+  payoutHoldInputSchema,
+  refundDecisionSchema,
+  refundRequestInputSchema,
+} from '@jays/contracts';
+import {
+  adminEarningSchema,
+  adminPaymentSchema,
+  disputeSchema,
+  earningSchema,
+  feeRuleSchema,
+  financeOverviewSchema,
+  financeSettingSchema,
+  financeSummarySchema,
+  ledgerLineSchema,
+  payoutHoldSchema,
+  payoutRunResultSchema,
+  payoutSchema,
+  reconciliationRunSchema,
+  refundRequestSchema,
+} from '@jays/contracts';
 import { z } from 'zod';
 
 /** A failed API call, carrying the error envelope from docs/07-api.md. */
@@ -157,6 +182,8 @@ function query(params: Record<string, string | number | boolean | undefined>): s
   const text = search.toString();
   return text ? `?${text}` : '';
 }
+
+type Page = { cursor?: string; limit?: number };
 
 export function createApiClient(options: ApiClientOptions) {
   const doFetch = options.fetch ?? fetch;
@@ -675,6 +702,85 @@ export function createApiClient(options: ApiClientOptions) {
       call('POST', '/admin/brands', brandSchema, body),
     updateBrand: (id: string, body: z.input<typeof updateBrandRequestSchema>) =>
       call('PATCH', `/admin/brands/${encodeURIComponent(id)}`, brandSchema, body),
+    // Business finance (finance.view)
+    financeSummary: (id: string) => call('GET', `${biz(id)}/finance/summary`, financeSummarySchema),
+    financeEarnings: (id: string, params: Page & { status?: string } = {}) =>
+      call('GET', `${biz(id)}/finance/earnings${query(params)}`, pageSchema(earningSchema)),
+    financeLedger: (id: string, params: Page = {}) =>
+      call('GET', `${biz(id)}/finance/ledger${query(params)}`, pageSchema(ledgerLineSchema)),
+    financePayouts: (id: string, params: Page & { status?: string } = {}) =>
+      call('GET', `${biz(id)}/finance/payouts${query(params)}`, pageSchema(payoutSchema)),
+
+    // Admin finance
+    adminFinanceOverview: () => call('GET', '/admin/finance/overview', financeOverviewSchema),
+    adminCreateFeeRule: (body: z.input<typeof feeRuleInputSchema>) =>
+      call('POST', '/admin/finance/fee-rules', z.array(feeRuleSchema), body),
+    adminCreateFinanceSetting: (body: z.input<typeof financeSettingInputSchema>) =>
+      call('POST', '/admin/finance/settings', z.array(financeSettingSchema), body),
+    adminPayments: (params: Page & { status?: string; needsAttention?: 'true' | 'false' } = {}) =>
+      call('GET', `/admin/finance/payments${query(params)}`, pageSchema(adminPaymentSchema)),
+    adminPayment: (id: string) =>
+      call('GET', `/admin/finance/payments/${encodeURIComponent(id)}`, adminPaymentSchema),
+    adminRefundRequests: (params: Page & { status?: string } = {}) =>
+      call(
+        'GET',
+        `/admin/finance/refund-requests${query(params)}`,
+        pageSchema(refundRequestSchema),
+      ),
+    adminCreateRefundRequest: (body: z.input<typeof refundRequestInputSchema>) =>
+      call('POST', '/admin/finance/refund-requests', refundRequestSchema, body),
+    adminDecideRefundRequest: (id: string, body: z.input<typeof refundDecisionSchema>) =>
+      call(
+        'POST',
+        `/admin/finance/refund-requests/${encodeURIComponent(id)}/decision`,
+        refundRequestSchema,
+        body,
+      ),
+    adminEarnings: (params: Page & { businessId?: string; status?: string } = {}) =>
+      call('GET', `/admin/finance/earnings${query(params)}`, pageSchema(adminEarningSchema)),
+    adminDisputes: (params: Page & { status?: string } = {}) =>
+      call('GET', `/admin/finance/disputes${query(params)}`, pageSchema(disputeSchema)),
+    adminOpenDispute: (body: z.input<typeof disputeInputSchema>) =>
+      call('POST', '/admin/finance/disputes', disputeSchema, body),
+    adminResolveDispute: (id: string, body: z.input<typeof disputeResolutionSchema>) =>
+      call(
+        'POST',
+        `/admin/finance/disputes/${encodeURIComponent(id)}/resolution`,
+        disputeSchema,
+        body,
+      ),
+    adminPayoutHolds: () => call('GET', '/admin/finance/holds', z.array(payoutHoldSchema)),
+    adminPlacePayoutHold: (body: z.input<typeof payoutHoldInputSchema>) =>
+      call('POST', '/admin/finance/holds', z.array(payoutHoldSchema), body),
+    adminReleasePayoutHold: (id: string) =>
+      call(
+        'POST',
+        `/admin/finance/holds/${encodeURIComponent(id)}/release`,
+        z.array(payoutHoldSchema),
+      ),
+    adminPayouts: (params: Page & { status?: string; businessId?: string } = {}) =>
+      call('GET', `/admin/finance/payouts${query(params)}`, pageSchema(payoutSchema)),
+    adminRunPayouts: () => call('POST', '/admin/finance/payout-runs', payoutRunResultSchema),
+    adminReconciliationRuns: (params: Page = {}) =>
+      call(
+        'GET',
+        `/admin/finance/reconciliation-runs${query(params)}`,
+        pageSchema(reconciliationRunSchema),
+      ),
+    adminRunReconciliation: (date?: string) =>
+      call(
+        'POST',
+        '/admin/finance/reconciliation-runs',
+        reconciliationRunSchema,
+        date ? { date } : {},
+      ),
+    adminResolveReconciliationItem: (id: string, note: string) =>
+      call(
+        'POST',
+        `/admin/finance/reconciliation-items/${encodeURIComponent(id)}/resolve`,
+        reconciliationRunSchema,
+        { note },
+      ),
   };
 }
 
