@@ -120,6 +120,7 @@ You will create **two** projects: one for staging and one for production. Supaba
 2. Under **Environment secrets**, add:
    - `STAGING_DATABASE_DIRECT_URL`: the **direct** staging connection string (step 2.5, port 5432);
    - `STAGING_MFA_ENCRYPTION_KEY`: the same value you gave the staging API's `MFA_ENCRYPTION_KEY`;
+   - `STAGING_SUPABASE_URL` and `STAGING_SUPABASE_SERVICE_ROLE_KEY`: the same values you gave the staging API;
    - `DEMO_CREDENTIALS_PASSPHRASE`: a long passphrase from your password manager. It encrypts the file of demo account passwords.
 3. Run them from the **Actions** tab: [STAGING.md](STAGING.md), step 3.
 

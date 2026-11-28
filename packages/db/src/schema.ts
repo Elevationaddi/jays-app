@@ -31,6 +31,8 @@ export type UserStatus = 'pending_verification' | 'active' | 'restricted' | 'dea
 
 export interface UsersTable {
   id: Id;
+  /** Staging demonstration data (ADR-0038). */
+  is_demo: Generated<boolean>;
   email: string | null;
   email_verified_at: Timestamp | null;
   phone: string | null;
@@ -124,6 +126,8 @@ export type BusinessStatus =
 
 export interface BusinessesTable {
   id: Id;
+  /** Staging demonstration data (ADR-0038). */
+  is_demo: Generated<boolean>;
   display_name: Localized;
   status: Generated<BusinessStatus>;
   legal_name: string | null;
@@ -1498,7 +1502,14 @@ export interface LegalAcceptancesTable {
   accepted_at: CreatedAt;
 }
 
+export interface EnvironmentMarkerTable {
+  singleton: Generated<boolean>;
+  environment: 'local' | 'test' | 'staging' | 'production';
+  marked_at: Generated<Timestamp>;
+}
+
 export interface Database {
+  environment_marker: EnvironmentMarkerTable;
   emirates: EmiratesTable;
   users: UsersTable;
   verification_challenges: VerificationChallengesTable;
@@ -1591,6 +1602,7 @@ export interface Database {
 
 /** Every column of every table, used by the drift test. Keep in the same order as above. */
 export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T] & string)[] } = {
+  environment_marker: ['singleton', 'environment', 'marked_at'],
   emirates: ['id', 'code', 'name', 'enabled', 'sort_order', 'created_at', 'updated_at'],
   users: [
     'id',
@@ -1615,6 +1627,7 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'notify_sms',
     'notify_push',
     'deleted_at',
+    'is_demo',
   ],
   verification_challenges: [
     'id',
@@ -1699,6 +1712,7 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'psp_details_submitted',
     'psp_payouts_enabled',
     'psp_account_updated_at',
+    'is_demo',
   ],
   memberships: [
     'id',

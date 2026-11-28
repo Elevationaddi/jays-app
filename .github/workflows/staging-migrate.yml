@@ -1,0 +1,48 @@
+# Applies database migrations to STAGING. Manual only; never runs on a schedule or on push.
+# Secrets live in the GitHub environment "staging" (docs/STAGING.md section 3).
+name: 'Staging: migrate database'
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "staging" to migrate the staging database'
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-database
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Migrate the staging database
+    if: inputs.confirm == 'staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      DATABASE_URL: ${{ secrets.STAGING_DATABASE_DIRECT_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Refuse a database marked as anything other than staging
+        run: |
+          marker=""
+          if [ "$(psql "$DATABASE_URL" -Atqc "SELECT to_regclass('public.environment_marker') IS NOT NULL")" = t ]; then
+            marker=$(psql "$DATABASE_URL" -Atqc "SELECT coalesce(max(environment), '') FROM environment_marker")
+          fi
+          if [ -n "$marker" ] && [ "$marker" != staging ]; then
+            echo "::error::This database is marked as '$marker', not staging. Nothing was changed."
+            exit 1
+          fi
+      - name: Apply migrations
+        run: pnpm db:migrate
+      - name: Mark the database as staging (first run only)
+        run: psql "$DATABASE_URL" -qc "INSERT INTO environment_marker (environment) SELECT 'staging' WHERE NOT EXISTS (SELECT 1 FROM environment_marker)"

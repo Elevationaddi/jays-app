@@ -122,9 +122,10 @@ Migrations never run inside Vercel. Two manual GitHub Actions workflows do it, f
 1. **Add the secrets.** In **Settings → Environments → New environment**, name it `staging` and add these secrets:
    - `STAGING_DATABASE_DIRECT_URL`: the Supabase **direct** connection, port 5432;
    - `STAGING_MFA_ENCRYPTION_KEY`: the same value as the API's `MFA_ENCRYPTION_KEY`;
+   - `STAGING_SUPABASE_URL` and `STAGING_SUPABASE_SERVICE_ROLE_KEY`: the same values as the API's, so demo images land in the staging bucket;
    - `DEMO_CREDENTIALS_PASSPHRASE`: a long passphrase from your password manager.
-2. **Run "Staging: migrate database".** It applies `packages/db/migrations` and refuses any database that is not marked as staging.
-3. **Run "Staging: load demonstration data".** It loads the fictional dataset ([DEMO_DATA.md](DEMO_DATA.md)) with newly generated passwords. The credentials file is encrypted with your passphrase and kept as a workflow artifact for one day. Download it, decrypt it (DEMO_DATA.md shows how) and keep it in your password manager.
+2. **Run "Staging: migrate database"** (type `staging` to confirm). It applies `packages/db/migrations` and refuses any database that is not marked as staging.
+3. **Run "Staging: load demonstration data"** (type `fictional-demo-data` to confirm). It loads the fictional dataset ([DEMO_DATA.md](DEMO_DATA.md)) with newly generated passwords. The credentials file is encrypted with your passphrase and kept as a workflow artifact for one day. Download it, decrypt it (DEMO_DATA.md shows how) and keep it in your password manager.
 
 ## 4. First deployment checks
 

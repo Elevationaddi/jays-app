@@ -554,6 +554,7 @@ export class SupportService {
     const result = await verifyStoredUpload(this.storage, this.scanner, att.object_key, {
       contentType: att.content_type,
       maxBytes: Math.min(att.declared_size_bytes, DOCUMENT_MAX_BYTES),
+      limitBytes: DOCUMENT_MAX_BYTES,
     });
     if (!result.ok && result.reason === 'missing') throw uploadFailure('missing');
     await this.db.transaction().execute(async (trx) => {
