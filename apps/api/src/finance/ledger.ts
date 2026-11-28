@@ -1,4 +1,5 @@
 import {
+  bookingPriceParts,
   allocateRefund,
   commissionFor,
   commissionVatFor,
@@ -350,6 +351,8 @@ export async function recordBookingCapture(
       'b.tax_fils',
       'b.snapshot',
       'b.travel_fee_fils',
+      'b.addons',
+      'b.addons_fils',
       's.category_id',
       's.tax_class',
     ])
@@ -358,17 +361,37 @@ export async function recordBookingCapture(
   const snap = b.snapshot as { service: { title: Localized } };
   const rate =
     b.tax_fils > 0 ? Math.round((b.tax_fils * 10_000) / (booking.priceFils - b.tax_fils)) : 0;
-  // A home visit shows its travel fee as its own line; the VAT splits in proportion.
-  const travel = b.travel_fee_fils;
-  const travelVat = travel > 0 ? Math.round((b.tax_fils * travel) / booking.priceFils) : 0;
+  // The service, each add-on and a home visit's travel fee are separate lines; the VAT splits in
+  // proportion (phase 8.7, bookingPriceParts).
+  const parts = bookingPriceParts({
+    priceFils: booking.priceFils,
+    taxFils: b.tax_fils,
+    addonsFils: b.addons_fils,
+    travelFeeFils: b.travel_fee_fils,
+  });
+  const travel = parts.travelFeeFils;
+  const travelVat = parts.travelVatFils;
+  const addonVats = b.addons.map((x) =>
+    b.addons_fils > 0 ? Math.floor((parts.addonsVatFils * x.priceFils) / b.addons_fils) : 0,
+  );
+  if (addonVats.length > 0) {
+    addonVats[0]! += parts.addonsVatFils - addonVats.reduce((sum, v) => sum + v, 0);
+  }
   const documentLines = [
     {
       description: snap.service.title,
       qty: 1,
-      totalFils: booking.priceFils - travel,
+      totalFils: parts.serviceFils,
       vatRateBps: rate,
-      vatFils: b.tax_fils - travelVat,
+      vatFils: parts.serviceVatFils,
     },
+    ...b.addons.map((x, i) => ({
+      description: x.title,
+      qty: 1,
+      totalFils: x.priceFils,
+      vatRateBps: rate,
+      vatFils: addonVats[i]!,
+    })),
     ...(travel > 0
       ? [
           {
@@ -392,8 +415,8 @@ export async function recordBookingCapture(
         {
           ref: booking.id,
           categoryId: b.category_id,
-          // Commission applies to the service only: a separately itemised travel fee is the
-          // merchant's in full (founder decision, 2026-11-28; ADR-0024).
+          // Commission applies to the service and its add-ons: a separately itemised travel fee
+          // is the merchant's in full (founder decision, 2026-11-28; ADR-0025).
           baseFils: Math.max(0, booking.priceFils - travel - (b.tax_fils - travelVat)),
         },
       ],

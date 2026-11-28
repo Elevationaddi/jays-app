@@ -84,3 +84,23 @@ export function completeAccountDeletionsJob(db: SqlRunner, intervalMs = 3_600_00
     },
   };
 }
+
+/**
+ * Queues appointment reminders about 24 hours ahead and expires waitlist entries for days that
+ * have passed (phase 8.7, ADR-0026). The rules are the database functions
+ * `queue_booking_reminders` and `expire_waitlist_entries` (migration 0013); each reminder is
+ * marked sent in the same statement, so a booking is reminded once however often this runs.
+ */
+export const BOOKING_REMINDERS_SQL =
+  'SELECT queue_booking_reminders(now(), 24, 200) + expire_waitlist_entries(now()) AS n';
+
+export function bookingRemindersJob(db: SqlRunner, intervalMs = 300_000): Job {
+  return {
+    name: 'booking-reminders',
+    intervalMs,
+    async run() {
+      const { rows } = await db.query<{ n: number }>(BOOKING_REMINDERS_SQL);
+      return Number(rows[0]?.n ?? 0);
+    },
+  };
+}

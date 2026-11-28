@@ -6,6 +6,7 @@ import {
   BUSINESS_BOOKING_TRANSITIONS,
   DEFAULT_TIMEZONE,
   EMIRATE_CODES,
+  IMAGE_CONTENT_TYPES,
   SERVICE_LOCATION_MODES,
   TAX_CLASSES,
   localToUtc,
@@ -182,10 +183,18 @@ export async function updateService(f: FormData) {
 
 // Staff ------------------------------------------------------------------------------------------
 
+/** Both languages or neither: a bio is shown in the customer's language. */
+function localizedOrNull(f: FormData, prefix: string) {
+  const en = text(f, `${prefix}En`);
+  const ar = text(f, `${prefix}Ar`);
+  return en || ar ? { en, ar } : null;
+}
+
 function staffBody(f: FormData) {
   const member = text(f, 'membershipId');
   return {
     displayName: text(f, 'displayName'),
+    bio: localizedOrNull(f, 'bio'),
     membershipId: UUID.test(member) ? member : null,
     branchIds: ids(f, 'branchIds'),
     serviceIds: ids(f, 'serviceIds'),
@@ -340,4 +349,96 @@ export async function createManualBooking(f: FormData) {
     fail(path, error);
   }
   redirect(`${path}${path.includes('?') ? '&' : '?'}saved=1`);
+}
+
+// Add-ons (phase 8.7) ---------------------------------------------------------------------------
+
+function addonBody(f: FormData) {
+  const priceFils = parseAed(f.get('price'));
+  return {
+    title: { en: text(f, 'titleEn'), ar: text(f, 'titleAr') },
+    priceFils: priceFils ?? -1,
+    durationMin: int(f, 'durationMin', -1),
+    sortOrder: int(f, 'sortOrder', 0),
+  };
+}
+
+export async function createAddon(f: FormData) {
+  const id = uuid(f, 'businessId');
+  const serviceId = uuid(f, 'serviceId');
+  const path = `/business/${id}/services/${serviceId}`;
+  try {
+    await (await serverApi()).createAddon(id, serviceId, addonBody(f));
+  } catch (error) {
+    fail(path, error);
+  }
+  redirect(`${path}?saved=1#addons`);
+}
+
+export async function updateAddon(f: FormData) {
+  const id = uuid(f, 'businessId');
+  const serviceId = uuid(f, 'serviceId');
+  const addonId = uuid(f, 'addonId');
+  const path = `/business/${id}/services/${serviceId}`;
+  const status = text(f, 'status');
+  try {
+    await (
+      await serverApi()
+    ).updateAddon(
+      id,
+      addonId,
+      status === 'archived' || status === 'active' ? { status } : addonBody(f),
+    );
+  } catch (error) {
+    fail(path, error);
+  }
+  redirect(`${path}?saved=1#addons`);
+}
+
+// Portfolio (phase 8.7) -------------------------------------------------------------------------
+
+/** Uploads a photo through a signed URL, runs the checks, then adds it to the portfolio. */
+export async function uploadPortfolioPhoto(f: FormData) {
+  const id = uuid(f, 'businessId');
+  const path = `/business/${id}/services/portfolio`;
+  const file = f.get('file');
+  if (
+    !(file instanceof File) ||
+    file.size === 0 ||
+    !(IMAGE_CONTENT_TYPES as readonly string[]).includes(file.type)
+  ) {
+    redirect(`${path}?error=VALIDATION_FAILED`);
+  }
+  const serviceId = text(f, 'serviceId');
+  const staffId = text(f, 'staffId');
+  try {
+    const api = await serverApi();
+    const ticket = await api.createPortfolioImageUpload(id, {
+      contentType: file.type as (typeof IMAGE_CONTENT_TYPES)[number],
+      sizeBytes: file.size,
+    });
+    await api.upload(ticket, new Uint8Array(await file.arrayBuffer()));
+    await api.completePortfolioImage(id, ticket.id);
+    await api.addPortfolioItem(id, {
+      mediaId: ticket.id,
+      serviceId: UUID.test(serviceId) ? serviceId : null,
+      staffId: UUID.test(staffId) ? staffId : null,
+      caption: localizedOrNull(f, 'caption'),
+    });
+  } catch (error) {
+    fail(path, error);
+  }
+  redirect(`${path}?saved=1`);
+}
+
+export async function removePortfolioPhoto(f: FormData) {
+  const id = uuid(f, 'businessId');
+  const itemId = uuid(f, 'itemId');
+  const path = `/business/${id}/services/portfolio`;
+  try {
+    await (await serverApi()).removePortfolioItem(id, itemId);
+  } catch (error) {
+    fail(path, error);
+  }
+  redirect(`${path}?saved=1`);
 }

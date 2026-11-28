@@ -195,7 +195,13 @@ export async function approvedVenue(
 export function holdRequest(
   h: Harness,
   session: Session,
-  body: { branchId: string; serviceId: string; startAt: string; staffId?: string | null },
+  body: {
+    branchId: string;
+    serviceId: string;
+    startAt: string;
+    staffId?: string | null;
+    addonIds?: string[];
+  },
   key = `hold-${randomUUID()}`,
 ) {
   return h
@@ -209,7 +215,13 @@ export function holdRequest(
 export async function held(
   h: Harness,
   session: Session,
-  body: { branchId: string; serviceId: string; startAt: string; staffId?: string | null },
+  body: {
+    branchId: string;
+    serviceId: string;
+    startAt: string;
+    staffId?: string | null;
+    addonIds?: string[];
+  },
 ) {
   const res = await holdRequest(h, session, body);
   if (res.status !== 201) throw new Error(`hold failed: ${res.status} ${JSON.stringify(res.body)}`);
@@ -243,7 +255,13 @@ export async function payBooking(
 export async function confirmedBooking(
   h: Harness,
   session: Session,
-  body: { branchId: string; serviceId: string; startAt: string; staffId?: string | null },
+  body: {
+    branchId: string;
+    serviceId: string;
+    startAt: string;
+    staffId?: string | null;
+    addonIds?: string[];
+  },
 ) {
   const booking = await held(h, session, body);
   await payBooking(h, session, booking.id);

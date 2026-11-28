@@ -259,7 +259,8 @@ export interface VerificationDocumentsTable {
   updated_at: UpdatedAt;
 }
 
-export type MediaPurpose = 'storefront_logo' | 'storefront_banner' | 'product_image';
+export type MediaPurpose =
+  'storefront_logo' | 'storefront_banner' | 'product_image' | 'portfolio_image';
 
 export interface MediaTable {
   id: Id;
@@ -690,6 +691,7 @@ export interface StaffTable {
   status: Generated<'active' | 'archived'>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+  bio: LocalizedOrNull;
 }
 
 export interface StaffBranchesTable {
@@ -773,6 +775,63 @@ export interface BookingsTable {
   home_address: ColumnType<HomeAddress | null, string | null | undefined, string | null>;
   travel_fee_fils: Generated<number>;
   travel_buffer_min: Generated<number>;
+  addons: ColumnType<BookedAddon[], string | undefined, string>;
+  addons_fils: Generated<number>;
+  reminder_sent_at: Timestamp | null;
+}
+
+/** An add-on as booked (T13): later edits never change a booking. */
+export interface BookedAddon {
+  id: string;
+  title: { en: string; ar: string };
+  priceFils: number;
+  durationMin: number;
+}
+
+export interface ServiceAddonsTable {
+  id: Id;
+  business_id: string;
+  service_id: string;
+  title: Localized;
+  price_fils: number;
+  duration_min: number;
+  status: Generated<'active' | 'archived'>;
+  sort_order: Generated<number>;
+  created_by: string;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface PortfolioItemsTable {
+  id: Id;
+  business_id: string;
+  media_id: string;
+  service_id: string | null;
+  staff_id: string | null;
+  caption: LocalizedOrNull;
+  sort_order: Generated<number>;
+  created_by: string;
+  created_at: CreatedAt;
+}
+
+export type WaitlistStatus = 'active' | 'notified' | 'canceled' | 'expired';
+
+export interface BookingWaitlistTable {
+  id: Id;
+  user_id: string;
+  business_id: string;
+  branch_id: string;
+  service_id: string;
+  staff_id: string | null;
+  /** A local date; read it with to_char to avoid time zone shifts. */
+  date: ColumnType<Date, string, string>;
+  window_start: Generated<string>;
+  window_end: Generated<string>;
+  status: Generated<WaitlistStatus>;
+  notified_booking_id: string | null;
+  notified_at: Timestamp | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
 }
 
 /** The customer's address as booked for a home visit (T13). */
@@ -1393,6 +1452,9 @@ export interface Database {
   home_service_areas: HomeServiceAreasTable;
   wishlist_items: WishlistItemsTable;
   stock_alerts: StockAlertsTable;
+  service_addons: ServiceAddonsTable;
+  portfolio_items: PortfolioItemsTable;
+  booking_waitlist: BookingWaitlistTable;
 }
 
 /** Every column of every table, used by the drift test. Keep in the same order as above. */
@@ -1922,6 +1984,7 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'status',
     'created_at',
     'updated_at',
+    'bio',
   ],
   staff_branches: ['staff_id', 'branch_id', 'business_id'],
   staff_services: ['staff_id', 'service_id', 'business_id'],
@@ -1987,6 +2050,9 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'home_address',
     'travel_fee_fils',
     'travel_buffer_min',
+    'addons',
+    'addons_fils',
+    'reminder_sent_at',
   ],
   fee_rules: [
     'id',
@@ -2329,6 +2395,46 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
   ],
   wishlist_items: ['user_id', 'product_id', 'created_at'],
   stock_alerts: ['id', 'user_id', 'variant_id', 'created_at', 'notified_at'],
+  service_addons: [
+    'id',
+    'business_id',
+    'service_id',
+    'title',
+    'price_fils',
+    'duration_min',
+    'status',
+    'sort_order',
+    'created_by',
+    'created_at',
+    'updated_at',
+  ],
+  portfolio_items: [
+    'id',
+    'business_id',
+    'media_id',
+    'service_id',
+    'staff_id',
+    'caption',
+    'sort_order',
+    'created_by',
+    'created_at',
+  ],
+  booking_waitlist: [
+    'id',
+    'user_id',
+    'business_id',
+    'branch_id',
+    'service_id',
+    'staff_id',
+    'date',
+    'window_start',
+    'window_end',
+    'status',
+    'notified_booking_id',
+    'notified_at',
+    'created_at',
+    'updated_at',
+  ],
   payout_runs: [
     'id',
     'scheduled_for',

@@ -22,6 +22,14 @@ export function errorMessageKey(code: string | undefined): MessageKey | null {
       return 'auth.error.validation';
     case 'NETWORK_ERROR':
       return 'common.offline';
+    case 'ADDON_LIMIT':
+      return 'error.addonLimit';
+    case 'PORTFOLIO_LIMIT':
+      return 'error.portfolioLimit';
+    case 'MEDIA_IN_USE':
+      return 'error.mediaInUse';
+    case 'MEDIA_NOT_READY':
+      return 'error.mediaNotReady';
     case 'IN_REVIEW':
       return 'error.inReview';
     case 'PROFILE_LOCKED':

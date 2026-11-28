@@ -1,4 +1,4 @@
-import type { Availability, Booking } from '@jays/contracts';
+import type { Availability, Booking, WaitlistEntry } from '@jays/contracts';
 import { addDays, localDateOf } from '@jays/domain';
 import { colors } from '@jays/ui';
 import { useCallback, useEffect, useState } from 'react';
@@ -24,6 +24,25 @@ export function AppointmentsScreen() {
   const [scope, setScope] = useState<'upcoming' | 'past'>('upcoming');
   const [items, setItems] = useState<Booking[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [waiting, setWaiting] = useState<WaitlistEntry[]>([]);
+
+  useEffect(() => {
+    if (!state.session) return;
+    let cancelled = false;
+    api
+      .waitlist()
+      .then((w) => !cancelled && setWaiting(w.items))
+      .catch(() => !cancelled && setWaiting([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [api, state.session]);
+
+  const leave = (id: string) =>
+    api
+      .leaveWaitlist(id)
+      .then((w) => setWaiting(w.items))
+      .catch((e) => setError(tr(errorKey(e).key)));
 
   useEffect(() => {
     if (!state.session) {
@@ -58,6 +77,47 @@ export function AppointmentsScreen() {
         ]}
       />
       {error ? <Banner kind="error">{error}</Banner> : null}
+      {waiting.length > 0 ? (
+        <>
+          <Text style={s.section} accessibilityRole="header">
+            {tr('waitlist.title')}
+          </Text>
+          {waiting.map((w) => (
+            <View key={w.id} style={s.card}>
+              <Text style={s.text}>{w.service.title[state.locale]}</Text>
+              <Text style={s.muted}>
+                {w.venue.name[state.locale]} ·{' '}
+                {shortDate(`${w.date}T12:00:00Z`, state.locale, 'UTC')}
+                {w.staff ? ` · ${w.staff.displayName}` : ''}
+              </Text>
+              <Text style={s.muted}>
+                {tr(w.status === 'notified' ? 'waitlist.opened' : 'waitlist.waiting')}
+              </Text>
+              <View style={s.row}>
+                {w.status === 'notified' ? (
+                  <Button
+                    variant="secondary"
+                    label={tr('waitlist.bookNow')}
+                    onPress={() =>
+                      dispatch({
+                        type: 'openService',
+                        venueId: w.venue.id,
+                        serviceId: w.service.id,
+                        prefill: { branchId: w.branch.id, staffId: w.staff?.id, date: w.date },
+                      })
+                    }
+                  />
+                ) : null}
+                <Button
+                  variant="ghost"
+                  label={tr('waitlist.leave')}
+                  onPress={() => void leave(w.id)}
+                />
+              </View>
+            </View>
+          ))}
+        </>
+      ) : null}
       {items === null ? (
         <ActivityIndicator color={colors.accent} accessibilityLabel={tr('common.loading')} />
       ) : items.length === 0 ? (
@@ -148,6 +208,10 @@ export function AppointmentScreen() {
         serviceId: booking.service.id,
         date,
         location: booking.location,
+        // The appointment keeps its booked length, add-ons included.
+        ...(booking.addons.length > 0
+          ? { addonIds: booking.addons.map((x) => x.id).join(',') }
+          : {}),
       })
       .then((a) => {
         if (!cancelled) setSlots(a);
@@ -278,6 +342,14 @@ export function AppointmentScreen() {
             </Text>
           </>
         )}
+        {b.addons.length > 0 ? (
+          <Text style={s.muted}>
+            {tr('book.addonsBooked', {
+              list: b.addons.map((x) => x.title[state.locale]).join(', '),
+              amount: money(b.addonsFils, state.locale),
+            })}
+          </Text>
+        ) : null}
         <Text style={s.muted}>
           {tr('book.policy', {
             hours: b.policy.cutoffHours,
@@ -366,6 +438,34 @@ export function AppointmentScreen() {
             busy={busy}
           />
         </View>
+      ) : null}
+      {['completed', 'canceled', 'no_show', 'expired'].includes(b.status) ? (
+        <Button
+          variant="secondary"
+          label={tr('appointments.bookAgain')}
+          busy={busy}
+          onPress={() =>
+            void run(async () => {
+              const r = await api.rebook(b.id);
+              if (!r.available) {
+                setError(tr('appointments.rebookUnavailable'));
+                return;
+              }
+              dispatch({
+                type: 'openService',
+                venueId: r.venueId,
+                serviceId: r.serviceId,
+                prefill: {
+                  branchId: r.branchId,
+                  staffId: r.staffId,
+                  addonIds: r.addonIds,
+                  location: r.location,
+                  addressId: r.addressId,
+                },
+              });
+            })
+          }
+        />
       ) : null}
       <Invoices bookingId={b.id} back="/appointments/detail" />
       <Button

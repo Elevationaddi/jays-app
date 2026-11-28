@@ -19,6 +19,7 @@ import { PrivacyScreen, UnsubscribeScreen } from './screens/PrivacyScreens';
 import { ProductScreen } from './screens/ProductScreen';
 import { ResetScreen } from './screens/ResetScreen';
 import { SearchScreen } from './screens/SearchScreen';
+import { ServiceSearchScreen } from './screens/ServiceSearchScreen';
 import { StoreScreen } from './screens/StoreScreen';
 import { NewTicketScreen, SupportScreen, TicketScreen } from './screens/SupportScreens';
 import { VerifyScreen } from './screens/VerifyScreen';
@@ -122,6 +123,8 @@ export function App() {
         return <ProductScreen />;
       case '/shop/search':
         return <SearchScreen />;
+      case '/services/search':
+        return <ServiceSearchScreen />;
       case '/wishlist':
         return <WishlistScreen />;
       case '/cart':

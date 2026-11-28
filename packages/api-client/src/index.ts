@@ -1,4 +1,19 @@
 import {
+  addonListSchema,
+  addonSchema,
+  type addonInputSchema,
+  type createPortfolioItemRequestSchema,
+  type joinWaitlistRequestSchema,
+  nextAvailableSchema,
+  type portfolioImageUploadRequestSchema,
+  portfolioItemSchema,
+  portfolioListSchema,
+  publicServiceListItemSchema,
+  rebookSchema,
+  type ServiceSort,
+  type updateAddonRequestSchema,
+  waitlistEntrySchema,
+  waitlistListSchema,
   adminEmirateListSchema,
   supportInfoSchema,
   consentRecordSchema,
@@ -561,7 +576,40 @@ export function createApiClient(options: ApiClientOptions) {
       date: string;
       staffId?: string;
       location?: 'venue' | 'home';
+      /** Comma-separated add-on ids. */
+      addonIds?: string;
     }) => call('GET', `/availability${query(params)}`, availabilitySchema),
+    // Service discovery (phase 8.7)
+    searchServices: (
+      params: {
+        q?: string;
+        category?: string;
+        emirate?: string;
+        location?: 'venue' | 'home';
+        minPriceFils?: number;
+        maxPriceFils?: number;
+        minRating?: number;
+        sort?: ServiceSort;
+        cursor?: string;
+        limit?: number;
+      } = {},
+    ) => call('GET', `/services${query(params)}`, pageSchema(publicServiceListItemSchema)),
+    nextAvailable: (
+      serviceId: string,
+      params: { branchId?: string; staffId?: string; location?: 'venue' | 'home' } = {},
+    ) =>
+      call(
+        'GET',
+        `/services/${encodeURIComponent(serviceId)}/next-available${query(params)}`,
+        nextAvailableSchema,
+      ),
+    waitlist: () => call('GET', '/me/waitlist', waitlistListSchema),
+    joinWaitlist: (body: z.input<typeof joinWaitlistRequestSchema>) =>
+      call('POST', '/me/waitlist', waitlistEntrySchema, body),
+    leaveWaitlist: (entryId: string) =>
+      call('DELETE', `/me/waitlist/${encodeURIComponent(entryId)}`, waitlistListSchema),
+    rebook: (bookingId: string) =>
+      call('GET', `/bookings/${encodeURIComponent(bookingId)}/rebook`, rebookSchema),
     /** Send the same idempotency key when retrying, so a lost response never holds twice. */
     holdBooking: (body: z.input<typeof holdRequestSchema>, idempotencyKey: string) =>
       call('POST', '/bookings/hold', bookingSchema, body, idem(idempotencyKey)),
@@ -717,6 +765,32 @@ export function createApiClient(options: ApiClientOptions) {
       serviceId: string,
       body: z.input<typeof updateServiceRequestSchema>,
     ) => call('PATCH', `${biz(id)}/services/${encodeURIComponent(serviceId)}`, serviceSchema, body),
+    addons: (id: string, serviceId: string) =>
+      call('GET', `${biz(id)}/services/${encodeURIComponent(serviceId)}/addons`, addonListSchema),
+    createAddon: (id: string, serviceId: string, body: z.input<typeof addonInputSchema>) =>
+      call(
+        'POST',
+        `${biz(id)}/services/${encodeURIComponent(serviceId)}/addons`,
+        addonSchema,
+        body,
+      ),
+    updateAddon: (id: string, addonId: string, body: z.input<typeof updateAddonRequestSchema>) =>
+      call('PATCH', `${biz(id)}/addons/${encodeURIComponent(addonId)}`, addonSchema, body),
+    portfolio: (id: string) => call('GET', `${biz(id)}/portfolio`, portfolioListSchema),
+    createPortfolioImageUpload: (
+      id: string,
+      body: z.input<typeof portfolioImageUploadRequestSchema>,
+    ) => call('POST', `${biz(id)}/portfolio-images`, uploadTicketSchema, body),
+    completePortfolioImage: (id: string, mediaId: string) =>
+      call(
+        'POST',
+        `${biz(id)}/portfolio-images/${encodeURIComponent(mediaId)}/complete`,
+        mediaSchema,
+      ),
+    addPortfolioItem: (id: string, body: z.input<typeof createPortfolioItemRequestSchema>) =>
+      call('POST', `${biz(id)}/portfolio`, portfolioItemSchema, body),
+    removePortfolioItem: (id: string, itemId: string) =>
+      call('DELETE', `${biz(id)}/portfolio/${encodeURIComponent(itemId)}`, portfolioListSchema),
     staff: (id: string) => call('GET', `${biz(id)}/staff`, z.array(staffSchema)),
     staffMember: (id: string, staffId: string) =>
       call('GET', `${biz(id)}/staff/${encodeURIComponent(staffId)}`, staffSchema),

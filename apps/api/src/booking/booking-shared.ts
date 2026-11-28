@@ -1,6 +1,6 @@
 import { HttpStatus } from '@nestjs/common';
 import type { Booking, MerchantBooking } from '@jays/contracts';
-import type { Database, Db, HomeAddress } from '@jays/db';
+import type { BookedAddon, Database, Db, HomeAddress } from '@jays/db';
 
 type Localized = { en: string; ar: string };
 import {
@@ -37,6 +37,7 @@ export interface BookingSnapshot {
   service: {
     id: string;
     title: Localized;
+    /** The booked length: the service's own minutes plus its add-ons' (phase 8.7). */
     durationMin: number;
     bufferBeforeMin: number;
     bufferAfterMin: number;
@@ -423,6 +424,8 @@ export const BOOKING_COLUMNS = [
   'b.location_type',
   'b.home_address',
   'b.travel_fee_fils',
+  'b.addons',
+  'b.addons_fils',
 ] as const;
 
 export interface BookingRow {
@@ -451,6 +454,8 @@ export interface BookingRow {
   location_type: 'venue' | 'home';
   home_address: HomeAddress | null;
   travel_fee_fils: number;
+  addons: BookedAddon[];
+  addons_fils: number;
 }
 
 function core(row: BookingRow) {
@@ -486,6 +491,8 @@ function core(row: BookingRow) {
         }
       : null,
     travelFeeFils: row.travel_fee_fils,
+    addons: row.addons,
+    addonsFils: row.addons_fils,
     priceFils: row.price_fils,
     taxFils: row.tax_fils,
     currency: 'AED' as const,

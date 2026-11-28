@@ -2,6 +2,8 @@ import { parseEnv, workerEnvSchema } from '@jays/config';
 import { pino } from 'pino';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  BOOKING_REMINDERS_SQL,
+  bookingRemindersJob,
   completeAccountDeletionsJob,
   expireBookingHoldsJob,
   expireUnpaidOrdersJob,
@@ -79,5 +81,12 @@ describe('jobs', () => {
     const job = completeAccountDeletionsJob({ query } as never, 1000);
     await expect(job.run()).resolves.toBe(1);
     expect(query).toHaveBeenCalledWith('SELECT complete_account_deletions(now(), 50) AS n');
+  });
+
+  it('queues reminders and expires waitlist entries through the shared functions', async () => {
+    const query = vi.fn(async () => ({ rows: [{ n: 4 }] }));
+    const job = bookingRemindersJob({ query } as never, 1000);
+    await expect(job.run()).resolves.toBe(4);
+    expect(query).toHaveBeenCalledWith(BOOKING_REMINDERS_SQL);
   });
 });

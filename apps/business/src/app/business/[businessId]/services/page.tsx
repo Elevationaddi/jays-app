@@ -78,6 +78,15 @@ export default async function ServicesPage({
             )}
           </section>
           <section className="card">
+            <h2>{tr('portfolio.title')}</h2>
+            <p className="muted">{tr('portfolio.intro')}</p>
+            <p>
+              <Link className="btn secondary" href={`${path}/portfolio`}>
+                {tr('portfolio.manage')}
+              </Link>
+            </p>
+          </section>
+          <section className="card">
             <h2>{tr('home.title')}</h2>
             <p>
               <span className={`badge ${home.status}`}>{tr(`home.status.${home.status}`)}</span>{' '}

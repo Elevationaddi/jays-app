@@ -521,7 +521,7 @@ export class ScheduleService {
   async listStaff(businessId: string): Promise<Staff[]> {
     const rows = await this.db
       .selectFrom('staff')
-      .select(['id', 'display_name', 'membership_id', 'status'])
+      .select(['id', 'display_name', 'membership_id', 'status', 'bio'])
       .where('business_id', '=', businessId)
       .where('status', '=', 'active')
       .orderBy('display_name')
@@ -533,7 +533,7 @@ export class ScheduleService {
   async getStaff(businessId: string, staffId: string): Promise<Staff> {
     const row = await this.db
       .selectFrom('staff')
-      .select(['id', 'display_name', 'membership_id', 'status'])
+      .select(['id', 'display_name', 'membership_id', 'status', 'bio'])
       .where('business_id', '=', businessId)
       .where('id', '=', staffId)
       .executeTakeFirst();
@@ -562,6 +562,7 @@ export class ScheduleService {
           business_id: businessId,
           display_name: body.displayName,
           membership_id: body.membershipId ?? null,
+          bio: body.bio ? JSON.stringify(body.bio) : null,
         })
         .returning('id')
         .executeTakeFirstOrThrow();
@@ -586,6 +587,7 @@ export class ScheduleService {
       await this.lockStaff(trx, a.businessId, staffId);
       const set: Record<string, unknown> = {};
       if (body.displayName) set.display_name = body.displayName;
+      if (body.bio !== undefined) set.bio = body.bio ? JSON.stringify(body.bio) : null;
       if (body.membershipId !== undefined) {
         if (body.membershipId) await this.assertMembership(trx, a.businessId, body.membershipId);
         set.membership_id = body.membershipId;
@@ -767,6 +769,7 @@ export class ScheduleService {
       display_name: string;
       membership_id: string | null;
       status: Staff['status'];
+      bio: { en: string; ar: string } | null;
     }[],
   ): Promise<Staff[]> {
     if (rows.length === 0) return [];
@@ -795,6 +798,7 @@ export class ScheduleService {
     return rows.map((r) => ({
       id: r.id,
       displayName: r.display_name,
+      bio: r.bio,
       membershipId: r.membership_id,
       status: r.status,
       branchIds: branches.filter((b) => b.staff_id === r.id).map((b) => b.branch_id),

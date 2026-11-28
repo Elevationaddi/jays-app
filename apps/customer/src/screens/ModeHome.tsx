@@ -118,7 +118,43 @@ export function ModeHome() {
             />
           </View>
         </>
-      ) : null}
+      ) : (
+        <>
+          <Field
+            label={tr('search.query')}
+            value={query}
+            onChangeText={setQuery}
+            returnKeyType="search"
+            maxLength={100}
+            placeholder={tr('serviceSearch.placeholder')}
+            onSubmitEditing={() =>
+              dispatch({ type: 'searchServices', filters: query.trim() ? { q: query.trim() } : {} })
+            }
+          />
+          <View style={styles.chips}>
+            <Button
+              variant="secondary"
+              label={tr('search.go')}
+              onPress={() =>
+                dispatch({
+                  type: 'searchServices',
+                  filters: query.trim() ? { q: query.trim() } : {},
+                })
+              }
+            />
+            <Button
+              variant="ghost"
+              label={tr('serviceSearch.topRated')}
+              onPress={() => dispatch({ type: 'searchServices', filters: { sort: 'rating' } })}
+            />
+            <Button
+              variant="ghost"
+              label={tr('serviceSearch.atHome')}
+              onPress={() => dispatch({ type: 'searchServices', filters: { location: 'home' } })}
+            />
+          </View>
+        </>
+      )}
       {load.state === 'loading' ? (
         <ActivityIndicator color={colors.accent} accessibilityLabel={tr('common.loading')} />
       ) : load.state === 'error' ? (

@@ -29,6 +29,11 @@ import {
 import { HomeServicesService } from './booking/home-services.service.js';
 import { BookingsController } from './booking/bookings.controller.js';
 import { BookingsService } from './booking/bookings.service.js';
+import {
+  BusinessServiceExtrasController,
+  ServiceDiscoveryController,
+} from './booking/service-discovery.controller.js';
+import { ServiceDiscoveryService } from './booking/service-discovery.service.js';
 import { BusinessScheduleController } from './booking/business-schedule.controller.js';
 import { ScheduleService } from './booking/schedule.service.js';
 import { AdminTaxonomyController } from './catalog/admin-taxonomy.controller.js';
@@ -208,6 +213,8 @@ export class AppModule {
         AdminProductsController,
         CommerceController,
         BookingsController,
+        ServiceDiscoveryController,
+        BusinessServiceExtrasController,
         BusinessScheduleController,
         AdminBookingsController,
         BusinessHomeServicesController,
@@ -286,6 +293,7 @@ export class AppModule {
         PaymentsService,
         ScheduleService,
         BookingsService,
+        ServiceDiscoveryService,
         AdminBookingsService,
         HomeServicesService,
         FinanceService,

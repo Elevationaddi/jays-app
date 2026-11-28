@@ -205,5 +205,29 @@ describe('product discovery', () => {
     expect(actionForLink(`/products/${id}`)).toEqual({ type: 'openProduct', productId: id });
     expect(actionForLink(`/orders/${id}`)).toEqual({ type: 'openOrder', orderId: id });
     expect(actionForLink('/business/x/returns')).toBeNull();
+    const svc = '00000000-0000-4000-8000-0000000000bb';
+    expect(actionForLink(`/venues/${id}/services/${svc}`)).toEqual({
+      type: 'openService',
+      venueId: id,
+      serviceId: svc,
+    });
+  });
+
+  it('searches services and opens one with a prefill (phase 8.7)', () => {
+    const s = run([
+      { type: 'searchServices', filters: { q: 'nails', sort: 'rating' } },
+      {
+        type: 'openService',
+        venueId: 'v-1',
+        serviceId: 's-1',
+        prefill: { staffId: 'st-1', addonIds: ['a-1'] },
+      },
+    ]);
+    expect(s.route).toBe('/services/book');
+    expect(s.storeByMode.services).toBe('v-1');
+    expect(s.bookPrefill).toEqual({ staffId: 'st-1', addonIds: ['a-1'] });
+    expect(s.serviceSearch).toEqual({ q: 'nails', sort: 'rating' });
+    // Starting a booking from the venue page clears any earlier prefill.
+    expect(run([{ type: 'startBooking', serviceId: 's-2' }], s).bookPrefill).toEqual({});
   });
 });

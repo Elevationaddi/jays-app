@@ -14,7 +14,7 @@ import type {
   PublicVenue,
   RescheduleRequest,
 } from '@jays/contracts';
-import type { Db, HomeAddress } from '@jays/db';
+import type { BookedAddon, Db, HomeAddress } from '@jays/db';
 import { sql, type SqlBool } from 'kysely';
 
 type Localized = { en: string; ar: string };
@@ -36,6 +36,10 @@ import {
   localDateOf,
   localToUtc,
   MAX_ACTIVE_HOLDS_PER_USER,
+  AddonError,
+  PORTFOLIO_ITEMS_MAX,
+  pickAddons,
+  ratingSummary,
   offersLocation,
   rankStaff,
   type BookingLocation,
@@ -126,7 +130,7 @@ export class BookingsService {
   // Public
 
   /** Businesses customers can book: approved, storefront published, services mode active. */
-  private visibleBusiness(conn: Conn, businessId: string) {
+  visibleBusiness(conn: Conn, businessId: string) {
     return conn
       .selectFrom('businesses as b')
       .innerJoin('storefronts as s', 's.business_id', 'b.id')
@@ -189,7 +193,7 @@ export class BookingsService {
         : [],
       this.db
         .selectFrom('staff')
-        .select(['id', 'display_name'])
+        .select(['id', 'display_name', 'bio'])
         .where('business_id', '=', businessId)
         .where('status', '=', 'active')
         .orderBy('display_name')
@@ -211,6 +215,20 @@ export class BookingsService {
         : [],
     ]);
     const base = this.env.API_PUBLIC_URL.replace(/\/$/, '');
+    const [addons, ratings, portfolio] = await Promise.all([
+      serviceIds.length
+        ? this.db
+            .selectFrom('service_addons')
+            .select(['id', 'service_id', 'title', 'price_fils', 'duration_min'])
+            .where('service_id', 'in', serviceIds)
+            .where('status', '=', 'active')
+            .orderBy('sort_order')
+            .orderBy('created_at')
+            .execute()
+        : [],
+      venueRatings(this.db, businessId),
+      publicPortfolio(this.db, businessId, base),
+    ]);
     const home = await homeTermsOf(this.db, businessId, this.clock.now());
     const enabled = new Set(
       (
@@ -250,6 +268,15 @@ export class BookingsService {
           lateCancelRefundBps: s.late_cancel_refund_bps,
           locationMode: effectiveMode(s.location_mode)!,
           branchIds: branchServices.filter((x) => x.service_id === s.id).map((x) => x.branch_id),
+          addons: addons
+            .filter((a) => a.service_id === s.id)
+            .map((a) => ({
+              id: a.id,
+              title: a.title,
+              priceFils: a.price_fils,
+              durationMin: a.duration_min,
+            })),
+          rating: ratings.services.get(s.id) ?? null,
         }))
         .filter((s) => s.branchIds.length > 0 && s.locationMode !== null),
       homeServices:
@@ -267,10 +294,18 @@ export class BookingsService {
         .map((s) => ({
           id: s.id,
           displayName: s.display_name,
+          bio: s.bio,
           branchIds: staffBranches.filter((x) => x.staff_id === s.id).map((x) => x.branch_id),
           serviceIds: staffServices.filter((x) => x.staff_id === s.id).map((x) => x.service_id),
+          rating: ratings.staff.get(s.id) ?? null,
         }))
         .filter((s) => s.branchIds.length > 0 && s.serviceIds.length > 0),
+      portfolio: portfolio.filter(
+        (p) =>
+          (p.serviceId === null || serviceIds.includes(p.serviceId)) &&
+          (p.staffId === null || staff.some((x) => x.id === p.staffId)),
+      ),
+      rating: ratings.venue,
     };
   }
 
@@ -280,11 +315,15 @@ export class BookingsService {
     const now = this.clock.now();
     this.assertInHorizon(query.date, branch.timezone, now);
     const travel = await this.travelFor(this.db, service, query.location, null, now);
+    const extras = await this.addonsFor(this.db, service, query.addonIds ?? []);
     let staffIds = await qualifiedStaff(this.db, branch.business_id, branch.id, service.id);
     if (query.staffId) staffIds = staffIds.filter((id) => id === query.staffId);
     const input = await loadDay(this.db, {
       branch,
-      service: withTravel(durations(service), travel.travelBufferMin),
+      service: withTravel(
+        withAddons(durations(service), extras.durationMin),
+        travel.travelBufferMin,
+      ),
       staffIds,
       date: query.date,
       now,
@@ -356,6 +395,36 @@ export class BookingsService {
       .executeTakeFirst();
     if (!service) throw notFound();
     return { branch: branch as BranchRow, service: service as ServiceRow };
+  }
+
+  /** The chosen add-ons of a service, checked and totalled (phase 8.7). */
+  private async addonsFor(conn: Conn, service: ServiceRow, ids: readonly string[]) {
+    if (ids.length === 0) return { addons: [] as BookedAddon[], priceFils: 0, durationMin: 0 };
+    const rows = await conn
+      .selectFrom('service_addons')
+      .select(['id', 'title', 'price_fils', 'duration_min'])
+      .where('service_id', '=', service.id)
+      .where('status', '=', 'active')
+      .orderBy('sort_order')
+      .orderBy('created_at')
+      .execute();
+    try {
+      return pickAddons(
+        rows.map((r) => ({
+          id: r.id,
+          title: r.title,
+          priceFils: r.price_fils,
+          durationMin: r.duration_min,
+        })),
+        ids,
+        service.duration_min,
+      );
+    } catch (error) {
+      if (error instanceof AddonError) {
+        throw new ApiError(HttpStatus.UNPROCESSABLE_ENTITY, error.code, error.message);
+      }
+      throw error;
+    }
   }
 
   /**
@@ -533,6 +602,7 @@ export class BookingsService {
     branch: BranchRow,
     service: ServiceRow,
     staffId: string,
+    addonsMin = 0,
   ): Promise<BookingSnapshot> {
     const [business, staff] = await Promise.all([
       conn
@@ -558,12 +628,22 @@ export class BookingsService {
         building: branch.building,
         timezone: branch.timezone,
       },
-      service: { id: service.id, title: service.title, ...durations(service) },
+      service: {
+        id: service.id,
+        title: service.title,
+        ...withAddons(durations(service), addonsMin),
+      },
       staff: { id: staff.id, displayName: staff.display_name },
     };
   }
 
-  private async priceOf(conn: Conn, service: ServiceRow, now: Date, travelFeeFils = 0) {
+  private async priceOf(
+    conn: Conn,
+    service: ServiceRow,
+    now: Date,
+    travelFeeFils = 0,
+    addonsFils = 0,
+  ) {
     const [rates, business] = await Promise.all([
       currentTaxRates(conn, now),
       conn
@@ -574,8 +654,9 @@ export class BookingsService {
     ]);
     // D4: prices include VAT; a business that is not VAT registered charges none.
     const bps = business.tax_registered ? rates[service.tax_class] : 0;
-    // The travel fee is part of the same supply, so it takes the service's VAT treatment.
-    const total = service.price_fils + travelFeeFils;
+    // Add-ons and the travel fee are part of the same supply, so they take the service's VAT
+    // treatment.
+    const total = service.price_fils + addonsFils + travelFeeFils;
     return {
       price_fils: total,
       tax_fils: extractInclusiveTax(fils(total), bps, 'half_up'),
@@ -624,7 +705,14 @@ export class BookingsService {
               ? await this.homeAddress(trx, userId, body.addressId)
               : null;
           const travel = await this.travelFor(trx, service, body.location, address, now);
-          const price = await this.priceOf(trx, service, now, travel.travelFeeFils);
+          const extras = await this.addonsFor(trx, service, body.addonIds ?? []);
+          const price = await this.priceOf(
+            trx,
+            service,
+            now,
+            travel.travelFeeFils,
+            extras.priceFils,
+          );
           const policy: PolicySnapshot = {
             cutoffHours: service.cancel_cutoff_hours,
             lateRefundBps: service.late_cancel_refund_bps,
@@ -633,7 +721,10 @@ export class BookingsService {
             trx,
             {
               branch,
-              service: withTravel(durations(service), travel.travelBufferMin),
+              service: withTravel(
+                withAddons(durations(service), extras.durationMin),
+                travel.travelBufferMin,
+              ),
               serviceId: service.id,
               startAt: new Date(body.startAt),
               staffId: body.staffId ?? null,
@@ -657,7 +748,9 @@ export class BookingsService {
                   source: 'customer',
                   payment_mode: 'prepaid',
                   ...price,
-                  snapshot: JSON.stringify(await this.snapshot(trx, branch, service, staffId)),
+                  snapshot: JSON.stringify(
+                    await this.snapshot(trx, branch, service, staffId, extras.durationMin),
+                  ),
                   policy_snapshot: JSON.stringify(policy),
                   customer_name: user.display_name,
                   customer_phone: user.phone,
@@ -667,6 +760,8 @@ export class BookingsService {
                   home_address: address ? JSON.stringify(address) : null,
                   travel_fee_fils: travel.travelFeeFils,
                   travel_buffer_min: travel.travelBufferMin,
+                  addons: JSON.stringify(extras.addons),
+                  addons_fils: extras.priceFils,
                 })
                 .returning('id')
                 .executeTakeFirstOrThrow(),
@@ -678,7 +773,12 @@ export class BookingsService {
             targetType: 'booking',
             targetId: booking.id,
             businessId: branch.business_id,
-            diff: { startAt: body.startAt, serviceId: service.id, location: body.location },
+            diff: {
+              startAt: body.startAt,
+              serviceId: service.id,
+              location: body.location,
+              addonIds: extras.addons.map((a) => a.id),
+            },
             requestId: meta.requestId,
           });
           return booking.id;
@@ -1334,6 +1434,71 @@ const durations = (s: {
   bufferBeforeMin: s.buffer_before_min,
   bufferAfterMin: s.buffer_after_min,
 });
+
+const withAddons = (
+  d: { durationMin: number; bufferBeforeMin: number; bufferAfterMin: number },
+  addonsMin: number,
+) => ({ ...d, durationMin: d.durationMin + addonsMin });
+
+/** Average published rating of completed appointments: the venue, per service and per professional. */
+async function venueRatings(conn: Conn, businessId: string) {
+  const rows = await conn
+    .selectFrom('reviews as r')
+    .innerJoin('bookings as b', 'b.id', 'r.booking_id')
+    .select([
+      'r.service_id',
+      'b.staff_id',
+      (eb) => eb.fn.sum<string>('r.rating').as('sum'),
+      (eb) => eb.fn.countAll<string>().as('n'),
+    ])
+    .where('r.business_id', '=', businessId)
+    .where('r.target_type', '=', 'booking')
+    .where('r.status', '=', 'published')
+    .groupBy(['r.service_id', 'b.staff_id'])
+    .execute();
+  const add = (m: Map<string, [number, number]>, k: string, sum: number, n: number) => {
+    const [s0, n0] = m.get(k) ?? [0, 0];
+    m.set(k, [s0 + sum, n0 + n]);
+  };
+  const byService = new Map<string, [number, number]>();
+  const byStaff = new Map<string, [number, number]>();
+  let total: [number, number] = [0, 0];
+  for (const r of rows) {
+    const sum = Number(r.sum);
+    const n = Number(r.n);
+    if (r.service_id) add(byService, r.service_id, sum, n);
+    add(byStaff, r.staff_id, sum, n);
+    total = [total[0] + sum, total[1] + n];
+  }
+  const summarise = (m: Map<string, [number, number]>) =>
+    new Map([...m].map(([k, [sum, n]]) => [k, ratingSummary(sum, n)!]));
+  return {
+    services: summarise(byService),
+    staff: summarise(byStaff),
+    venue: ratingSummary(total[0], total[1]),
+  };
+}
+
+/** A business's portfolio photos that are ready to show. */
+export async function publicPortfolio(conn: Conn, businessId: string, base: string) {
+  const rows = await conn
+    .selectFrom('portfolio_items as p')
+    .innerJoin('media as m', 'm.id', 'p.media_id')
+    .select(['p.id', 'p.media_id', 'p.caption', 'p.service_id', 'p.staff_id'])
+    .where('p.business_id', '=', businessId)
+    .where('m.status', '=', 'ready')
+    .orderBy('p.sort_order')
+    .orderBy('p.created_at', 'desc')
+    .limit(PORTFOLIO_ITEMS_MAX)
+    .execute();
+  return rows.map((r) => ({
+    id: r.id,
+    imageUrl: `${base}/media/${r.media_id}`,
+    caption: r.caption,
+    serviceId: r.service_id,
+    staffId: r.staff_id,
+  }));
+}
 
 const holdExpired = () =>
   new ApiError(

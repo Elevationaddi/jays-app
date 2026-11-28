@@ -3,14 +3,16 @@ import type {
   Availability,
   Booking,
   Emirate,
+  NextAvailable,
   PayBookingResponse,
   PublicVenue,
 } from '@jays/contracts';
 import { addDays, coverageFor, localDateOf } from '@jays/domain';
 import { colors } from '@jays/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
-import { Chips, cardStyles as s } from '../components/Picker';
+import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
+import { Chips, MultiChips, cardStyles as s } from '../components/Picker';
+import { RatingLine } from '../components/ProductCard';
 import { Tabs } from '../components/Tabs';
 import { Banner, Body, Button, Field, Screen, Title } from '../components/ui';
 import { useApp } from '../context';
@@ -52,6 +54,10 @@ export function BookScreen() {
   const [emirates, setEmirates] = useState<Emirate[]>([]);
   const [addressId, setAddressId] = useState<string | null>(null);
   const [form, setForm] = useState({ emirate: '', area: '', street: '', building: '' });
+  // Phase 8.7: add-ons, the next free time and the waitlist.
+  const [addonIds, setAddonIds] = useState<string[]>([]);
+  const [next, setNext] = useState<NextAvailable | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (!venueId) {
@@ -65,9 +71,17 @@ export function BookScreen() {
         if (cancelled) return;
         setVenue(v);
         const service = v.services.find((x) => x.id === state.bookServiceId);
-        setBranchId(service?.branchIds[0] ?? null);
-        setLocation(service?.locationMode === 'home' ? 'home' : 'venue');
-        setDate(localDateOf(new Date(), v.branches[0]?.timezone ?? 'Asia/Dubai'));
+        const p = state.bookPrefill;
+        setBranchId(
+          p.branchId && service?.branchIds.includes(p.branchId)
+            ? p.branchId
+            : (service?.branchIds[0] ?? null),
+        );
+        setLocation(p.location ?? (service?.locationMode === 'home' ? 'home' : 'venue'));
+        if (p.staffId && v.staff.some((x) => x.id === p.staffId)) setStaffId(p.staffId);
+        setAddonIds((p.addonIds ?? []).filter((id) => service?.addons.some((a) => a.id === id)));
+        if (p.addressId) setAddressId(p.addressId);
+        setDate(p.date ?? localDateOf(new Date(), v.branches[0]?.timezone ?? 'Asia/Dubai'));
       })
       .catch(() => {
         if (!cancelled) setVenue('error');
@@ -75,7 +89,20 @@ export function BookScreen() {
     return () => {
       cancelled = true;
     };
-  }, [api, venueId, state.bookServiceId]);
+  }, [api, venueId, state.bookServiceId, state.bookPrefill]);
+
+  // The earliest free time, as a shortcut to the right day.
+  useEffect(() => {
+    if (!state.bookServiceId) return;
+    let cancelled = false;
+    api
+      .nextAvailable(state.bookServiceId, { location })
+      .then((n) => !cancelled && setNext(n))
+      .catch(() => !cancelled && setNext(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [api, state.bookServiceId, location]);
 
   const service =
     typeof venue === 'object'
@@ -92,7 +119,12 @@ export function BookScreen() {
       .then(([a, e]) => {
         setAddresses(a.items);
         setEmirates(e.items);
-        setAddressId((a.items.find((x) => x.isDefault) ?? a.items[0])?.id ?? null);
+        setAddressId(
+          (current) =>
+            (a.items.some((x) => x.id === current) ? current : null) ??
+            (a.items.find((x) => x.isDefault) ?? a.items[0])?.id ??
+            null,
+        );
       })
       .catch((e) => setError(tr(errorKey(e).key)));
   }, [api, location, state.session, addresses, tr]);
@@ -109,6 +141,7 @@ export function BookScreen() {
         date,
         location,
         ...(staffId !== ANY ? { staffId } : {}),
+        ...(addonIds.length > 0 ? { addonIds: addonIds.join(',') } : {}),
       })
       .then((a) => {
         if (!cancelled) setSlots(a);
@@ -122,7 +155,7 @@ export function BookScreen() {
     return () => {
       cancelled = true;
     };
-  }, [api, service, branchId, date, staffId, location, tr]);
+  }, [api, service, branchId, date, staffId, location, addonIds, tr]);
 
   const run = useCallback(
     async (fn: () => Promise<void>) => {
@@ -147,7 +180,7 @@ export function BookScreen() {
         return;
       }
       if (location === 'home' && !addressId) return;
-      const choice = `${slot}|${location}|${addressId ?? ''}`;
+      const choice = `${slot}|${location}|${addressId ?? ''}|${addonIds.join(',')}`;
       if (holdKey.current?.slot !== choice) {
         holdKey.current = { slot: choice, key: newIdempotencyKey('hold') };
       }
@@ -159,10 +192,28 @@ export function BookScreen() {
           staffId: staffId === ANY ? null : staffId,
           location,
           ...(location === 'home' ? { addressId } : {}),
+          addonIds,
         },
         holdKey.current.key,
       );
       setStep({ name: 'pay', booking, payment: await api.payBooking(booking.id) });
+    });
+
+  // Nothing is reserved: the customer is told once if a matching time opens.
+  const joinWaitlist = () =>
+    run(async () => {
+      if (!service || !branchId || !date) return;
+      if (!state.session) {
+        dispatch({ type: 'requireSignIn', returnTo: '/services/book' });
+        return;
+      }
+      await api.joinWaitlist({
+        branchId,
+        serviceId: service.id,
+        date,
+        ...(staffId !== ANY ? { staffId } : {}),
+      });
+      setNotice(tr('waitlist.joined'));
     });
 
   const saveAddress = () =>
@@ -244,6 +295,13 @@ export function BookScreen() {
   const homeBlocked = location === 'home' && (!address || !coverage || belowMinimum);
   const emirateName = (code: string) =>
     emirates.find((e) => e.code === code)?.name[state.locale] ?? code;
+  const chosenAddons = service.addons.filter((a) => addonIds.includes(a.id));
+  const addonsFils = chosenAddons.reduce((sum, a) => sum + a.priceFils, 0);
+  const addonsMin = chosenAddons.reduce((sum, a) => sum + a.durationMin, 0);
+  const pro = staffId !== ANY ? venue.staff.find((p) => p.id === staffId) : undefined;
+  const photos = venue.portfolio.filter(
+    (p) => p.serviceId === service.id || (pro !== undefined && p.staffId === pro.id),
+  );
   const policy = tr('book.policy', {
     hours: service.cancelCutoffHours,
     percent: service.lateCancelRefundBps / 100,
@@ -260,10 +318,76 @@ export function BookScreen() {
           price: money(service.priceFils, state.locale),
         })}
       </Body>
+      <RatingLine rating={service.rating} />
       {error ? <Banner kind="error">{error}</Banner> : null}
+      {notice ? <Banner kind="info">{notice}</Banner> : null}
 
       {step.name === 'pick' ? (
         <>
+          {photos.length > 0 ? (
+            <ScrollView
+              horizontal
+              accessibilityLabel={tr('portfolio.title')}
+              contentContainerStyle={{ gap: 8 }}
+            >
+              {photos.map((p) => (
+                <Image
+                  key={p.id}
+                  source={{ uri: p.imageUrl }}
+                  style={{ width: 120, height: 120, borderRadius: 12 }}
+                  accessibilityLabel={p.caption?.[state.locale] ?? tr('portfolio.photo')}
+                />
+              ))}
+            </ScrollView>
+          ) : null}
+          {next?.startAt && next.timeZone ? (
+            <View style={s.card}>
+              <Text style={s.text}>
+                {tr('book.nextFree', {
+                  date: shortDate(next.startAt, state.locale, next.timeZone),
+                  time: timeIn(next.startAt, state.locale, next.timeZone),
+                })}
+              </Text>
+              <Button
+                variant="secondary"
+                label={tr('book.goToDay')}
+                onPress={() => {
+                  if (next.branchId && service.branchIds.includes(next.branchId)) {
+                    setBranchId(next.branchId);
+                  }
+                  setDate(localDateOf(new Date(next.startAt!), next.timeZone!));
+                }}
+              />
+            </View>
+          ) : null}
+          {service.addons.length > 0 ? (
+            <>
+              <Text style={s.section} accessibilityRole="header">
+                {tr('book.addons')}
+              </Text>
+              <MultiChips
+                label={tr('book.addons')}
+                values={addonIds}
+                onChange={setAddonIds}
+                options={service.addons.map((a) => ({
+                  value: a.id,
+                  label: tr('book.addonOption', {
+                    title: a.title[state.locale],
+                    price: money(a.priceFils, state.locale),
+                    minutes: a.durationMin,
+                  }),
+                }))}
+              />
+              {chosenAddons.length > 0 ? (
+                <Body>
+                  {tr('book.withAddons', {
+                    price: money(service.priceFils + addonsFils, state.locale),
+                    duration: service.durationMin + addonsMin,
+                  })}
+                </Body>
+              ) : null}
+            </>
+          ) : null}
           {offersBoth ? (
             <>
               <Text style={s.section} accessibilityRole="header">
@@ -397,9 +521,19 @@ export function BookScreen() {
             onChange={setStaffId}
             options={[
               { value: ANY, label: tr('book.anyone') },
-              ...staffOptions.map((p) => ({ value: p.id, label: p.displayName })),
+              ...staffOptions.map((p) => ({
+                value: p.id,
+                label: p.rating ? `${p.displayName} ★ ${p.rating.average}` : p.displayName,
+              })),
             ]}
           />
+          {pro && (pro.bio || pro.rating) ? (
+            <View style={s.card}>
+              <Text style={s.text}>{pro.displayName}</Text>
+              <RatingLine rating={pro.rating} />
+              {pro.bio ? <Body>{pro.bio[state.locale]}</Body> : null}
+            </View>
+          ) : null}
           <Text style={s.section} accessibilityRole="header">
             {tr('book.date')}
           </Text>
@@ -430,6 +564,14 @@ export function BookScreen() {
           ) : (
             <Body muted>{tr('book.noSlots')}</Body>
           )}
+          {slots !== 'loading' && location === 'venue' ? (
+            <Button
+              variant="ghost"
+              label={tr('waitlist.join')}
+              onPress={() => void joinWaitlist()}
+              disabled={busy}
+            />
+          ) : null}
           <Body muted>{policy}</Body>
           <Button
             label={state.session ? tr('book.hold') : tr('book.signIn')}
@@ -459,6 +601,14 @@ export function BookScreen() {
                 ].join(', '),
               })}{' '}
               · {tr('book.travelFee', { amount: money(step.booking.travelFeeFils, state.locale) })}
+            </Body>
+          ) : null}
+          {step.booking.addons.length > 0 ? (
+            <Body>
+              {tr('book.addonsBooked', {
+                list: step.booking.addons.map((a) => a.title[state.locale]).join(', '),
+                amount: money(step.booking.addonsFils, state.locale),
+              })}
             </Body>
           ) : null}
           <Body>

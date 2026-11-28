@@ -44,6 +44,34 @@ export function StaffFields({
           </select>
         </div>
       </div>
+      <div className="grid2">
+        <div className="field">
+          <label htmlFor="bioEn">{tr('staff.bioEn')}</label>
+          <textarea
+            id="bioEn"
+            name="bioEn"
+            rows={3}
+            maxLength={600}
+            aria-describedby="bio-hint"
+            defaultValue={staff?.bio?.en ?? ''}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="bioAr">{tr('staff.bioAr')}</label>
+          <textarea
+            id="bioAr"
+            name="bioAr"
+            dir="rtl"
+            rows={3}
+            maxLength={600}
+            aria-describedby="bio-hint"
+            defaultValue={staff?.bio?.ar ?? ''}
+          />
+        </div>
+      </div>
+      <p id="bio-hint" className="muted">
+        {tr('staff.bioHint')}
+      </p>
       <fieldset className="plain">
         <legend style={{ fontWeight: 600, marginBottom: 8 }}>{tr('staff.branches')}</legend>
         <div className="chips">
