@@ -1,9 +1,10 @@
+import type { MessageKey } from '@jays/i18n';
 import { PLATFORM_ROLES } from '@jays/domain';
 import { ErrorAlert } from '../../../components/ErrorAlert';
 import { Shell } from '../../../components/Shell';
 import { requireAdmin } from '../../../lib/admin';
 import { translator } from '../../../lib/i18n';
-import { inviteAdmin } from './actions';
+import { changeAdminStatus, inviteAdmin } from './actions';
 
 type Search = Promise<Record<string, string | undefined>>;
 
@@ -26,6 +27,15 @@ export default async function SecurityPage({ searchParams }: { searchParams: Sea
   return (
     <Shell locale={locale} admin={admin} current="security">
       <ErrorAlert locale={locale} code={params['error']} />
+      {params['suspended'] ? (
+        <div className="alert info" role="status">
+          {tr('admin.security.suspended')}
+        </div>
+      ) : params['reactivated'] ? (
+        <div className="alert info" role="status">
+          {tr('admin.security.reactivated')}
+        </div>
+      ) : null}
       {!canManage && !canAudit ? <div className="alert error">{tr('admin.forbidden')}</div> : null}
       {admins ? (
         <section>
@@ -38,6 +48,7 @@ export default async function SecurityPage({ searchParams }: { searchParams: Sea
                 <th>{tr('admin.roles')}</th>
                 <th>{tr('admin.security.mfa')}</th>
                 <th>{tr('admin.security.status')}</th>
+                <th>{tr('admin.security.access')}</th>
               </tr>
             </thead>
             <tbody>
@@ -49,8 +60,42 @@ export default async function SecurityPage({ searchParams }: { searchParams: Sea
                   <td>{a.mfaEnabled ? '✓ TOTP' : '—'}</td>
                   <td>
                     <span className={`badge ${a.status === 'active' ? 'active' : a.status}`}>
-                      {a.status}
+                      {tr(`admin.security.status.${a.status}`)}
                     </span>
+                  </td>
+                  <td>
+                    {a.id === admin.id ? (
+                      <span className="muted">{tr('admin.security.you')}</span>
+                    ) : (
+                      <form action={changeAdminStatus} className="stack" style={{ gap: 6 }}>
+                        <input type="hidden" name="adminId" value={a.id} />
+                        <input
+                          type="hidden"
+                          name="action"
+                          value={a.status === 'suspended' ? 'reactivate' : 'suspend'}
+                        />
+                        <label htmlFor={`reason-${a.id}`} className="muted">
+                          {tr('admin.audit.reason')}
+                        </label>
+                        <input
+                          id={`reason-${a.id}`}
+                          name="reason"
+                          required
+                          minLength={5}
+                          maxLength={1000}
+                        />
+                        <button
+                          className={a.status === 'suspended' ? 'btn secondary' : 'btn danger'}
+                          type="submit"
+                        >
+                          {tr(
+                            a.status === 'suspended'
+                              ? 'admin.security.reactivate'
+                              : 'admin.security.suspend',
+                          )}
+                        </button>
+                      </form>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -115,7 +160,7 @@ export default async function SecurityPage({ searchParams }: { searchParams: Sea
                   <td className="ltr">
                     <code>{e.action}</code>
                   </td>
-                  <td className="ltr">{e.actorType}</td>
+                  <td>{tr(`admin.audit.actorType.${e.actorType}` as MessageKey)}</td>
                   <td>{e.reason ?? '—'}</td>
                 </tr>
               ))}

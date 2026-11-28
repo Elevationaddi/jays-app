@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { FakeStripe, stripeEvent } from '../testing/fake-stripe.js';
 import { ProviderUnavailableError } from './provider.js';
@@ -218,6 +219,40 @@ describe('Stripe webhooks (mock HTTP)', () => {
     // Tampered body.
     const d = stripeEvent(SECRET, 'payment_intent.succeeded', obj, now);
     expect(verify({ ...d, body: d.body.replace('1000', '9000') })).toBeNull();
+  });
+
+  it('refuses future timestamps, malformed headers and signed bodies that are not events', () => {
+    const obj = { id: 'pi_1', amount_received: 1000, currency: 'aed' };
+    // Signed six minutes in the future (clock skew beyond the tolerance, or a pre-made replay).
+    const future = stripeEvent(
+      SECRET,
+      'payment_intent.succeeded',
+      obj,
+      new Date(now.getTime() + 360_000),
+    );
+    expect(verify(future)).toBeNull();
+    const d = stripeEvent(SECRET, 'payment_intent.succeeded', obj, now);
+    const t = Math.floor(now.getTime() / 1000);
+    for (const header of [
+      '',
+      'garbage',
+      `t=${t}`,
+      `v1=${d.headers['stripe-signature']!.split('v1=')[1]}`,
+      `t=not-a-number,v1=${'a'.repeat(64)}`,
+      `t=${t},v1=${'z'.repeat(64)}`,
+      `t=${t},v0=${d.headers['stripe-signature']!.split('v1=')[1]}`,
+    ]) {
+      expect(verify({ ...d, headers: { 'stripe-signature': header } })).toBeNull();
+    }
+    expect(stripe.verifyWebhook(Buffer.from(d.body), undefined, now)).toBeNull();
+    // Correctly signed bytes that are not JSON, or JSON that is not an event, are refused.
+    const signed = (body: string) => {
+      const v1 = createHmac('sha256', SECRET).update(`${t}.${body}`).digest('hex');
+      return { body, headers: { 'stripe-signature': `t=${t},v1=${v1}` } };
+    };
+    expect(verify(signed('{not json'))).toBeNull();
+    expect(verify(signed('[]'))).toBeNull();
+    expect(verify(signed(JSON.stringify({ id: 'evt_1', type: 'x', livemode: false })))).toBeNull();
   });
 
   it('refuses live-mode events even when correctly signed', () => {

@@ -1,6 +1,6 @@
 import { colors } from '@jays/ui';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Text, View } from 'react-native';
 import { cardStyles as s } from '../components/Picker';
 import { Tabs } from '../components/Tabs';
 import { Banner, Body, Button, Screen, Title } from '../components/ui';
@@ -11,7 +11,7 @@ type Page = Awaited<ReturnType<ReturnType<typeof useApp>['api']['notifications']
 
 /** /notifications: in-app messages, newest first. Opening the list marks them read. */
 export function NotificationsScreen() {
-  const { state, api, dispatch, tr } = useApp();
+  const { state, api, dispatch, tr, push } = useApp();
   const [page, setPage] = useState<Page | 'error' | null>(null);
 
   useEffect(() => {
@@ -53,6 +53,25 @@ export function NotificationsScreen() {
         />
       </View>
       <Title>{tr('inbox.title')}</Title>
+      {push.permission ? (
+        <View style={s.card} accessibilityRole="summary">
+          <Text style={s.text}>{tr('push.title')}</Text>
+          <Body muted>{tr(`push.status.${push.permission}`)}</Body>
+          {push.permission === 'undetermined' ? (
+            <View style={{ alignItems: 'flex-start' }}>
+              <Button label={tr('push.allow')} onPress={() => void push.enable()} />
+            </View>
+          ) : push.permission === 'denied' ? (
+            <View style={{ alignItems: 'flex-start' }}>
+              <Button
+                variant="secondary"
+                label={tr('push.openSettings')}
+                onPress={() => void Linking.openSettings().catch(() => undefined)}
+              />
+            </View>
+          ) : null}
+        </View>
+      ) : null}
       {page === null ? (
         <ActivityIndicator color={colors.accent} accessibilityLabel={tr('common.loading')} />
       ) : page === 'error' ? (

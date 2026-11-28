@@ -1,5 +1,6 @@
 import { BRAND } from '@jays/i18n';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { sql } from 'kysely';
 import type { AdminListItem, AdminSession, AdminView, AuditLogItem } from '@jays/contracts';
 import type { Db } from '@jays/db';
 import { hasPlatformCapability, PLATFORM_CAPABILITIES, type PlatformRole } from '@jays/domain';
@@ -314,6 +315,105 @@ export class AdminService {
     });
     const { tokens } = await this.sessions.create(this.db, adminId, now, meta.userAgent);
     return { tokens, admin: await this.view(adminId) };
+  }
+
+  /**
+   * Suspends or reactivates another admin. Suspension revokes every session at once (the guard
+   * also checks the status on each request). Nobody can suspend themselves, and the last active
+   * superadmin cannot be suspended, so the console can never lock everyone out.
+   */
+  async changeAdminStatus(
+    actorId: string,
+    targetId: string,
+    body: { action: 'suspend' | 'reactivate'; reason: string },
+    meta: RequestMeta,
+  ): Promise<AdminListItem> {
+    if (actorId === targetId) {
+      throw new ApiError(
+        HttpStatus.CONFLICT,
+        'INVALID_TRANSITION',
+        'You cannot change your own status.',
+      );
+    }
+    const now = this.clock.now();
+    await this.db.transaction().execute(async (trx) => {
+      const target = await trx
+        .selectFrom('admin_accounts')
+        .select(['id', 'status', 'mfa_enabled_at'])
+        .where('id', '=', targetId)
+        .forUpdate()
+        .executeTakeFirst();
+      if (!target) throw new ApiError(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Admin not found.');
+      const from = target.status;
+      // Someone suspended before finishing the invite goes back to invited, not active.
+      const to =
+        body.action === 'suspend' ? 'suspended' : target.mfa_enabled_at ? 'active' : 'invited';
+      if (body.action === 'suspend' ? from === 'suspended' : from !== 'suspended') {
+        throw new ApiError(
+          HttpStatus.CONFLICT,
+          'INVALID_TRANSITION',
+          `An admin who is ${from} cannot be ${body.action === 'suspend' ? 'suspended' : 'reactivated'}.`,
+        );
+      }
+      if (body.action === 'suspend') {
+        // Serialise concurrent suspensions so two superadmins cannot suspend each other.
+        await sql`SELECT pg_advisory_xact_lock(hashtext('admin_status_change'))`.execute(trx);
+        const roles = await trx
+          .selectFrom('admin_roles')
+          .select('role')
+          .where('admin_id', '=', targetId)
+          .execute();
+        if (roles.some((r) => r.role === 'superadmin')) {
+          const others = await trx
+            .selectFrom('admin_accounts as a')
+            .innerJoin('admin_roles as r', 'r.admin_id', 'a.id')
+            .select((eb) => eb.fn.countAll<string>().as('n'))
+            .where('r.role', '=', 'superadmin')
+            .where('a.status', '=', 'active')
+            .where('a.id', '!=', targetId)
+            .executeTakeFirstOrThrow();
+          if (Number(others.n) === 0) {
+            throw new ApiError(
+              HttpStatus.CONFLICT,
+              'INVALID_TRANSITION',
+              'The last active superadmin cannot be suspended.',
+            );
+          }
+        }
+      }
+      await trx
+        .updateTable('admin_accounts')
+        .set({ status: to })
+        .where('id', '=', targetId)
+        .execute();
+      if (body.action === 'suspend') {
+        await this.sessions.revokeAllForSubject(trx, targetId, now, 'admin');
+      }
+      await writeAudit(trx, {
+        actorType: 'admin',
+        actorId,
+        action: body.action === 'suspend' ? 'admin.suspended' : 'admin.reactivated',
+        targetType: 'admin_account',
+        targetId,
+        reason: body.reason,
+        diff: { status: { from, to } },
+        requestId: meta.requestId,
+      });
+    });
+    const row = await this.db
+      .selectFrom('admin_accounts')
+      .select(['id', 'email', 'display_name', 'status', 'mfa_enabled_at', 'created_at'])
+      .where('id', '=', targetId)
+      .executeTakeFirstOrThrow();
+    return {
+      id: row.id,
+      email: row.email,
+      displayName: row.display_name,
+      status: row.status,
+      roles: await this.roles(targetId),
+      mfaEnabled: row.mfa_enabled_at !== null,
+      createdAt: new Date(row.created_at).toISOString(),
+    };
   }
 
   async listAdmins(query: ListQuery) {

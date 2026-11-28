@@ -1,0 +1,3533 @@
+[
+  {
+    "id": "B-01",
+    "app": "business",
+    "path": "/sign-in",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/sign-in",
+    "issues": []
+  },
+  {
+    "id": "B-02",
+    "app": "business",
+    "path": "/register",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/register",
+    "issues": []
+  },
+  {
+    "id": "B-03",
+    "app": "business",
+    "path": "/verify",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/verify",
+    "issues": []
+  },
+  {
+    "id": "B-31",
+    "app": "business",
+    "path": "/legal/merchant_agreement",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/legal/merchant_agreement",
+    "issues": []
+  },
+  {
+    "id": "B-04",
+    "app": "business",
+    "path": "/business/gateway",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/gateway",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-05",
+    "app": "business",
+    "path": "/business/new",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/new",
+    "issues": []
+  },
+  {
+    "id": "B-06",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/onboarding",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/onboarding",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-08",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/dashboard",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/dashboard",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-09",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/storefront",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/storefront",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-10",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-11",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products/new",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products/new",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-12",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products/fd7992af-23f8-4806-9921-46f58a9d5eb2",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products/fd7992af-23f8-4806-9921-46f58a9d5eb2",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-13",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/inventory",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/inventory",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-14",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/delivery",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/delivery",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-15",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/orders",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/orders",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-16",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/orders/1002af0c-001f-4a3f-904f-2b2096c617b5",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/orders/1002af0c-001f-4a3f-904f-2b2096c617b5",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-17",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/returns",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/returns",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-18",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/reviews",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/reviews",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-19",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/calendar",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/calendar",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-20",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/calendar/67837e87-aa30-4a6e-bdbe-35adaba7da36",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/calendar/67837e87-aa30-4a6e-bdbe-35adaba7da36",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-21",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-22",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/c2b1ab75-689e-46c1-bc8a-b97855393d8d",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/c2b1ab75-689e-46c1-bc8a-b97855393d8d",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-23",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/branches/961f3abb-7cc4-4f16-b477-7a8f7408e2d3",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/branches/961f3abb-7cc4-4f16-b477-7a8f7408e2d3",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-24",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/home",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/home",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-25",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/portfolio",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/portfolio",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-26",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/staff",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/staff",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-27",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/staff/ee1f90be-d250-4c27-b009-7d6b4885e88a",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/staff/ee1f90be-d250-4c27-b009-7d6b4885e88a",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-28",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/finance",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/finance",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-29",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/finance/documents/9091b41a-9afc-436f-be5a-23f4a1908869",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/finance/documents/9091b41a-9afc-436f-be5a-23f4a1908869",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-30",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/team",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/team",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1697px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-01",
+    "app": "business",
+    "path": "/sign-in",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/sign-in",
+    "issues": []
+  },
+  {
+    "id": "B-02",
+    "app": "business",
+    "path": "/register",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/register",
+    "issues": []
+  },
+  {
+    "id": "B-03",
+    "app": "business",
+    "path": "/verify",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/verify",
+    "issues": []
+  },
+  {
+    "id": "B-31",
+    "app": "business",
+    "path": "/legal/merchant_agreement",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/legal/merchant_agreement",
+    "issues": []
+  },
+  {
+    "id": "B-04",
+    "app": "business",
+    "path": "/business/gateway",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/gateway",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: form.switcher, button.btn.secondary, a"
+      }
+    ]
+  },
+  {
+    "id": "B-05",
+    "app": "business",
+    "path": "/business/new",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/new",
+    "issues": []
+  },
+  {
+    "id": "B-06",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/onboarding",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/onboarding",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-08",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/dashboard",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/dashboard",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-09",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/storefront",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/storefront",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a, section.card"
+      }
+    ]
+  },
+  {
+    "id": "B-10",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-11",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products/new",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products/new",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-12",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products/fd7992af-23f8-4806-9921-46f58a9d5eb2",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products/fd7992af-23f8-4806-9921-46f58a9d5eb2",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a, section.card"
+      }
+    ]
+  },
+  {
+    "id": "B-13",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/inventory",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/inventory",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a, table, thead, tr, th, tbody"
+      }
+    ]
+  },
+  {
+    "id": "B-14",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/delivery",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/delivery",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a, table, thead, tr, th, tbody"
+      }
+    ]
+  },
+  {
+    "id": "B-15",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/orders",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/orders",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-16",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/orders/1002af0c-001f-4a3f-904f-2b2096c617b5",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/orders/1002af0c-001f-4a3f-904f-2b2096c617b5",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-17",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/returns",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/returns",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-18",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/reviews",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/reviews",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-19",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/calendar",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/calendar",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-20",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/calendar/67837e87-aa30-4a6e-bdbe-35adaba7da36",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/calendar/67837e87-aa30-4a6e-bdbe-35adaba7da36",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-21",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a, table, tbody, tr, td, input"
+      }
+    ]
+  },
+  {
+    "id": "B-22",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/c2b1ab75-689e-46c1-bc8a-b97855393d8d",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/c2b1ab75-689e-46c1-bc8a-b97855393d8d",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-23",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/branches/961f3abb-7cc4-4f16-b477-7a8f7408e2d3",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/branches/961f3abb-7cc4-4f16-b477-7a8f7408e2d3",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a, form.card, div.grid2, div.field, label, input"
+      }
+    ]
+  },
+  {
+    "id": "B-24",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/home",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/home",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-25",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/portfolio",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/portfolio",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-26",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/staff",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/staff",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-27",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/staff/ee1f90be-d250-4c27-b009-7d6b4885e88a",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/staff/ee1f90be-d250-4c27-b009-7d6b4885e88a",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a, section.card, h2, p.muted, form, div.table-wrap"
+      }
+    ]
+  },
+  {
+    "id": "B-28",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/finance",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/finance",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a, table, thead, tr, th, tbody"
+      }
+    ]
+  },
+  {
+    "id": "B-29",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/finance/documents/9091b41a-9afc-436f-be5a-23f4a1908869",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/finance/documents/9091b41a-9afc-436f-be5a-23f4a1908869",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a, table, thead, tr, th, tbody"
+      }
+    ]
+  },
+  {
+    "id": "B-30",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/team",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/team",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1489px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-01",
+    "app": "business",
+    "path": "/sign-in",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/sign-in",
+    "issues": []
+  },
+  {
+    "id": "B-02",
+    "app": "business",
+    "path": "/register",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/register",
+    "issues": []
+  },
+  {
+    "id": "B-03",
+    "app": "business",
+    "path": "/verify",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/verify",
+    "issues": []
+  },
+  {
+    "id": "B-31",
+    "app": "business",
+    "path": "/legal/merchant_agreement",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/legal/merchant_agreement",
+    "issues": []
+  },
+  {
+    "id": "B-04",
+    "app": "business",
+    "path": "/business/gateway",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/gateway",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Hamda Al Ketbi"
+      }
+    ]
+  },
+  {
+    "id": "B-05",
+    "app": "business",
+    "path": "/business/new",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/new",
+    "issues": []
+  },
+  {
+    "id": "B-06",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/onboarding",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/onboarding",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "demo-licence-oud-orchid.pdf"
+      }
+    ]
+  },
+  {
+    "id": "B-08",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/dashboard",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/dashboard",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-09",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/storefront",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/storefront",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-10",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-11",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products/new",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products/new",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-12",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products/fd7992af-23f8-4806-9921-46f58a9d5eb2",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products/fd7992af-23f8-4806-9921-46f58a9d5eb2",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-13",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/inventory",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/inventory",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-14",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/delivery",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/delivery",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-15",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/orders",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/orders",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-16",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/orders/1002af0c-001f-4a3f-904f-2b2096c617b5",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/orders/1002af0c-001f-4a3f-904f-2b2096c617b5",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo Villa 3, Fictional Street 12, Arabian Ranches | DXB"
+      }
+    ]
+  },
+  {
+    "id": "B-17",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/returns",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/returns",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Changed my mind (demo) | Wrong shade (demo)"
+      }
+    ]
+  },
+  {
+    "id": "B-18",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/reviews",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/reviews",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Jana | Very good quality. Delivery took one day longer than shown. | Good, but the shade was slightly different from the photo. | Nice result, I would book again. | Ahmed | Great value for the price. | Thank you for the feedback. We have shared it with our team. | Already ordered again. Highly recommended."
+      }
+    ]
+  },
+  {
+    "id": "B-19",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/calendar",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/calendar",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Amal (Senior stylist)"
+      }
+    ]
+  },
+  {
+    "id": "B-20",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/calendar/67837e87-aa30-4a6e-bdbe-35adaba7da36",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/calendar/67837e87-aa30-4a6e-bdbe-35adaba7da36",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Amal (Senior stylist) | Sara Lim"
+      }
+    ]
+  },
+  {
+    "id": "B-21",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-22",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/c2b1ab75-689e-46c1-bc8a-b97855393d8d",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/c2b1ab75-689e-46c1-bc8a-b97855393d8d",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-23",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/branches/961f3abb-7cc4-4f16-b477-7a8f7408e2d3",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/branches/961f3abb-7cc4-4f16-b477-7a8f7408e2d3",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-24",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/home",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/home",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-25",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/portfolio",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/portfolio",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-26",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/staff",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/staff",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Amal (Senior stylist) | Joanna (Stylist) | Shaikha (Henna artist)"
+      }
+    ]
+  },
+  {
+    "id": "B-27",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/staff/ee1f90be-d250-4c27-b009-7d6b4885e88a",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/staff/ee1f90be-d250-4c27-b009-7d6b4885e88a",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Amal (Senior stylist)"
+      }
+    ]
+  },
+  {
+    "id": "B-28",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/finance",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/finance",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-29",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/finance/documents/9091b41a-9afc-436f-be5a-23f4a1908869",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/finance/documents/9091b41a-9afc-436f-be5a-23f4a1908869",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Oud & Orchid Salon and Shop (Demo) LLC"
+      }
+    ]
+  },
+  {
+    "id": "B-30",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/team",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/team",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1522px wide in a 1440px window: a"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Hamda Al Ketbi"
+      }
+    ]
+  },
+  {
+    "id": "B-01",
+    "app": "business",
+    "path": "/sign-in",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/sign-in",
+    "issues": []
+  },
+  {
+    "id": "B-02",
+    "app": "business",
+    "path": "/register",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/register",
+    "issues": []
+  },
+  {
+    "id": "B-03",
+    "app": "business",
+    "path": "/verify",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/verify",
+    "issues": []
+  },
+  {
+    "id": "B-31",
+    "app": "business",
+    "path": "/legal/merchant_agreement",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/legal/merchant_agreement",
+    "issues": []
+  },
+  {
+    "id": "B-04",
+    "app": "business",
+    "path": "/business/gateway",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/gateway",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-05",
+    "app": "business",
+    "path": "/business/new",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/new",
+    "issues": []
+  },
+  {
+    "id": "B-06",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/onboarding",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/onboarding",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "demo-licence-oud-orchid.pdf"
+      }
+    ]
+  },
+  {
+    "id": "B-08",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/dashboard",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/dashboard",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-09",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/storefront",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/storefront",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a, section.card"
+      }
+    ]
+  },
+  {
+    "id": "B-10",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-11",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products/new",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products/new",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-12",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products/fd7992af-23f8-4806-9921-46f58a9d5eb2",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/products/fd7992af-23f8-4806-9921-46f58a9d5eb2",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a, section.card"
+      }
+    ]
+  },
+  {
+    "id": "B-13",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/inventory",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/inventory",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a, table, thead, tr, th, tbody"
+      }
+    ]
+  },
+  {
+    "id": "B-14",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/delivery",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/delivery",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a, table, thead, tr, th, tbody"
+      }
+    ]
+  },
+  {
+    "id": "B-15",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/orders",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/orders",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-16",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/orders/1002af0c-001f-4a3f-904f-2b2096c617b5",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/orders/1002af0c-001f-4a3f-904f-2b2096c617b5",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo Villa 3, Fictional Street 12, Arabian Ranches | DXB"
+      }
+    ]
+  },
+  {
+    "id": "B-17",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/returns",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/returns",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Changed my mind (demo) | Wrong shade (demo)"
+      }
+    ]
+  },
+  {
+    "id": "B-18",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/reviews",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/reviews",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Jana | Very good quality. Delivery took one day longer than shown. | Good, but the shade was slightly different from the photo. | Nice result, I would book again. | Ahmed | Great value for the price. | Thank you for the feedback. We have shared it with our team. | Already ordered again. Highly recommended."
+      }
+    ]
+  },
+  {
+    "id": "B-19",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/calendar",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/calendar",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Amal (Senior stylist)"
+      }
+    ]
+  },
+  {
+    "id": "B-20",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/calendar/67837e87-aa30-4a6e-bdbe-35adaba7da36",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/calendar/67837e87-aa30-4a6e-bdbe-35adaba7da36",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Amal (Senior stylist) | Sara Lim"
+      }
+    ]
+  },
+  {
+    "id": "B-21",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a, table, tbody, tr, td, input"
+      }
+    ]
+  },
+  {
+    "id": "B-22",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/c2b1ab75-689e-46c1-bc8a-b97855393d8d",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/c2b1ab75-689e-46c1-bc8a-b97855393d8d",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-23",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/branches/961f3abb-7cc4-4f16-b477-7a8f7408e2d3",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/branches/961f3abb-7cc4-4f16-b477-7a8f7408e2d3",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a, form.card, div.grid2, div.field, label, input"
+      }
+    ]
+  },
+  {
+    "id": "B-24",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/home",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/home",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-25",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/portfolio",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/services/portfolio",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a"
+      }
+    ]
+  },
+  {
+    "id": "B-26",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/staff",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/staff",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Amal (Senior stylist) | Joanna (Stylist) | Shaikha (Henna artist)"
+      }
+    ]
+  },
+  {
+    "id": "B-27",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/staff/ee1f90be-d250-4c27-b009-7d6b4885e88a",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/staff/ee1f90be-d250-4c27-b009-7d6b4885e88a",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a, section.card, h2, p.muted, form, div.table-wrap"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Amal (Senior stylist)"
+      }
+    ]
+  },
+  {
+    "id": "B-28",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/finance",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/finance",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a, table, thead, tr, th, tbody"
+      }
+    ]
+  },
+  {
+    "id": "B-29",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/finance/documents/9091b41a-9afc-436f-be5a-23f4a1908869",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/finance/documents/9091b41a-9afc-436f-be5a-23f4a1908869",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a, table, thead, tr, th, tbody"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Oud & Orchid Salon and Shop (Demo) LLC"
+      }
+    ]
+  },
+  {
+    "id": "B-30",
+    "app": "business",
+    "path": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/team",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/business/2ddafefe-9905-4b1a-91f7-9a7abf03cd9a/team",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 1314px wide in a 390px window: a"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Hamda Al Ketbi"
+      }
+    ]
+  },
+  {
+    "id": "A-01",
+    "app": "admin",
+    "path": "/sign-in",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/sign-in",
+    "issues": []
+  },
+  {
+    "id": "A-02",
+    "app": "admin",
+    "path": "/invite?token=demo-invalid-token",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/invite",
+    "issues": []
+  },
+  {
+    "id": "A-04",
+    "app": "admin",
+    "path": "/admin/dashboard",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/dashboard",
+    "issues": []
+  },
+  {
+    "id": "A-05",
+    "app": "admin",
+    "path": "/admin/businesses",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/businesses",
+    "issues": []
+  },
+  {
+    "id": "A-06",
+    "app": "admin",
+    "path": "/admin/businesses/7dde52fc-63b7-4a32-b21e-7daf183e0056",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/businesses/7dde52fc-63b7-4a32-b21e-7daf183e0056",
+    "issues": []
+  },
+  {
+    "id": "A-07",
+    "app": "admin",
+    "path": "/admin/products",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/products",
+    "issues": []
+  },
+  {
+    "id": "A-08",
+    "app": "admin",
+    "path": "/admin/products/fd7992af-23f8-4806-9921-46f58a9d5eb2",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/products/fd7992af-23f8-4806-9921-46f58a9d5eb2",
+    "issues": []
+  },
+  {
+    "id": "A-09",
+    "app": "admin",
+    "path": "/admin/services",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/services",
+    "issues": []
+  },
+  {
+    "id": "A-10",
+    "app": "admin",
+    "path": "/admin/home-services",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/home-services",
+    "issues": []
+  },
+  {
+    "id": "A-11",
+    "app": "admin",
+    "path": "/admin/home-services/cb93fca2-32de-40cd-8db6-4802077439c0",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/home-services/cb93fca2-32de-40cd-8db6-4802077439c0",
+    "issues": []
+  },
+  {
+    "id": "A-12",
+    "app": "admin",
+    "path": "/admin/bookings",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/bookings",
+    "issues": []
+  },
+  {
+    "id": "A-13",
+    "app": "admin",
+    "path": "/admin/orders",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/orders",
+    "issues": []
+  },
+  {
+    "id": "A-14",
+    "app": "admin",
+    "path": "/admin/finance",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance",
+    "issues": []
+  },
+  {
+    "id": "A-15",
+    "app": "admin",
+    "path": "/admin/finance/payments",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance/payments",
+    "issues": []
+  },
+  {
+    "id": "A-16",
+    "app": "admin",
+    "path": "/admin/finance/payments/798873d5-5319-4c04-9269-7a78ad443078",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance/payments/798873d5-5319-4c04-9269-7a78ad443078",
+    "issues": []
+  },
+  {
+    "id": "A-17",
+    "app": "admin",
+    "path": "/admin/finance/refunds",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance/refunds",
+    "issues": []
+  },
+  {
+    "id": "A-18",
+    "app": "admin",
+    "path": "/admin/finance/payouts",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance/payouts",
+    "issues": []
+  },
+  {
+    "id": "A-19",
+    "app": "admin",
+    "path": "/admin/finance/disputes",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance/disputes",
+    "issues": []
+  },
+  {
+    "id": "A-20",
+    "app": "admin",
+    "path": "/admin/finance/reconciliation",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance/reconciliation",
+    "issues": []
+  },
+  {
+    "id": "A-21",
+    "app": "admin",
+    "path": "/admin/finance/earnings",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance/earnings",
+    "issues": []
+  },
+  {
+    "id": "A-22",
+    "app": "admin",
+    "path": "/admin/finance/tax",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance/tax",
+    "issues": []
+  },
+  {
+    "id": "A-23",
+    "app": "admin",
+    "path": "/admin/finance/tax/4749dc89-319e-4a1d-af6f-2182431ef8a9",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance/tax/4749dc89-319e-4a1d-af6f-2182431ef8a9",
+    "issues": []
+  },
+  {
+    "id": "A-24",
+    "app": "admin",
+    "path": "/admin/support",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/support",
+    "issues": []
+  },
+  {
+    "id": "A-25",
+    "app": "admin",
+    "path": "/admin/support/1a07a1eb-c0c8-4462-8818-e4c709730395",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/support/1a07a1eb-c0c8-4462-8818-e4c709730395",
+    "issues": []
+  },
+  {
+    "id": "A-26",
+    "app": "admin",
+    "path": "/admin/reviews",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/reviews",
+    "issues": []
+  },
+  {
+    "id": "A-27",
+    "app": "admin",
+    "path": "/admin/notifications",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/notifications",
+    "issues": []
+  },
+  {
+    "id": "A-28",
+    "app": "admin",
+    "path": "/admin/content",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/content",
+    "issues": []
+  },
+  {
+    "id": "A-29",
+    "app": "admin",
+    "path": "/admin/legal",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/legal",
+    "issues": []
+  },
+  {
+    "id": "A-30",
+    "app": "admin",
+    "path": "/admin/legal/fee19d4d-46a6-4860-b613-799a5f8ecde3",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/legal/fee19d4d-46a6-4860-b613-799a5f8ecde3",
+    "issues": []
+  },
+  {
+    "id": "A-31",
+    "app": "admin",
+    "path": "/admin/operations",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/operations",
+    "issues": []
+  },
+  {
+    "id": "A-32",
+    "app": "admin",
+    "path": "/admin/pilot",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/pilot",
+    "issues": []
+  },
+  {
+    "id": "A-33",
+    "app": "admin",
+    "path": "/admin/security",
+    "lang": "en",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/security",
+    "issues": []
+  },
+  {
+    "id": "A-01",
+    "app": "admin",
+    "path": "/sign-in",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/sign-in",
+    "issues": []
+  },
+  {
+    "id": "A-02",
+    "app": "admin",
+    "path": "/invite?token=demo-invalid-token",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/invite",
+    "issues": []
+  },
+  {
+    "id": "A-04",
+    "app": "admin",
+    "path": "/admin/dashboard",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/dashboard",
+    "issues": []
+  },
+  {
+    "id": "A-05",
+    "app": "admin",
+    "path": "/admin/businesses",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/businesses",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 609px wide in a 390px window: main.page, h1, nav.tabs.filters, a, div.table-wrap"
+      }
+    ]
+  },
+  {
+    "id": "A-06",
+    "app": "admin",
+    "path": "/admin/businesses/7dde52fc-63b7-4a32-b21e-7daf183e0056",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/businesses/7dde52fc-63b7-4a32-b21e-7daf183e0056",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 533px wide in a 390px window: section.card, h2, dl.kv, dt, span.ltr-inline, span.badge.approved"
+      }
+    ]
+  },
+  {
+    "id": "A-07",
+    "app": "admin",
+    "path": "/admin/products",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/products",
+    "issues": []
+  },
+  {
+    "id": "A-08",
+    "app": "admin",
+    "path": "/admin/products/fd7992af-23f8-4806-9921-46f58a9d5eb2",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/products/fd7992af-23f8-4806-9921-46f58a9d5eb2",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 754px wide in a 390px window: section.card, h2, div.stack, div.chips, div.grid2, div"
+      }
+    ]
+  },
+  {
+    "id": "A-09",
+    "app": "admin",
+    "path": "/admin/services",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/services",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 491px wide in a 390px window: main.page, h1, p.muted, nav.tabs.filters, div.table-wrap"
+      }
+    ]
+  },
+  {
+    "id": "A-10",
+    "app": "admin",
+    "path": "/admin/home-services",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/home-services",
+    "issues": []
+  },
+  {
+    "id": "A-11",
+    "app": "admin",
+    "path": "/admin/home-services/cb93fca2-32de-40cd-8db6-4802077439c0",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/home-services/cb93fca2-32de-40cd-8db6-4802077439c0",
+    "issues": []
+  },
+  {
+    "id": "A-12",
+    "app": "admin",
+    "path": "/admin/bookings",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/bookings",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 657px wide in a 390px window: main.page, h1, p.muted, nav.tabs.filters, a, div.table-wrap"
+      }
+    ]
+  },
+  {
+    "id": "A-13",
+    "app": "admin",
+    "path": "/admin/orders",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/orders",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 826px wide in a 390px window: main.page, h1, p.muted, nav.tabs.filters, a, div.table-wrap"
+      }
+    ]
+  },
+  {
+    "id": "A-14",
+    "app": "admin",
+    "path": "/admin/finance",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 401px wide in a 390px window: main.page"
+      }
+    ]
+  },
+  {
+    "id": "A-15",
+    "app": "admin",
+    "path": "/admin/finance/payments",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance/payments",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 630px wide in a 390px window: main.page, h1, nav.tabs.filters, a, div.table-wrap, p"
+      }
+    ]
+  },
+  {
+    "id": "A-16",
+    "app": "admin",
+    "path": "/admin/finance/payments/798873d5-5319-4c04-9269-7a78ad443078",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance/payments/798873d5-5319-4c04-9269-7a78ad443078",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 485px wide in a 390px window: main.page, p, h1, nav.tabs.filters, a, section.card"
+      }
+    ]
+  },
+  {
+    "id": "A-17",
+    "app": "admin",
+    "path": "/admin/finance/refunds",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance/refunds",
+    "issues": []
+  },
+  {
+    "id": "A-18",
+    "app": "admin",
+    "path": "/admin/finance/payouts",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance/payouts",
+    "issues": []
+  },
+  {
+    "id": "A-19",
+    "app": "admin",
+    "path": "/admin/finance/disputes",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance/disputes",
+    "issues": []
+  },
+  {
+    "id": "A-20",
+    "app": "admin",
+    "path": "/admin/finance/reconciliation",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance/reconciliation",
+    "issues": []
+  },
+  {
+    "id": "A-21",
+    "app": "admin",
+    "path": "/admin/finance/earnings",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance/earnings",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 811px wide in a 390px window: main.page, h1, p.muted, nav.tabs.filters, a, div.table-wrap"
+      }
+    ]
+  },
+  {
+    "id": "A-22",
+    "app": "admin",
+    "path": "/admin/finance/tax",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance/tax",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 602px wide in a 390px window: main.page, h1, p.muted, nav.tabs.filters, a, div.alert.warning"
+      }
+    ]
+  },
+  {
+    "id": "A-23",
+    "app": "admin",
+    "path": "/admin/finance/tax/4749dc89-319e-4a1d-af6f-2182431ef8a9",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance/tax/4749dc89-319e-4a1d-af6f-2182431ef8a9",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 508px wide in a 390px window: main.page, p, article.card.tax-doc, div.alert.warning, header, div"
+      }
+    ]
+  },
+  {
+    "id": "A-24",
+    "app": "admin",
+    "path": "/admin/support",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/support",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 658px wide in a 390px window: main.page, h1, p.muted, nav.tabs.filters, a, div.table-wrap"
+      }
+    ]
+  },
+  {
+    "id": "A-25",
+    "app": "admin",
+    "path": "/admin/support/1a07a1eb-c0c8-4462-8818-e4c709730395",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/support/1a07a1eb-c0c8-4462-8818-e4c709730395",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 409px wide in a 390px window: main.page, p.meta, h1, div.split, section.card, aside.card"
+      }
+    ]
+  },
+  {
+    "id": "A-26",
+    "app": "admin",
+    "path": "/admin/reviews",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/reviews",
+    "issues": []
+  },
+  {
+    "id": "A-27",
+    "app": "admin",
+    "path": "/admin/notifications",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/notifications",
+    "issues": []
+  },
+  {
+    "id": "A-28",
+    "app": "admin",
+    "path": "/admin/content",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/content",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 535px wide in a 390px window: main.page, h1, p.muted, section, h2, div.table-wrap"
+      }
+    ]
+  },
+  {
+    "id": "A-29",
+    "app": "admin",
+    "path": "/admin/legal",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/legal",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 462px wide in a 390px window: main.page, h1, p.muted, div.alert.warning, div.table-wrap"
+      }
+    ]
+  },
+  {
+    "id": "A-30",
+    "app": "admin",
+    "path": "/admin/legal/fee19d4d-46a6-4860-b613-799a5f8ecde3",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/legal/fee19d4d-46a6-4860-b613-799a5f8ecde3",
+    "issues": []
+  },
+  {
+    "id": "A-31",
+    "app": "admin",
+    "path": "/admin/operations",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/operations",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 549px wide in a 390px window: main.page, h1, p.muted, div.table-wrap"
+      }
+    ]
+  },
+  {
+    "id": "A-32",
+    "app": "admin",
+    "path": "/admin/pilot",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/pilot",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 474px wide in a 390px window: main.page, h1, div.alert.info, div.stats, div.card.stat, span.muted"
+      }
+    ]
+  },
+  {
+    "id": "A-33",
+    "app": "admin",
+    "path": "/admin/security",
+    "lang": "en",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/security",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 750px wide in a 390px window: main.page, section, h1, table, thead, tr"
+      }
+    ]
+  },
+  {
+    "id": "A-01",
+    "app": "admin",
+    "path": "/sign-in",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/sign-in",
+    "issues": []
+  },
+  {
+    "id": "A-02",
+    "app": "admin",
+    "path": "/invite?token=demo-invalid-token",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/invite",
+    "issues": []
+  },
+  {
+    "id": "A-04",
+    "app": "admin",
+    "path": "/admin/dashboard",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/dashboard",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-05",
+    "app": "admin",
+    "path": "/admin/businesses",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/businesses",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Bloom Bar Florist Beauty (pending review) (Demo) LLC"
+      }
+    ]
+  },
+  {
+    "id": "A-06",
+    "app": "admin",
+    "path": "/admin/businesses/7dde52fc-63b7-4a32-b21e-7daf183e0056",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/businesses/7dde52fc-63b7-4a32-b21e-7daf183e0056",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Bloom Bar Florist Beauty (pending review) (Demo) LLC | Fictional Licensing Authority (demo data) | Demo Owner | o***@demo.jays.example | merchant-draft-2026-11 | business.created | user"
+      }
+    ]
+  },
+  {
+    "id": "A-07",
+    "app": "admin",
+    "path": "/admin/products",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/products",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-08",
+    "app": "admin",
+    "path": "/admin/products/fd7992af-23f8-4806-9921-46f58a9d5eb2",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/products/fd7992af-23f8-4806-9921-46f58a9d5eb2",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | product.approved | admin | product.submitted | user | product.created"
+      }
+    ]
+  },
+  {
+    "id": "A-09",
+    "app": "admin",
+    "path": "/admin/services",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/services",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-10",
+    "app": "admin",
+    "path": "/admin/home-services",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/home-services",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-11",
+    "app": "admin",
+    "path": "/admin/home-services/cb93fca2-32de-40cd-8db6-4802077439c0",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/home-services/cb93fca2-32de-40cd-8db6-4802077439c0",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Fictional Licensing Authority (demo data) | demo-home-licence.pdf | Mohammed Bin Zayed City"
+      }
+    ]
+  },
+  {
+    "id": "A-12",
+    "app": "admin",
+    "path": "/admin/bookings",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/bookings",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Hassan (Barber) | · succeeded | · refunded | Ivy (Nail technician) | Amal (Senior stylist) | Elena (Mobile nail technician)"
+      }
+    ]
+  },
+  {
+    "id": "A-13",
+    "app": "admin",
+    "path": "/admin/orders",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/orders",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Fictional Express (demo)"
+      }
+    ]
+  },
+  {
+    "id": "A-14",
+    "app": "admin",
+    "path": "/admin/finance",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-15",
+    "app": "admin",
+    "path": "/admin/finance/payments",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance/payments",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-16",
+    "app": "admin",
+    "path": "/admin/finance/payments/798873d5-5319-4c04-9269-7a78ad443078",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance/payments/798873d5-5319-4c04-9269-7a78ad443078",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-17",
+    "app": "admin",
+    "path": "/admin/finance/refunds",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance/refunds",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-18",
+    "app": "admin",
+    "path": "/admin/finance/payouts",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance/payouts",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-19",
+    "app": "admin",
+    "path": "/admin/finance/disputes",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance/disputes",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-20",
+    "app": "admin",
+    "path": "/admin/finance/reconciliation",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance/reconciliation",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-21",
+    "app": "admin",
+    "path": "/admin/finance/earnings",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance/earnings",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-22",
+    "app": "admin",
+    "path": "/admin/finance/tax",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance/tax",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-23",
+    "app": "admin",
+    "path": "/admin/finance/tax/4749dc89-319e-4a1d-af6f-2182431ef8a9",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/finance/tax/4749dc89-319e-4a1d-af6f-2182431ef8a9",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Mirage Grooming Lounge (Demo) LLC"
+      }
+    ]
+  },
+  {
+    "id": "A-24",
+    "app": "admin",
+    "path": "/admin/support",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/support",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Charged twice? (demo) | Olivia Grant | Change my email address (demo) | Where is my order? (demo) | Can I change my stylist? (demo)"
+      }
+    ]
+  },
+  {
+    "id": "A-25",
+    "app": "admin",
+    "path": "/admin/support/1a07a1eb-c0c8-4462-8818-e4c709730395",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/support/1a07a1eb-c0c8-4462-8818-e4c709730395",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Charged twice? (demo) | Ahmed Saeed | I see two pending amounts on my card for one order. | Demo support admin | Thank you for contacting us. We are looking into this for yo"
+      }
+    ]
+  },
+  {
+    "id": "A-26",
+    "app": "admin",
+    "path": "/admin/reviews",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/reviews",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-27",
+    "app": "admin",
+    "path": "/admin/notifications",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/notifications",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Appointment at {business} canceled | Appointment at {business} confirmed | Reminder: {business} {when} | Appointment at {business} moved | {staff} is on the way | A time opened at {business} | Part of order {ref} was canceled"
+      }
+    ]
+  },
+  {
+    "id": "A-28",
+    "app": "admin",
+    "path": "/admin/content",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/content",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Beauty | beauty | Makeup | makeup | Skincare | skincare | Haircare"
+      }
+    ]
+  },
+  {
+    "id": "A-29",
+    "app": "admin",
+    "path": "/admin/legal",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/legal",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-30",
+    "app": "admin",
+    "path": "/admin/legal/fee19d4d-46a6-4860-b613-799a5f8ecde3",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/legal/fee19d4d-46a6-4860-b613-799a5f8ecde3",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | First draft for legal review."
+      }
+    ]
+  },
+  {
+    "id": "A-31",
+    "app": "admin",
+    "path": "/admin/operations",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/operations",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | AUH | DXB | SHJ | AJM | UAQ | RAK | FUJ"
+      }
+    ]
+  },
+  {
+    "id": "A-32",
+    "app": "admin",
+    "path": "/admin/pilot",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/pilot",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-33",
+    "app": "admin",
+    "path": "/admin/security",
+    "lang": "ar",
+    "viewport": "desktop",
+    "status": 200,
+    "landed": "/admin/security",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | active | Demo operations admin | Demo compliance admin | Demo catalog admin | Demo finance admin | Demo support admin"
+      }
+    ]
+  },
+  {
+    "id": "A-01",
+    "app": "admin",
+    "path": "/sign-in",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/sign-in",
+    "issues": []
+  },
+  {
+    "id": "A-02",
+    "app": "admin",
+    "path": "/invite?token=demo-invalid-token",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/invite",
+    "issues": []
+  },
+  {
+    "id": "A-04",
+    "app": "admin",
+    "path": "/admin/dashboard",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/dashboard",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-05",
+    "app": "admin",
+    "path": "/admin/businesses",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/businesses",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 555px wide in a 390px window: main.page, h1, nav.tabs.filters, a, div.table-wrap"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Bloom Bar Florist Beauty (pending review) (Demo) LLC"
+      }
+    ]
+  },
+  {
+    "id": "A-06",
+    "app": "admin",
+    "path": "/admin/businesses/7dde52fc-63b7-4a32-b21e-7daf183e0056",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/businesses/7dde52fc-63b7-4a32-b21e-7daf183e0056",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 550px wide in a 390px window: section.card, h2, dl.kv, dt, span.ltr-inline, span.badge.approved"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Bloom Bar Florist Beauty (pending review) (Demo) LLC | Fictional Licensing Authority (demo data) | Demo Owner | o***@demo.jays.example | merchant-draft-2026-11 | business.created | user"
+      }
+    ]
+  },
+  {
+    "id": "A-07",
+    "app": "admin",
+    "path": "/admin/products",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/products",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-08",
+    "app": "admin",
+    "path": "/admin/products/fd7992af-23f8-4806-9921-46f58a9d5eb2",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/products/fd7992af-23f8-4806-9921-46f58a9d5eb2",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 698px wide in a 390px window: section.card, h2, div.stack, div.chips, div.grid2, div"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | product.approved | admin | product.submitted | user | product.created"
+      }
+    ]
+  },
+  {
+    "id": "A-09",
+    "app": "admin",
+    "path": "/admin/services",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/services",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 456px wide in a 390px window: main.page, h1, p.muted, nav.tabs.filters, div.table-wrap"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-10",
+    "app": "admin",
+    "path": "/admin/home-services",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/home-services",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-11",
+    "app": "admin",
+    "path": "/admin/home-services/cb93fca2-32de-40cd-8db6-4802077439c0",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/home-services/cb93fca2-32de-40cd-8db6-4802077439c0",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Fictional Licensing Authority (demo data) | demo-home-licence.pdf | Mohammed Bin Zayed City"
+      }
+    ]
+  },
+  {
+    "id": "A-12",
+    "app": "admin",
+    "path": "/admin/bookings",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/bookings",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 633px wide in a 390px window: main.page, h1, p.muted, nav.tabs.filters, a, div.table-wrap"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Hassan (Barber) | · succeeded | · refunded | Ivy (Nail technician) | Amal (Senior stylist) | Elena (Mobile nail technician)"
+      }
+    ]
+  },
+  {
+    "id": "A-13",
+    "app": "admin",
+    "path": "/admin/orders",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/orders",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 854px wide in a 390px window: main.page, h1, p.muted, nav.tabs.filters, a, div.table-wrap"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Fictional Express (demo)"
+      }
+    ]
+  },
+  {
+    "id": "A-14",
+    "app": "admin",
+    "path": "/admin/finance",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-15",
+    "app": "admin",
+    "path": "/admin/finance/payments",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance/payments",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 588px wide in a 390px window: main.page, h1, nav.tabs.filters, a, div.table-wrap, p"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-16",
+    "app": "admin",
+    "path": "/admin/finance/payments/798873d5-5319-4c04-9269-7a78ad443078",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance/payments/798873d5-5319-4c04-9269-7a78ad443078",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 440px wide in a 390px window: main.page, p, h1, nav.tabs.filters, section.card, dl.kv"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-17",
+    "app": "admin",
+    "path": "/admin/finance/refunds",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance/refunds",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-18",
+    "app": "admin",
+    "path": "/admin/finance/payouts",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance/payouts",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-19",
+    "app": "admin",
+    "path": "/admin/finance/disputes",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance/disputes",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-20",
+    "app": "admin",
+    "path": "/admin/finance/reconciliation",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance/reconciliation",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-21",
+    "app": "admin",
+    "path": "/admin/finance/earnings",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance/earnings",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 739px wide in a 390px window: main.page, h1, p.muted, nav.tabs.filters, a, div.table-wrap"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-22",
+    "app": "admin",
+    "path": "/admin/finance/tax",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance/tax",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 538px wide in a 390px window: main.page, h1, p.muted, nav.tabs.filters, a, div.alert.warning"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-23",
+    "app": "admin",
+    "path": "/admin/finance/tax/4749dc89-319e-4a1d-af6f-2182431ef8a9",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/finance/tax/4749dc89-319e-4a1d-af6f-2182431ef8a9",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 476px wide in a 390px window: main.page, p, article.card.tax-doc, div.alert.warning, header, div"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Mirage Grooming Lounge (Demo) LLC"
+      }
+    ]
+  },
+  {
+    "id": "A-24",
+    "app": "admin",
+    "path": "/admin/support",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/support",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 641px wide in a 390px window: main.page, h1, p.muted, nav.tabs.filters, a, div.table-wrap"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Charged twice? (demo) | Olivia Grant | Change my email address (demo) | Where is my order? (demo) | Can I change my stylist? (demo)"
+      }
+    ]
+  },
+  {
+    "id": "A-25",
+    "app": "admin",
+    "path": "/admin/support/1a07a1eb-c0c8-4462-8818-e4c709730395",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/support/1a07a1eb-c0c8-4462-8818-e4c709730395",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 409px wide in a 390px window: main.page, p.meta, h1, div.split, section.card, aside.card"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Charged twice? (demo) | Ahmed Saeed | I see two pending amounts on my card for one order. | Demo support admin | Thank you for contacting us. We are looking into this for yo"
+      }
+    ]
+  },
+  {
+    "id": "A-26",
+    "app": "admin",
+    "path": "/admin/reviews",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/reviews",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-27",
+    "app": "admin",
+    "path": "/admin/notifications",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/notifications",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Appointment at {business} canceled | Appointment at {business} confirmed | Reminder: {business} {when} | Appointment at {business} moved | {staff} is on the way | A time opened at {business} | Part of order {ref} was canceled"
+      }
+    ]
+  },
+  {
+    "id": "A-28",
+    "app": "admin",
+    "path": "/admin/content",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/content",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 518px wide in a 390px window: main.page, h1, p.muted, section, h2, div.table-wrap"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | Beauty | beauty | Makeup | makeup | Skincare | skincare | Haircare"
+      }
+    ]
+  },
+  {
+    "id": "A-29",
+    "app": "admin",
+    "path": "/admin/legal",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/legal",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 422px wide in a 390px window: main.page, h1, p.muted, div.alert.warning, div.table-wrap"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-30",
+    "app": "admin",
+    "path": "/admin/legal/fee19d4d-46a6-4860-b613-799a5f8ecde3",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/legal/fee19d4d-46a6-4860-b613-799a5f8ecde3",
+    "issues": [
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | First draft for legal review."
+      }
+    ]
+  },
+  {
+    "id": "A-31",
+    "app": "admin",
+    "path": "/admin/operations",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/operations",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 432px wide in a 390px window: main.page, h1, p.muted, div.table-wrap"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | AUH | DXB | SHJ | AJM | UAQ | RAK | FUJ"
+      }
+    ]
+  },
+  {
+    "id": "A-32",
+    "app": "admin",
+    "path": "/admin/pilot",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/pilot",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 392px wide in a 390px window: main.page"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin"
+      }
+    ]
+  },
+  {
+    "id": "A-33",
+    "app": "admin",
+    "path": "/admin/security",
+    "lang": "ar",
+    "viewport": "phone",
+    "status": 200,
+    "landed": "/admin/security",
+    "issues": [
+      {
+        "kind": "overflow",
+        "detail": "page is 728px wide in a 390px window: main.page, section, h1, table, thead, tr"
+      },
+      {
+        "kind": "english-in-arabic",
+        "detail": "Demo superadmin admin | active | Demo operations admin | Demo compliance admin | Demo catalog admin | Demo finance admin | Demo support admin"
+      }
+    ]
+  }
+]

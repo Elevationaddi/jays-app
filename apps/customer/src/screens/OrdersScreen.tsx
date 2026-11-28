@@ -56,8 +56,14 @@ export function OrdersScreen() {
               <Text style={styles.text}>{money(o.totalFils, state.locale)}</Text>
             </View>
             <Text style={styles.muted}>
-              {dateOf(o.createdAt, state.locale)} · {tr('orders.items', { count: o.itemCount })} ·{' '}
-              {tr('myOrders.stores', { count: o.merchantCount })}
+              {dateOf(o.createdAt, state.locale)} ·{' '}
+              {o.itemCount === 1
+                ? tr('orders.items.one')
+                : tr('orders.items', { count: o.itemCount })}{' '}
+              ·{' '}
+              {o.merchantCount === 1
+                ? tr('myOrders.stores.one')
+                : tr('myOrders.stores', { count: o.merchantCount })}
             </Text>
             <Text
               style={[

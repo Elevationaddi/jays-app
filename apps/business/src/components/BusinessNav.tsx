@@ -1,6 +1,13 @@
 import type { BusinessView } from '@jays/contracts';
 import { t, type Locale } from '@jays/i18n';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
+import {
+  MODE_TABS,
+  WORKSPACE_MODE_COOKIE,
+  resolveMode,
+  type WorkspaceMode,
+} from '../lib/workspace';
 
 export type Tab =
   | 'gateway'
@@ -19,8 +26,12 @@ export type Tab =
   | 'dashboard'
   | 'team';
 
-/** Workspace tabs, shown only for what the member's capabilities allow. */
-export function BusinessNav({
+/**
+ * Workspace navigation. A business that runs both products and services gets a clear
+ * "Manage Products | Manage Services" switch; the tab row then shows the shared tabs plus only
+ * the tabs of the current mode. Tabs are shown only for what the member's capabilities allow.
+ */
+export async function BusinessNav({
   locale,
   business,
   current,
@@ -31,6 +42,13 @@ export function BusinessNav({
 }) {
   const can = (c: BusinessView['myCapabilities'][number]) => business.myCapabilities.includes(c);
   const services = business.modes.services !== 'not_activated';
+  const activated = (['shop', 'services'] as const).filter(
+    (m) => business.modes[m] !== 'not_activated',
+  );
+  const preferred = (await cookies()).get(WORKSPACE_MODE_COOKIE)?.value;
+  const mode: WorkspaceMode = resolveMode(current, business.modes, preferred);
+  const other: WorkspaceMode = mode === 'shop' ? 'services' : 'shop';
+  const hiddenTabs = activated.length === 2 || activated[0] === mode ? MODE_TABS[other] : [];
   const tabs: { key: Tab; href: string; label: string; show: boolean }[] = [
     {
       key: 'gateway',
@@ -124,22 +142,35 @@ export function BusinessNav({
     },
   ];
   return (
-    <nav
-      className="tabs"
-      aria-label={t(locale, 'business.gateway.switch')}
-      style={{ margin: '16px 0 24px' }}
-    >
-      {tabs
-        .filter((tab) => tab.show)
-        .map((tab) => (
-          <Link
-            key={tab.key}
-            href={tab.href}
-            aria-current={current === tab.key ? 'page' : undefined}
-          >
-            {tab.label}
-          </Link>
-        ))}
-    </nav>
+    <div style={{ margin: '16px 0 24px' }}>
+      {activated.length === 2 ? (
+        <nav className="switcher mode-switch" aria-label={t(locale, 'business.mode.switch')}>
+          {activated.map((m) => (
+            <Link
+              key={m}
+              href={`/business/${business.id}/mode/${m}`}
+              className={m === mode ? 'btn' : 'btn secondary'}
+              aria-current={m === mode ? 'true' : undefined}
+              prefetch={false}
+            >
+              {t(locale, `business.mode.${m}`)}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
+      <nav className="tabs" aria-label={t(locale, 'business.nav.label')}>
+        {tabs
+          .filter((tab) => tab.show && !hiddenTabs.includes(tab.key))
+          .map((tab) => (
+            <Link
+              key={tab.key}
+              href={tab.href}
+              aria-current={current === tab.key ? 'page' : undefined}
+            >
+              {tab.label}
+            </Link>
+          ))}
+      </nav>
+    </div>
   );
 }

@@ -6,7 +6,7 @@ import {
   pageSchema,
 } from '@jays/contracts';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { bearer, type Harness, signUp, startHarness } from '../testing/harness.js';
+import { bearer, type Harness, PASSWORD, signUp, startHarness } from '../testing/harness.js';
 
 let h: Harness;
 beforeAll(async () => {
@@ -326,6 +326,62 @@ describe('tenant isolation and permissions (T03)', () => {
       .get(`/v1/businesses/${business.id}`)
       .set('Authorization', bearer(staff))
       .expect(404);
+  });
+
+  it('lets a member leave (then delete their account) but never the last owner (ADR-0039)', async () => {
+    const owner = await signUp(h);
+    const staff = await signUp(h);
+    const business = await createBusiness(owner);
+    const membershipId = await addMember(owner, business.id, staff, ['fulfillment']);
+    // Deleting the account is blocked while the membership is active.
+    await h
+      .http()
+      .post('/v1/me/deletion')
+      .set('Authorization', bearer(staff))
+      .send({ password: PASSWORD })
+      .expect(409);
+    // Nobody can leave on someone else's behalf.
+    await h
+      .http()
+      .post(`/v1/me/memberships/${membershipId}/leave`)
+      .set('Authorization', bearer(owner))
+      .expect(404);
+    await h
+      .http()
+      .post(`/v1/me/memberships/${membershipId}/leave`)
+      .set('Authorization', bearer(staff))
+      .expect(204);
+    await h
+      .http()
+      .get(`/v1/businesses/${business.id}`)
+      .set('Authorization', bearer(staff))
+      .expect(404);
+    await h
+      .http()
+      .post(`/v1/me/memberships/${membershipId}/leave`)
+      .set('Authorization', bearer(staff))
+      .expect(404);
+    await h
+      .http()
+      .post('/v1/me/deletion')
+      .set('Authorization', bearer(staff))
+      .send({ password: PASSWORD })
+      .expect(200);
+
+    const mine = await h
+      .http()
+      .get('/v1/me/memberships')
+      .set('Authorization', bearer(owner))
+      .expect(200);
+    const ownerMembership = mine.body.items.find(
+      (m: { business: { id: string } }) => m.business.id === business.id,
+    ).membershipId as string;
+    const res = await h
+      .http()
+      .post(`/v1/me/memberships/${ownerMembership}/leave`)
+      .set('Authorization', bearer(owner))
+      .expect(409);
+    expect(res.body.error.code).toBe('LAST_OWNER');
   });
 
   it('refuses to invite someone without a verified account', async () => {

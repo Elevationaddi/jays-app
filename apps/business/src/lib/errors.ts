@@ -22,6 +22,8 @@ export function errorMessageKey(code: string | undefined): MessageKey | null {
       return 'auth.error.rateLimited';
     case 'VALIDATION_FAILED':
       return 'auth.error.validation';
+    case 'LAST_OWNER':
+      return 'error.lastOwner';
     case 'NETWORK_ERROR':
       return 'common.offline';
     case 'ADDON_LIMIT':

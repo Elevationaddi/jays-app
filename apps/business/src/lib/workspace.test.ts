@@ -1,6 +1,6 @@
 import type { MyMembership } from '@jays/contracts';
 import { describe, expect, it } from 'vitest';
-import { parseAed, pickWorkspace } from './workspace';
+import { modeHome, parseAed, pickWorkspace, resolveMode } from './workspace';
 
 const membership = (id: string, status: 'active' | 'invited'): MyMembership => ({
   membershipId: `m-${id}`,
@@ -44,5 +44,37 @@ describe('parseAed', () => {
 
   it.each(['', '-1', '1.234', 'abc', '1e3', '12345678'])('rejects %s', (input) => {
     expect(parseAed(input)).toBeNull();
+  });
+});
+
+describe('resolveMode', () => {
+  const both = { shop: 'active', services: 'active' } as const;
+  it('follows the tab when the tab belongs to a mode', () => {
+    expect(resolveMode('orders', both, 'services')).toBe('shop');
+    expect(resolveMode('calendar', both, 'shop')).toBe('services');
+  });
+  it('uses the remembered choice on shared tabs', () => {
+    expect(resolveMode('finance', both, 'services')).toBe('services');
+    expect(resolveMode('finance', both, undefined)).toBe('shop');
+    expect(resolveMode('finance', both, 'nonsense')).toBe('shop');
+  });
+  it('never picks a mode that is not activated while the other one is', () => {
+    const servicesOnly = { shop: 'not_activated', services: 'active' } as const;
+    expect(resolveMode('dashboard', servicesOnly, 'shop')).toBe('services');
+    expect(resolveMode('dashboard', servicesOnly, undefined)).toBe('services');
+    const shopOnly = { shop: 'onboarding', services: 'not_activated' } as const;
+    expect(resolveMode('dashboard', shopOnly, 'services')).toBe('shop');
+  });
+});
+
+describe('modeHome', () => {
+  it('opens the first page the member may use in that mode', () => {
+    expect(modeHome('b1', 'shop', ['catalog.manage'])).toBe('/business/b1/products');
+    expect(modeHome('b1', 'shop', ['orders.fulfill'])).toBe('/business/b1/orders');
+    expect(modeHome('b1', 'services', ['appointments.view_own'])).toBe('/business/b1/calendar');
+    expect(modeHome('b1', 'services', ['services.manage'])).toBe('/business/b1/services');
+  });
+  it('falls back to the dashboard', () => {
+    expect(modeHome('b1', 'services', [])).toBe('/business/b1/dashboard');
   });
 });

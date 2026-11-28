@@ -749,3 +749,54 @@ details.variant form {
   padding: 6px 16px;
   text-align: center;
 }
+
+/* Responsive layout (screen audit, 28 Nov 2026): nothing may be wider than the window. Wide
+   tables scroll inside themselves; rows of links wrap; grids and forms shrink to one column. */
+.tabs {
+  flex-wrap: wrap;
+}
+.card,
+.stack,
+section,
+form {
+  min-width: 0;
+}
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+.grid2 {
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+}
+.table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+@media (max-width: 800px) {
+  table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .switcher {
+    flex-wrap: wrap;
+  }
+  .switcher select {
+    min-width: 0;
+    flex: 1;
+  }
+  .kv {
+    grid-template-columns: 1fr;
+  }
+  dl.kv dd {
+    margin-block-end: 8px;
+  }
+}
+
+/* Manage Products | Manage Services switch above the workspace tabs. */
+.mode-switch {
+  margin-bottom: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
+}

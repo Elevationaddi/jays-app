@@ -41,6 +41,34 @@ function deliver(d: { body: string; headers: Record<string, string> }) {
 }
 
 describe('Stripe Connect in test mode (ADR-0030)', () => {
+  it('refuses unsigned, oversized and malformed webhook deliveries without side effects', async () => {
+    // No signature at all.
+    await h
+      .http()
+      .post('/v1/webhooks/payments')
+      .set('content-type', 'application/json')
+      .send('{}')
+      .expect((r) => expect(r.status).toBeGreaterThanOrEqual(400));
+    // A body far larger than any real event is cut off by the body parser before verification.
+    const big = stripeEvent(
+      platformSecret,
+      'payment_intent.succeeded',
+      { id: 'pi_big', padding: 'x'.repeat(2_000_000) },
+      new Date(),
+    );
+    const res = await deliver(big);
+    expect(res.status).toBe(413);
+    // Malformed JSON with a header that looks valid is refused, not a server error.
+    const bad = await h
+      .http()
+      .post('/v1/webhooks/payments')
+      .set('content-type', 'application/json')
+      .set('stripe-signature', `t=${Math.floor(Date.now() / 1000)},v1=${'a'.repeat(64)}`)
+      .send('{not json');
+    expect(bad.status).toBeGreaterThanOrEqual(400);
+    expect(bad.status).toBeLessThan(500);
+  });
+
   it('reports the provider and that payments are in test mode', async () => {
     const config = paymentConfigSchema.parse(
       (await h.http().get('/v1/payments/config').expect(200)).body,

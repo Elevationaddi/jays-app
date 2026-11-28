@@ -8,7 +8,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import {
   acceptInviteRequestSchema,
   adminInviteSchema,
@@ -16,6 +16,8 @@ import {
   adminLoginRequestSchema,
   adminSchema,
   adminSessionSchema,
+  adminStatusChangeRequestSchema,
+  type AdminStatusChangeRequest,
   auditLogItemSchema,
   confirmMfaRequestSchema,
   createAdminInviteRequestSchema,
@@ -28,6 +30,7 @@ import {
 import type { Request } from 'express';
 import { z } from 'zod';
 import { listQuerySchema, type ListQuery } from '../common/pagination.js';
+import { UuidParam } from '../common/params.js';
 import { requestMeta } from '../common/request-context.js';
 import {
   ApiErrors,
@@ -156,6 +159,27 @@ export class AdminController {
     @Req() req: Request,
   ) {
     return this.admins.invite(admin.adminId, body, requestMeta(req));
+  }
+
+  @Post('admins/:adminId/status')
+  @HttpCode(HttpStatus.OK)
+  @RequirePlatformCapability('admins.manage')
+  @ApiOperation({
+    summary: 'Suspend or reactivate an admin; suspension signs them out everywhere (superadmin)',
+    description:
+      'Offboarding (ADR-0039). Admin accounts are never deleted, so the audit trail stays complete. 409 INVALID_TRANSITION for your own account, the last active superadmin, or a status that does not allow the action.',
+  })
+  @ApiParam({ name: 'adminId', format: 'uuid' })
+  @ApiZodBody(adminStatusChangeRequestSchema)
+  @ApiZodResponse(200, adminListItemSchema, 'The admin after the change.')
+  @ApiErrors(400, 401, 403, 404, 409)
+  changeStatus(
+    @CurrentAdmin() admin: AdminPrincipal,
+    @UuidParam('adminId') adminId: string,
+    @ZodBody(adminStatusChangeRequestSchema) body: AdminStatusChangeRequest,
+    @Req() req: Request,
+  ) {
+    return this.admins.changeAdminStatus(admin.adminId, adminId, body, requestMeta(req));
   }
 
   @Get('audit-logs')

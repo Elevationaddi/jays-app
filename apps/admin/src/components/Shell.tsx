@@ -134,16 +134,8 @@ export function Shell({
   return (
     <>
       <TopBar locale={locale} returnTo={`/admin/${current}`} signedIn name={admin.displayName} />
-      <div style={{ display: 'flex', minHeight: 'calc(100vh - 70px)', flexWrap: 'wrap' }}>
-        <nav
-          aria-label="Admin"
-          style={{
-            width: 220,
-            padding: 16,
-            borderInlineEnd: '1px solid var(--border)',
-            background: 'var(--surface-raised)',
-          }}
-        >
+      <div className="admin-layout">
+        <nav aria-label="Admin" className="admin-nav">
           <ul className="list" style={{ gap: 4 }}>
             {items
               .filter((i) => i.show)
@@ -161,9 +153,7 @@ export function Shell({
               ))}
           </ul>
         </nav>
-        <main className="page" style={{ flex: 1, margin: 0, maxWidth: 1100 }}>
-          {children}
-        </main>
+        <main className="page admin-main">{children}</main>
       </div>
     </>
   );

@@ -31,6 +31,8 @@ import {
   consentRecordSchema,
   dataExportSchema,
   privacySchema,
+  pushDeviceListSchema,
+  pushDeviceSchema,
   unsubscribeResultSchema,
   type updatePrivacyRequestSchema,
   adminDashboardSchema,
@@ -430,6 +432,8 @@ export function createApiClient(options: ApiClientOptions) {
       call('POST', `/me/memberships/${encodeURIComponent(id)}/accept`, myMembershipSchema),
     declineMembership: (id: string) =>
       call('POST', `/me/memberships/${encodeURIComponent(id)}/decline`, none),
+    leaveMembership: (id: string) =>
+      call('POST', `/me/memberships/${encodeURIComponent(id)}/leave`, none),
 
     // Account and privacy (ADR-0019)
     privacy: () => call('GET', '/me/privacy', privacySchema),
@@ -446,6 +450,12 @@ export function createApiClient(options: ApiClientOptions) {
     requestAccountDeletion: (password: string, reason?: string) =>
       call('POST', '/me/deletion', privacySchema, { password, ...(reason ? { reason } : {}) }),
     cancelAccountDeletion: () => call('DELETE', '/me/deletion', privacySchema),
+    // Push devices (ADR-0031): the token itself is never returned.
+    pushDevices: () => call('GET', '/me/push-devices', pushDeviceListSchema),
+    registerPushDevice: (body: { token: string; platform: 'ios' | 'android' | 'web' }) =>
+      call('POST', '/me/push-devices', pushDeviceSchema, body),
+    unregisterPushDevice: (token: string) =>
+      call('POST', '/me/push-devices/unregister', none, { token }),
     checkUnsubscribe: (token: string) =>
       call('GET', `/unsubscribe?token=${encodeURIComponent(token)}`, unsubscribeResultSchema),
     unsubscribe: (token: string) =>
@@ -893,6 +903,8 @@ export function createApiClient(options: ApiClientOptions) {
       call('POST', '/admin/invites/confirm-mfa', adminSessionSchema, body),
     admins: (params?: { cursor?: string; limit?: number }) =>
       call('GET', `/admin/admins${q(params)}`, pageSchema(adminListItemSchema)),
+    changeAdminStatus: (adminId: string, body: { action: 'suspend' | 'reactivate'; reason: string }) =>
+      call('POST', `/admin/admins/${encodeURIComponent(adminId)}/status`, adminListItemSchema, body),
     inviteAdmin: (body: z.input<typeof createAdminInviteRequestSchema>) =>
       call('POST', '/admin/admins/invites', adminInviteSchema, body),
     auditLogs: (params?: { cursor?: string; limit?: number }) =>

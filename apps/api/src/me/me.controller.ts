@@ -158,4 +158,22 @@ export class MeController {
   ) {
     await this.me.respondToInvitation(user.userId, id, false, requestMeta(req));
   }
+
+  @Post('memberships/:membershipId/leave')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Leave a business I belong to',
+    description:
+      'For example before deleting my account (ADR-0039). 409 LAST_OWNER when I am its only owner.',
+  })
+  @ApiParam({ name: 'membershipId', format: 'uuid' })
+  @ApiZodResponse(204, z.null(), 'Left the business.')
+  @ApiErrors(401, 404, 409)
+  async leave(
+    @CurrentUser() user: UserPrincipal,
+    @UuidParam('membershipId') id: string,
+    @Req() req: Request,
+  ) {
+    await this.me.leaveMembership(user.userId, id, requestMeta(req));
+  }
 }

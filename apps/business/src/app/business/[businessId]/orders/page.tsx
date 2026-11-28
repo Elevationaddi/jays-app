@@ -50,7 +50,9 @@ export default async function OrdersPage({
                 </Link>
                 <div className="muted" style={{ fontSize: 14 }}>
                   {tr('orders.placed', { date: date.format(new Date(o.createdAt)) })} ·{' '}
-                  {tr('orders.items', { count: o.itemCount })}
+                  {o.itemCount === 1
+                    ? tr('orders.items.one')
+                    : tr('orders.items', { count: o.itemCount })}
                 </div>
               </div>
               <strong>{money(o.totalFils, locale)}</strong>

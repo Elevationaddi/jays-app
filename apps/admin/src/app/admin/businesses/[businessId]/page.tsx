@@ -225,9 +225,10 @@ export default async function BusinessReviewPage({
             <ol className="history">
               {b.history.map((h) => (
                 <li key={h.id}>
-                  <strong className="ltr-inline">{h.action}</strong>{' '}
+                  <code className="ltr-inline">{h.action}</code>{' '}
                   <span className="muted">
-                    · {h.actorType} · {when.format(new Date(h.createdAt))}
+                    · {tr(`admin.audit.actorType.${h.actorType}`)} ·{' '}
+                    {when.format(new Date(h.createdAt))}
                   </span>
                   {h.reason ? <div>{h.reason}</div> : null}
                 </li>

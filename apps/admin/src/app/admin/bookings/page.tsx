@@ -1,3 +1,4 @@
+import type { MessageKey } from '@jays/i18n';
 import { BOOKING_STATUSES, type BookingStatus, fils, formatAed } from '@jays/domain';
 import Link from 'next/link';
 import { ErrorAlert } from '../../../components/ErrorAlert';
@@ -80,7 +81,9 @@ export default async function BookingsPage({ searchParams }: { searchParams: Sea
                     <span className={`badge ${b.status}`}>{tr(`bookingStatus.${b.status}`)}</span>
                     <div className="muted">
                       {tr(`booking.source.${b.source}`)}
-                      {b.paymentStatus ? ` · ${b.paymentStatus}` : ''}
+                      {b.paymentStatus
+                        ? ` · ${tr(`payment.status.${b.paymentStatus}` as MessageKey)}`
+                        : ''}
                     </div>
                     {b.paymentNeedsAttention ? (
                       <div className="badge rejected">{tr('admin.bookings.attention')}</div>

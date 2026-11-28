@@ -9,3 +9,9 @@ ignoredBuiltDependencies:
   - '@scarf/scarf'
   # sharp ships prebuilt binaries (@img/sharp-*); its install script only builds from source.
   - sharp
+
+# Security overrides for transitive dependencies (checked by `pnpm audit` in CI).
+overrides:
+  # GHSA-g3hv-75wg-m249 (moderate, ReDoS). Expo's build-time fingerprint tool asks for ^10.2.6;
+  # it only uses the Minimatch class, which 11.x keeps unchanged.
+  '@expo/fingerprint>minimatch': '^11.0.1'

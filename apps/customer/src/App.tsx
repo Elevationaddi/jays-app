@@ -1,10 +1,11 @@
 import { StatusBar } from 'expo-status-bar';
 import { ApiClientError } from '@jays/api-client';
-import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Linking } from 'react-native';
 import { makeApi } from './api';
 import { AppContext } from './context';
 import { deviceLocale } from './locale';
+import { expoPushSource, type PushPermission, stopPush, syncPush } from './push';
 import { AccountScreen } from './screens/AccountScreen';
 import { AppointmentScreen, AppointmentsScreen } from './screens/AppointmentsScreen';
 import { AuthScreen } from './screens/AuthScreen';
@@ -27,7 +28,7 @@ import { VerifyScreen } from './screens/VerifyScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { WishlistScreen } from './screens/WishlistScreen';
 import { loadRefreshToken, saveRefreshToken } from './secure-session';
-import { initialState, reducer, unsubscribeTokenFrom } from './state';
+import { actionForLink, initialState, reducer, unsubscribeTokenFrom } from './state';
 
 export function App() {
   const [state, dispatch] = useReducer(
@@ -101,7 +102,42 @@ export function App() {
       .catch(() => undefined);
   }, [api, signedInUser]);
 
+  // Push (ADR-0039): register silently after sign-in if the device already allows it, follow
+  // token changes, and open a tapped notification's link. Permission is asked only from a button.
+  const pushSource = useMemo(() => expoPushSource(), []);
+  const pushToken = useRef<string | null>(null);
+  const [pushPermission, setPushPermission] = useState<PushPermission | null>(null);
+  const runPushSync = useCallback(
+    async (ask: boolean) => {
+      try {
+        const r = await syncPush(api, pushSource, { ask });
+        pushToken.current = r.token;
+        setPushPermission(r.permission);
+      } catch {
+        // Offline or the API refused: try again on the next sign-in or token change.
+      }
+    },
+    [api, pushSource],
+  );
+  useEffect(() => {
+    if (!signedInUser) return;
+    void runPushSync(false);
+    const stopTokens = pushSource.onTokenChange(() => void runPushSync(false));
+    return stopTokens;
+  }, [signedInUser, pushSource, runPushSync]);
+  useEffect(
+    () =>
+      pushSource.onOpen((link) => {
+        const action = link ? actionForLink(link) : null;
+        dispatch(action ?? { type: 'navigate', route: '/notifications' });
+      }),
+    [pushSource],
+  );
+  const enablePush = useCallback(() => runPushSync(true), [runPushSync]);
+
   const signOut = useCallback(async () => {
+    await stopPush(api, pushToken.current);
+    pushToken.current = null;
     const refresh = stateRef.current.session?.tokens.refreshToken;
     if (refresh) await api.logout(refresh).catch(() => undefined);
     await saveRefreshToken(null);
@@ -169,7 +205,15 @@ export function App() {
   })();
 
   return (
-    <AppContext.Provider value={{ state, dispatch, api, signOut }}>
+    <AppContext.Provider
+      value={{
+        state,
+        dispatch,
+        api,
+        signOut,
+        push: { permission: pushPermission, enable: enablePush },
+      }}
+    >
       {screen}
       <StatusBar style="dark" />
     </AppContext.Provider>

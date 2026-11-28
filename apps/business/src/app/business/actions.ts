@@ -113,3 +113,18 @@ export async function removeMember(formData: FormData) {
   }
   redirect(`/business/${id}/team`);
 }
+
+/** Leaves the business (ADR-0039), for example before deleting the account. */
+export async function leaveBusiness(formData: FormData) {
+  const id = String(formData.get('membershipId') ?? '');
+  if (!UUID.test(id) || formData.get('confirm') !== 'yes') {
+    redirect('/business/gateway?error=VALIDATION_FAILED');
+  }
+  try {
+    await (await serverApi()).leaveMembership(id);
+  } catch (error) {
+    back('/business/gateway', error);
+  }
+  (await cookies()).delete(WORKSPACE_COOKIE);
+  redirect('/business/gateway?left=1');
+}

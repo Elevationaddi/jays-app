@@ -1,6 +1,7 @@
 import type { ApiClient } from '@jays/api-client';
 import { type MessageKey, t } from '@jays/i18n';
 import { createContext, type Dispatch, useCallback, useContext } from 'react';
+import type { PushPermission } from './push-sync';
 import type { Action, AppState } from './state';
 
 export interface AppContextValue {
@@ -8,6 +9,8 @@ export interface AppContextValue {
   dispatch: Dispatch<Action>;
   api: ApiClient;
   signOut: () => Promise<void>;
+  /** Push on this device: the permission, and a request the person makes from a button. */
+  push: { permission: PushPermission | null; enable: () => Promise<void> };
 }
 
 export const AppContext = createContext<AppContextValue | null>(null);

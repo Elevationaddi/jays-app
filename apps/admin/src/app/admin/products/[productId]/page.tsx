@@ -7,7 +7,7 @@ import {
   formatAed,
   type ProductReviewAction,
 } from '@jays/domain';
-import type { Locale } from '@jays/i18n';
+import type { Locale, MessageKey } from '@jays/i18n';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ErrorAlert } from '../../../../components/ErrorAlert';
@@ -125,9 +125,10 @@ export default async function ProductReviewPage({
             <ol className="history">
               {p.history.map((h) => (
                 <li key={h.id}>
-                  <strong className="ltr-inline">{h.action}</strong>{' '}
+                  <code className="ltr-inline">{h.action}</code>{' '}
                   <span className="muted">
-                    · {h.actorType} · {when.format(new Date(h.createdAt))}
+                    · {tr(`admin.audit.actorType.${h.actorType}` as MessageKey)} ·{' '}
+                    {when.format(new Date(h.createdAt))}
                   </span>
                   {h.reason ? <div>{h.reason}</div> : null}
                 </li>

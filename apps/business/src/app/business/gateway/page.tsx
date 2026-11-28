@@ -10,7 +10,7 @@ import { serverApi } from '../../../lib/api';
 import { translator } from '../../../lib/i18n';
 import { WORKSPACE_COOKIE } from '../../../lib/session';
 import { pickWorkspace } from '../../../lib/workspace';
-import { activateMode, respondToInvitation, switchBusiness } from '../actions';
+import { activateMode, leaveBusiness, respondToInvitation, switchBusiness } from '../actions';
 
 type Search = Promise<Record<string, string | undefined>>;
 
@@ -56,6 +56,11 @@ export default async function GatewayPage({ searchParams }: { searchParams: Sear
       />
       <main className="page">
         <ErrorAlert locale={locale} code={params['error']} />
+        {params['left'] ? (
+          <div className="alert info" role="status">
+            {tr('business.leave.done')}
+          </div>
+        ) : null}
         {invitations.length > 0 ? (
           <section aria-labelledby="invitations">
             <h2 id="invitations">{tr('business.invitations')}</h2>
@@ -145,6 +150,24 @@ export default async function GatewayPage({ searchParams }: { searchParams: Sear
             <Link href="/business/new">{tr('business.gateway.create')}</Link>
           </p>
         ) : null}
+        {current ? (
+          <details className="card" style={{ marginTop: 32 }}>
+            <summary>{tr('business.leave.title', { business: name(current) })}</summary>
+            <p className="muted">{tr('business.leave.body')}</p>
+            <form action={leaveBusiness} className="stack">
+              <input type="hidden" name="membershipId" value={current.membershipId} />
+              <label className="row">
+                <input type="checkbox" name="confirm" value="yes" required />{' '}
+                {tr('business.leave.confirm')}
+              </label>
+              <div className="actions">
+                <button className="btn danger" type="submit">
+                  {tr('business.leave.submit')}
+                </button>
+              </div>
+            </form>
+          </details>
+        ) : null}
       </main>
     </>
   );
@@ -186,9 +209,9 @@ function ModeCard({
             <span className="muted">{tr('business.mode.activate.ownerOnly')}</span>
           )
         ) : status === 'active' ? (
-          <span className="btn secondary" aria-disabled="true">
-            {tr('business.mode.open')} · {tr('common.later')}
-          </span>
+          <Link className="btn" href={`/business/${id}/mode/${mode}`} prefetch={false}>
+            {tr('business.mode.open')}
+          </Link>
         ) : (
           <Link className="btn secondary" href={`/business/${id}/onboarding`}>
             {tr('business.mode.continueSetup')}

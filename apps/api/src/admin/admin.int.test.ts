@@ -270,3 +270,63 @@ describe('admin invitations', () => {
     }
   });
 });
+
+describe('admin offboarding (ADR-0039)', () => {
+  it('suspends an admin everywhere at once, audits it, and reactivates them', async () => {
+    const superadmin = await adminLogin(await provisionAdmin(['superadmin']));
+    const leaver = await provisionAdmin(['support']);
+    const leaverSession = await adminLogin(leaver);
+    const change = (
+      id: string,
+      action: string,
+      as = superadmin,
+      reason = 'Left the support team',
+    ) =>
+      h
+        .http()
+        .post(`/v1/admin/admins/${id}/status`)
+        .set('Authorization', bearer(as))
+        .send({ action, reason });
+
+    // Only superadmins manage admins; nobody changes their own status; a reason is required.
+    await change(superadmin.admin.id, 'suspend', leaverSession).expect(403);
+    expect((await change(superadmin.admin.id, 'suspend').expect(409)).body.error.code).toBe(
+      'INVALID_TRANSITION',
+    );
+    await change(leaver.id, 'suspend', superadmin, 'no').expect(400);
+
+    const suspended = await change(leaver.id, 'suspend').expect(200);
+    expect(suspended.body).toMatchObject({ id: leaver.id, status: 'suspended' });
+    // The open session stops working at once, the refresh token is revoked, and sign-in fails.
+    await h.http().get('/v1/admin/me').set('Authorization', bearer(leaverSession)).expect(401);
+    await h
+      .http()
+      .post('/v1/admin/auth/refresh')
+      .send({ refreshToken: leaverSession.tokens.refreshToken })
+      .expect(401);
+    await h
+      .http()
+      .post('/v1/admin/auth/login')
+      .send({ email: leaver.email, password: PASSWORD, totpCode: freshCode(leaver.secret) })
+      .expect(401);
+    await change(leaver.id, 'suspend').expect(409);
+
+    const audit = pageSchema(auditLogItemSchema).parse(
+      (
+        await h
+          .http()
+          .get('/v1/admin/audit-logs?limit=20')
+          .set('Authorization', bearer(superadmin))
+          .expect(200)
+      ).body,
+    );
+    expect(
+      audit.items.find((e) => e.action === 'admin.suspended' && e.targetId === leaver.id),
+    ).toMatchObject({ actorId: superadmin.admin.id, reason: 'Left the support team' });
+
+    await change(leaver.id, 'reactivate', superadmin, 'Rejoined for the pilot').expect(200);
+    await adminLogin(leaver);
+    await change(leaver.id, 'reactivate').expect(409);
+    await change('00000000-0000-4000-8000-000000000000', 'suspend').expect(404);
+  });
+});

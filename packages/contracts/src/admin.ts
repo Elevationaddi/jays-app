@@ -73,6 +73,17 @@ export const adminListItemSchema = z.object({
 });
 export type AdminListItem = z.infer<typeof adminListItemSchema>;
 
+/**
+ * Offboarding an admin (ADR-0039): suspend signs them out everywhere at once and blocks sign-in;
+ * reactivate restores access. Admin accounts are never hard-deleted, so the audit trail keeps
+ * who did what.
+ */
+export const adminStatusChangeRequestSchema = z.strictObject({
+  action: z.enum(['suspend', 'reactivate']),
+  reason: reasonSchema,
+});
+export type AdminStatusChangeRequest = z.infer<typeof adminStatusChangeRequestSchema>;
+
 export const auditLogItemSchema = z.object({
   id: z.uuid(),
   actorType: z.enum(['user', 'admin', 'system']),

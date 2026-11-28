@@ -1,4 +1,5 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { sql } from 'kysely';
 import type { Address, AddressInput, Me, MyMembership, UpdateMeRequest } from '@jays/contracts';
 import type { Db } from '@jays/db';
 import { writeAudit } from '../common/audit.js';
@@ -310,6 +311,65 @@ export class MeService {
       permissions: updated.permissions as MyMembership['permissions'],
       business: views.get(updated.business_id)!,
     };
+  }
+
+  /**
+   * Leaves a business (ADR-0039), for example before deleting the account. The last active owner
+   * cannot leave: they add another owner first, or ask support to close the business.
+   */
+  async leaveMembership(userId: string, membershipId: string, meta: RequestMeta): Promise<void> {
+    const now = this.clock.now();
+    await this.db.transaction().execute(async (trx) => {
+      const row = await trx
+        .selectFrom('memberships')
+        .select(['id', 'business_id', 'permissions'])
+        .where('id', '=', membershipId)
+        .where('user_id', '=', userId)
+        .where('status', '=', 'active')
+        .executeTakeFirst();
+      if (!row) throw notFound();
+      // Lock the business first, as every other membership change does, then the membership.
+      await trx
+        .selectFrom('businesses')
+        .select('id')
+        .where('id', '=', row.business_id)
+        .forUpdate()
+        .execute();
+      if (row.permissions.includes('owner')) {
+        const other = await trx
+          .selectFrom('memberships')
+          .select('id')
+          .where('business_id', '=', row.business_id)
+          .where('status', '=', 'active')
+          .where('id', '<>', row.id)
+          .where(sql<boolean>`'owner' = ANY(permissions)`)
+          .executeTakeFirst();
+        if (!other) {
+          throw new ApiError(
+            HttpStatus.CONFLICT,
+            'LAST_OWNER',
+            'A business needs at least one owner. Add another owner first.',
+          );
+        }
+      }
+      const left = await trx
+        .updateTable('memberships')
+        .set({ status: 'removed', removed_at: now })
+        .where('id', '=', row.id)
+        .where('status', '=', 'active')
+        .executeTakeFirst();
+      if (Number(left.numUpdatedRows) !== 1) throw notFound();
+      await writeAudit(trx, {
+        actorType: 'user',
+        actorId: userId,
+        action: 'membership.left',
+        targetType: 'membership',
+        targetId: row.id,
+        businessId: row.business_id,
+        diff: { permissions: row.permissions },
+        requestId: meta.requestId,
+      });
+    });
   }
 
   private async assertEmirateEnabled(code: string): Promise<void> {

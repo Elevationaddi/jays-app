@@ -21,3 +21,7 @@ infra/staging/postgres_password.txt
 # Demo account credentials (scripts/demo/load-demo.ts): never commit
 demo-credentials.json
 *.demo-credentials.json
+
+# Firebase per-environment config (never committed)
+google-services.json
+GoogleService-Info.plist
