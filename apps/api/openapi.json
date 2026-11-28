@@ -1132,7 +1132,7 @@
     },
     "/v1/auth/register": {
       "post": {
-        "description": "Provide exactly one of email or phone. The answer is the same whether or not the contact is already registered. Unknown fields (for example a role) are rejected.",
+        "description": "Provide exactly one of email or phone. The answer is the same whether or not the contact is already registered. Unknown fields (for example a role) are rejected. In private staging, only invited (allowlisted) emails may register: others get 403 SIGNUP_RESTRICTED.",
         "operationId": "AuthController_register",
         "parameters": [],
         "requestBody": {
@@ -1241,6 +1241,16 @@
           },
           "400": {
             "description": "Validation failed (VALIDATION_FAILED) or a code is invalid or expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -13035,7 +13045,7 @@
     },
     "/v1/businesses/{businessId}/documents": {
       "post": {
-        "description": "PUT the file to uploadUrl with the given headers before expiresAt, then call complete. PDF, JPEG or PNG, up to 10 MB.",
+        "description": "PUT the file to uploadUrl with the given headers before expiresAt, then call complete. PDF, JPEG or PNG, up to 10 MB. Refused with 403 DOCUMENT_UPLOADS_DISABLED where uploads are switched off (private staging).",
         "operationId": "OnboardingController_createDocument",
         "parameters": [
           {

@@ -18,6 +18,8 @@ const en = {
   'surface.customer': 'Customer app',
   'surface.business': 'Business portal',
   'surface.admin': 'Admin console',
+  'staging.notice':
+    'Private staging. Every business, person, order, booking, review and payment here is fictional demonstration data. Payments are Stripe test mode only.',
   'language.switch': 'العربية',
   'language.label': 'Language',
 
@@ -1898,6 +1900,8 @@ const ar: Record<MessageKey, string> = {
   'surface.customer': 'تطبيق العملاء',
   'surface.business': 'بوابة الأعمال',
   'surface.admin': 'لوحة الإدارة',
+  'staging.notice':
+    'بيئة اختبار خاصة. جميع الأنشطة التجارية والأشخاص والطلبات والحجوزات والتقييمات والمدفوعات هنا بيانات تجريبية وهمية. المدفوعات في وضع الاختبار فقط.',
   'language.switch': 'English',
   'language.label': 'اللغة',
 

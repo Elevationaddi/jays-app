@@ -59,6 +59,14 @@ export const RATE_LIMIT_STORES = ['redis', 'postgres'] as const;
 /** `off` on Vercel: background jobs run from the protected cron routes instead of timers. */
 export const SCHEDULER_MODES = ['on', 'off'] as const;
 
+/** Who may register (ADR-0035). Staging requires `allowlist`: no unrestricted public sign-up. */
+export const SIGNUP_MODES = ['open', 'allowlist'] as const;
+/**
+ * Merchant verification document uploads (ADR-0035). Staging requires `disabled`: staging must not
+ * collect real documents, so it uses the fictional documents of the demo dataset only.
+ */
+export const DOCUMENT_UPLOAD_MODES = ['enabled', 'disabled'] as const;
+
 /** Marker that every committed example secret carries, so production can reject copied examples. */
 export const LOCAL_SECRET_MARKER = 'local-dev-only';
 
@@ -177,6 +185,15 @@ const apiShape = {
   MAPS_KEY: z.string().min(1).optional(),
   EMAIL_KEY: z.string().min(1).optional(),
   MOCK_PAYMENT_OUTCOMES: booleanFlag,
+  /**
+   * Private staging (ADR-0035): every request except health, webhooks, cron, signed file links and
+   * unsubscribe links must carry `x-staging-access` with this value. Required when APP_ENV=staging.
+   */
+  STAGING_ACCESS_TOKEN: z.string().min(32, 'must be at least 32 characters').optional(),
+  SIGNUP_MODE: z.enum(SIGNUP_MODES).default('open'),
+  /** With SIGNUP_MODE=allowlist: exact emails, or `@domain` entries, that may register. */
+  SIGNUP_ALLOWLIST: commaList,
+  DOCUMENT_UPLOADS: z.enum(DOCUMENT_UPLOAD_MODES).default('enabled'),
   /** Bearer token for GET /v1/metrics (Prometheus). Unset disables the endpoint; required in production. */
   METRICS_TOKEN: z.string().min(32, 'must be at least 32 characters').optional(),
 };
@@ -285,9 +302,37 @@ export function fcmServiceAccount(
   }
 }
 
+/**
+ * Private staging rules (ADR-0035, founder answer to question 1): authenticated access, no open
+ * registration, no real merchant documents, no live payments (already refused everywhere).
+ */
+function stagingIssues(env: Record<string, unknown>, shape: z.ZodRawShape): Issue[] {
+  if (env['APP_ENV'] !== 'staging' || !('STAGING_ACCESS_TOKEN' in shape)) return [];
+  const issues: Issue[] = [];
+  if (!env['STAGING_ACCESS_TOKEN']) {
+    issues.push({ path: 'STAGING_ACCESS_TOKEN', message: 'is required in staging' });
+  }
+  if (env['SIGNUP_MODE'] !== 'allowlist') {
+    issues.push({
+      path: 'SIGNUP_MODE',
+      message: 'must be allowlist in staging (no unrestricted public registration)',
+    });
+  }
+  if (env['DOCUMENT_UPLOADS'] !== 'disabled') {
+    issues.push({
+      path: 'DOCUMENT_UPLOADS',
+      message: 'must be disabled in staging (no real merchant verification documents)',
+    });
+  }
+  return issues;
+}
+
 function withProductionGuards<T extends z.ZodRawShape>(shape: T) {
   return z.object(shape).superRefine((env, ctx) => {
-    for (const issue of productionIssues(env as Record<string, unknown>, shape)) {
+    for (const issue of [
+      ...productionIssues(env as Record<string, unknown>, shape),
+      ...stagingIssues(env as Record<string, unknown>, shape),
+    ]) {
       ctx.addIssue({ code: 'custom', path: [issue.path], message: issue.message });
     }
     const record = env as Record<string, unknown>;

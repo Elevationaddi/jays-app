@@ -4,6 +4,8 @@ Status: Accepted (technical design). **Nothing has been deployed.** Deploying, c
 
 Date: 2026-11-28
 
+> **Update:** staging is now a separate set of `jays-staging-*` projects, not each project's Preview environment, because Vercel Cron runs only on Production deployments ([ADR-0035](0035-private-staging.md)).
+
 ## Context
 
 ADR-0024 chose Vercel for hosting and listed what had to change for serverless: no long-running timers or worker, no Redis subscription, small connection pools behind Supabase's pooler, and files that never pass through a function body. Phase 10 makes those changes and writes the deployment design. The founder asked for no external deployment and no new charges.

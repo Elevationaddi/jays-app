@@ -123,7 +123,7 @@ export class OnboardingController {
   @ApiOperation({
     summary: 'Start a private document upload; returns a signed PUT URL (owner)',
     description:
-      'PUT the file to uploadUrl with the given headers before expiresAt, then call complete. PDF, JPEG or PNG, up to 10 MB.',
+      'PUT the file to uploadUrl with the given headers before expiresAt, then call complete. PDF, JPEG or PNG, up to 10 MB. Refused with 403 DOCUMENT_UPLOADS_DISABLED where uploads are switched off (private staging).',
   })
   @ApiZodBody(createDocumentUploadRequestSchema)
   @ApiZodResponse(201, uploadTicketSchema, 'Upload ticket.')

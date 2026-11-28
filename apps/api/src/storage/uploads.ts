@@ -1,7 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { HttpStatus } from '@nestjs/common';
-import { checkUpload, type ImageInfo, type MediaPurpose } from '@jays/domain';
+import { checkUpload, IMAGE_RULES, type ImageInfo, type MediaPurpose } from '@jays/domain';
 import { ApiError } from '../common/error.filter.js';
+import { isSanitizable, sanitizeImage } from './image-sanitizer.js';
 import { extensionFor, type MalwareScanner, type ObjectStorage } from './storage.js';
 
 export type VerifyResult =
@@ -60,8 +61,10 @@ export function newObjectKey(
 
 /**
  * Checks an uploaded object before it counts: present, within size, real type equals the declared
- * type (magic bytes, not the client's header), image dimensions for media, then a malware scan.
- * Anything that fails is deleted from storage so it can never be served.
+ * type (magic bytes, not the client's header), image dimensions for media, then a malware scan of
+ * the bytes exactly as uploaded. Images that pass are then re-encoded (ADR-0036): metadata such as
+ * GPS location is removed, orientation applied, size limited, and the clean copy replaces the
+ * original in storage. Anything that fails is deleted from storage so it can never be served.
  */
 export async function verifyStoredUpload(
   storage: ObjectStorage,
@@ -88,14 +91,32 @@ export async function verifyStoredUpload(
         'We could not check the file just now. Try again in a few minutes.',
       );
     }
-    result = scan.clean
-      ? {
+    if (!scan.clean) {
+      result = { ok: false, reason: 'malware' };
+    } else if (isSanitizable(check.contentType)) {
+      const maxSide = declared.purpose ? IMAGE_RULES[declared.purpose].maxSide : undefined;
+      const clean = await sanitizeImage(bytes, check.contentType, maxSide ? { maxSide } : {});
+      if (!clean.ok) {
+        result = { ok: false, reason: clean.reason };
+      } else if (clean.bytes.length > declared.maxBytes) {
+        result = { ok: false, reason: 'too_large' };
+      } else {
+        // The stored object becomes the re-encoded copy; the original bytes are never served.
+        await storage.put(key, clean.bytes, check.contentType);
+        result = {
           ok: true,
-          size: bytes.length,
-          sha256: createHash('sha256').update(bytes).digest('hex'),
-          ...(check.image ? { image: check.image } : {}),
-        }
-      : { ok: false, reason: 'malware' };
+          size: clean.bytes.length,
+          sha256: createHash('sha256').update(clean.bytes).digest('hex'),
+          ...(declared.purpose ? { image: clean.image } : {}),
+        };
+      }
+    } else {
+      result = {
+        ok: true,
+        size: bytes.length,
+        sha256: createHash('sha256').update(bytes).digest('hex'),
+      };
+    }
   }
   if (!result.ok) await storage.delete(key);
   return result;

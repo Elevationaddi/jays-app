@@ -12,6 +12,7 @@ import {
   type AdminSession,
 } from '@jays/contracts';
 import { MERCHANT_AGREEMENT_VERSION } from '@jays/domain';
+import sharp from 'sharp';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   adminLogin,
@@ -308,7 +309,15 @@ describe('onboarding to approval (T02)', () => {
       .get(storagePath(redirect.headers['location'] as string))
       .expect(200);
     expect(image.headers['content-type']).toBe('image/png');
-    expect(Buffer.compare(image.body as Buffer, logo)).toBe(0);
+    // What is served is the re-encoded copy (ADR-0036): same picture, metadata-free bytes.
+    const served = await sharp(image.body as Buffer).metadata();
+    const original = await sharp(logo).metadata();
+    expect([served.format, served.width, served.height]).toEqual([
+      original.format,
+      original.width,
+      original.height,
+    ]);
+    expect(served.exif).toBeUndefined();
 
     // Every step is in the audit log with the actor.
     const audit = await h

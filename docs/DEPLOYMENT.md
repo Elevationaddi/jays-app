@@ -2,6 +2,8 @@
 
 Design: [ADR-0033](adr/0033-vercel-deployment.md). Cost rules: [ADR-0024](adr/0024-cost-constraints-and-vercel-first-architecture.md) and [INFRASTRUCTURE_COSTS.md](INFRASTRUCTURE_COSTS.md).
 
+> **Staging has its own runbook: [STAGING.md](STAGING.md)** ([ADR-0035](adr/0035-private-staging.md)). It replaces the "Preview = staging" plan below, because Vercel Cron only runs on Production deployments: staging is a separate set of four `jays-staging-*` projects whose Production environment is staging. This file remains the reference for the production project set.
+
 > **Nothing here has been done.** Every step that creates a project, sets a production value, runs a production migration or deploys needs the founder's explicit approval first. Keys are never pasted into chat: the founder adds them in Vercel's dashboard ([FOUNDER_SETUP_GUIDE.md](FOUNDER_SETUP_GUIDE.md), step 7).
 
 ## 0. Before anything is deployed
@@ -28,32 +30,34 @@ Leave "Include files outside the root directory" on: the apps use the shared `pa
 
 ## 2. Environment variables
 
-Set **Preview** (staging) and **Production** separately. Values marked _generate_ are random strings of at least 32 characters, different for each environment, never the local ones.
+Set **Production** values in the production projects. Staging values go into the `jays-staging-*` projects (STAGING.md, step 2). Values marked _generate_ are random strings of at least 32 characters, different for each environment, never the local ones.
 
 ### `jays-api`
 
-| Variable                                                                                                 | Value                                                                             |
-| -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `APP_ENV`                                                                                                | `staging` (Preview) or `production`                                               |
-| `DATABASE_URL`                                                                                           | Supabase transaction pooler, port 6543                                            |
-| `RATE_LIMIT_STORE`                                                                                       | `postgres`                                                                        |
-| `SCHEDULERS`                                                                                             | `off`                                                                             |
-| `CRON_SECRET`                                                                                            | _generate_                                                                        |
-| `DB_POOL_MAX`                                                                                            | `3`                                                                               |
-| `TRUST_PROXY_HOPS`                                                                                       | `1`                                                                               |
-| `API_PUBLIC_URL`                                                                                         | `https://<api domain>/v1`                                                         |
-| `CORS_ORIGINS`                                                                                           | the business, admin and web addresses (https)                                     |
-| `ADMIN_WEB_URL`, `BUSINESS_WEB_URL`                                                                      | the portal addresses (https)                                                      |
-| `JWT_KEYS`                                                                                               | `k1:` followed by a _generated_ value                                             |
-| `OTP_SECRET`, `MFA_ENCRYPTION_KEY`, `STORAGE_SIGNING_SECRET`, `METRICS_TOKEN`                            | _generate_ each                                                                   |
-| `STORAGE_PROVIDER`, `STORAGE_BUCKET`                                                                     | `supabase`, `jays-files`                                                          |
-| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`                                                              | setup guide, step 2.6                                                             |
-| `MALWARE_SCANNER` (+ `CLAMAV_HOST`, `CLAMAV_PORT`, `CLAMAV_TLS`)                                         | `mock` on staging until ClamAV runs; `clamav` with TLS in production              |
-| `NOTIFY_PROVIDER`, `EMAIL_KEY`, `EMAIL_FROM`                                                             | `resend` and step 3                                                               |
-| `PUSH_PROVIDER`, `FCM_SERVICE_ACCOUNT_JSON`                                                              | `fcm` and step 5                                                                  |
-| `PSP_PROVIDER`, `PSP_API_KEY`, `PSP_PUBLISHABLE_KEY`, `PSP_WEBHOOK_SECRET`, `PSP_CONNECT_WEBHOOK_SECRET` | `stripe` and step 4 (test keys only; live keys are refused)                       |
-| `MAPS_KEY`                                                                                               | required by production configuration; a maps provider is still a founder decision |
-| `DELIVERY_PARTNER`                                                                                       | `none`                                                                            |
+| Variable                                                                                                 | Value                                                                                                                      |
+| -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `APP_ENV`                                                                                                | `staging` (Preview) or `production`                                                                                        |
+| `DATABASE_URL`                                                                                           | Supabase transaction pooler, port 6543                                                                                     |
+| `RATE_LIMIT_STORE`                                                                                       | `postgres`                                                                                                                 |
+| `SCHEDULERS`                                                                                             | `off`                                                                                                                      |
+| `CRON_SECRET`                                                                                            | _generate_                                                                                                                 |
+| `DB_POOL_MAX`                                                                                            | `3`                                                                                                                        |
+| `TRUST_PROXY_HOPS`                                                                                       | `1`                                                                                                                        |
+| `API_PUBLIC_URL`                                                                                         | `https://<api domain>/v1`                                                                                                  |
+| `CORS_ORIGINS`                                                                                           | the business, admin and web addresses (https)                                                                              |
+| `ADMIN_WEB_URL`, `BUSINESS_WEB_URL`                                                                      | the portal addresses (https)                                                                                               |
+| `JWT_KEYS`                                                                                               | `k1:` followed by a _generated_ value                                                                                      |
+| `OTP_SECRET`, `MFA_ENCRYPTION_KEY`, `STORAGE_SIGNING_SECRET`, `METRICS_TOKEN`                            | _generate_ each                                                                                                            |
+| `STORAGE_PROVIDER`, `STORAGE_BUCKET`                                                                     | `supabase`, `jays-files`                                                                                                   |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`                                                              | setup guide, step 2.6                                                                                                      |
+| `MALWARE_SCANNER` (+ `CLAMAV_HOST`, `CLAMAV_PORT`, `CLAMAV_TLS`)                                         | `mock` on staging until ClamAV runs; `clamav` with TLS in production                                                       |
+| `NOTIFY_PROVIDER`, `EMAIL_KEY`, `EMAIL_FROM`                                                             | `resend` and step 3                                                                                                        |
+| `PUSH_PROVIDER`, `FCM_SERVICE_ACCOUNT_JSON`                                                              | `fcm` and step 5                                                                                                           |
+| `PSP_PROVIDER`, `PSP_API_KEY`, `PSP_PUBLISHABLE_KEY`, `PSP_WEBHOOK_SECRET`, `PSP_CONNECT_WEBHOOK_SECRET` | `stripe` and step 4 (test keys only; live keys are refused)                                                                |
+| `MAPS_KEY`                                                                                               | required by production configuration; a maps provider is still a founder decision                                          |
+| `DELIVERY_PARTNER`                                                                                       | `none`                                                                                                                     |
+| `SIGNUP_MODE`, `DOCUMENT_UPLOADS`                                                                        | `open` and `enabled` in production only after the pilot and scanner approvals; staging requires `allowlist` and `disabled` |
+| `STAGING_ACCESS_TOKEN`                                                                                   | staging only (ADR-0035)                                                                                                    |
 
 Production refuses to start with any mock adapter, local storage, http addresses, a committed example value, or a live Stripe key.
 

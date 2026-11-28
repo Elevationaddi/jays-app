@@ -18,9 +18,19 @@ target="$base/$scratch"
 work="$(mktemp -d)"
 trap '$PSQL "$admin" -qc "DROP DATABASE IF EXISTS $scratch" >/dev/null 2>&1 || true; rm -rf "$work"' EXIT
 
-# A throwaway passphrase: the drill tests encryption and decryption, not key custody.
-openssl rand -hex 32 > "$work/passphrase"
-export BACKUP_PASSPHRASE_FILE="$work/passphrase"
+# Throwaway keys: the drill tests encryption and decryption, not key custody. With
+# DRILL_ENCRYPTION=age (default when age is installed) it uses a fresh age key pair, as ADR-0037
+# proposes; otherwise the openssl passphrase mode.
+mode="${DRILL_ENCRYPTION:-$(command -v age >/dev/null 2>&1 && echo age || echo openssl)}"
+if [ "$mode" = age ]; then
+  age-keygen -o "$work/identity" 2>/dev/null
+  export BACKUP_AGE_RECIPIENT="$(age-keygen -y "$work/identity")"
+  export BACKUP_AGE_IDENTITY_FILE="$work/identity"
+else
+  openssl rand -hex 32 > "$work/passphrase"
+  export BACKUP_PASSPHRASE_FILE="$work/passphrase"
+fi
+echo "encryption: $mode"
 
 file="$(BACKUP_DIR="$work" "$here/backup.sh")"
 echo "backup: $(basename "$file") ($(du -h "$file" | cut -f1))"

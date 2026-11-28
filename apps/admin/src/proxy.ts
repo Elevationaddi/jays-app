@@ -1,5 +1,6 @@
 import { tokenPairSchema } from '@jays/contracts';
 import { type NextRequest, NextResponse } from 'next/server';
+import { stagingHeaders } from './lib/api';
 import { ACCESS_COOKIE, REFRESH_COOKIE, cookieOptions } from './lib/session';
 
 const API_URL = process.env['API_URL'] ?? 'http://localhost:3000/v1';
@@ -21,7 +22,7 @@ export async function proxy(request: NextRequest) {
     try {
       const res = await fetch(`${API_URL}/admin/auth/refresh`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', ...stagingHeaders() },
         body: JSON.stringify({ refreshToken: refresh }),
         cache: 'no-store',
       });

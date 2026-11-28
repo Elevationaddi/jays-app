@@ -33,6 +33,25 @@ services:
       timeout: 3s
       retries: 10
 
+  # Optional real ClamAV for local scanner tests (ADR-0032, CLAMAV_HOSTING_REVIEW.md). Not started by
+  # `pnpm dev:deps`: run `docker compose --profile scanner up -d clamav`, wait for the first signature
+  # download (several minutes, about 2-3 GB of memory), then set MALWARE_SCANNER=clamav,
+  # CLAMAV_HOST=127.0.0.1, CLAMAV_TLS=false. Bound to localhost only: clamd has no authentication.
+  clamav:
+    image: clamav/clamav:1.4
+    profiles: ['scanner']
+    ports:
+      - '127.0.0.1:3310:3310'
+    volumes:
+      - clamav-db:/var/lib/clamav
+    healthcheck:
+      test: ['CMD', 'clamdcheck.sh']
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 300s
+
 volumes:
   postgres-data:
   redis-data:
+  clamav-db:

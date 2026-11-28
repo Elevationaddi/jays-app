@@ -49,6 +49,25 @@ interface PendingSend {
 const invalidCode = () =>
   new ApiError(HttpStatus.BAD_REQUEST, 'OTP_INVALID', 'That code is not correct.');
 
+/**
+ * Who may register (ADR-0035). `open` allows anyone. `allowlist` (required in private staging)
+ * allows only listed emails or `@domain` entries, compared case-insensitively; phone sign-up is
+ * refused because it cannot be matched to the list.
+ */
+export function signupAllowed(
+  env: Pick<ApiEnv, 'SIGNUP_MODE' | 'SIGNUP_ALLOWLIST'>,
+  email: string | null,
+): boolean {
+  if (env.SIGNUP_MODE === 'open') return true;
+  if (!email) return false;
+  const address = email.trim().toLowerCase();
+  const domain = address.slice(address.lastIndexOf('@'));
+  return env.SIGNUP_ALLOWLIST.some((entry) => {
+    const item = entry.toLowerCase();
+    return item.startsWith('@') ? domain === item : address === item;
+  });
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -70,6 +89,13 @@ export class AuthService {
     const channel: ContactChannel = body.email ? 'email' : 'sms';
     this.requireChannel(channel);
     const destination = (body.email ?? body.phone) as string;
+    if (!signupAllowed(this.env, body.email ?? null)) {
+      throw new ApiError(
+        HttpStatus.FORBIDDEN,
+        'SIGNUP_RESTRICTED',
+        'Registration is by invitation only in this environment.',
+      );
+    }
     await enforce(this.limiter, [
       [LIMITS.registerPerIp, meta.ip],
       [LIMITS.otpSendPerDestination, sha256(destination)],

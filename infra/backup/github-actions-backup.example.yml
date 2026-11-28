@@ -1,0 +1,68 @@
+# TEMPLATE ONLY. NOT ACTIVE. ADR-0037 is proposed: copy this into the private backup repository
+# (for example Elevationaddi/jays-backups, .github/workflows/backup.yml) only after the founder
+# approves the destination and has generated the age key pair. Never add it to the code repository.
+#
+# Secrets in the backup repository:
+#   BACKUP_DATABASE_URL   production direct connection (port 5432), read-only role
+#   BACKUP_AGE_RECIPIENT  age public key (age1...). The private key is NEVER stored in GitHub.
+name: Encrypted database backup
+
+on:
+  schedule:
+    - cron: '30 22 * * *' # 02:30 Dubai (UTC+4)
+  workflow_dispatch:
+
+permissions:
+  contents: write # create and delete releases in this backup repository only
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Tools (PostgreSQL client matching the server's major version, and age)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq age postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-17
+      - name: Fetch the backup script from the code repository at a pinned commit
+        run: |
+          curl -fsSL -o backup.sh \
+            "https://raw.githubusercontent.com/Elevationaddi/jays-app/<PINNED_COMMIT>/infra/backup/backup.sh"
+          chmod +x backup.sh
+      - name: Dump and encrypt (public key only; this job cannot decrypt)
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_AGE_RECIPIENT: ${{ secrets.BACKUP_AGE_RECIPIENT }}
+          PG_DUMP: /usr/lib/postgresql/17/bin/pg_dump
+          BACKUP_DIR: out
+        run: ./backup.sh > path.txt
+      - name: Upload as a release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          file="$(cat path.txt)"
+          tag="backup-$(date -u +%Y%m%dT%H%M%SZ)"
+          gh release create "$tag" "$file" "$file.sha256" --title "$tag" --notes "Encrypted (age)."
+      - name: Retention (7 daily, 4 weekly on Sundays, 3 monthly on the 1st)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --limit 200 --json tagName -q '.[].tagName' | sort -r > tags.txt
+          keep="$(python3 - <<'PY'
+          import datetime as d
+          tags=[t.strip() for t in open('tags.txt') if t.startswith('backup-')]
+          def day(t): return d.datetime.strptime(t[7:15], '%Y%m%d').date()
+          keep, daily, weekly, monthly = set(), [], [], []
+          for t in tags:
+              dt = day(t)
+              if len(daily) < 7 and dt not in [day(x) for x in daily]: daily.append(t)
+              if dt.weekday() == 6 and len(weekly) < 4 and dt not in [day(x) for x in weekly]: weekly.append(t)
+              if dt.day == 1 and len(monthly) < 3 and dt not in [day(x) for x in monthly]: monthly.append(t)
+          print('\n'.join(daily + weekly + monthly))
+          PY
+          )"
+          for tag in $(cat tags.txt); do
+            echo "$keep" | grep -qx "$tag" || gh release delete "$tag" --yes --cleanup-tag
+          done
