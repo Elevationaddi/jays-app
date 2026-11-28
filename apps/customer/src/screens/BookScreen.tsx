@@ -1,11 +1,18 @@
-import type { Availability, Booking, PayBookingResponse, PublicVenue } from '@jays/contracts';
-import { addDays, localDateOf } from '@jays/domain';
+import type {
+  Address,
+  Availability,
+  Booking,
+  Emirate,
+  PayBookingResponse,
+  PublicVenue,
+} from '@jays/contracts';
+import { addDays, coverageFor, localDateOf } from '@jays/domain';
 import { colors } from '@jays/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { Chips, cardStyles as s } from '../components/Picker';
 import { Tabs } from '../components/Tabs';
-import { Banner, Body, Button, Screen, Title } from '../components/ui';
+import { Banner, Body, Button, Field, Screen, Title } from '../components/ui';
 import { useApp } from '../context';
 import { errorKey } from '../errors';
 import { money, newIdempotencyKey, shortDate, timeIn } from '../format';
@@ -39,6 +46,12 @@ export function BookScreen() {
   const [error, setError] = useState<string | null>(null);
   // One key per chosen time: retrying "Hold" after a lost response returns the same hold.
   const holdKey = useRef<{ slot: string; key: string } | null>(null);
+  // Home visits (D9): where the appointment happens, and which saved address.
+  const [location, setLocation] = useState<'venue' | 'home'>('venue');
+  const [addresses, setAddresses] = useState<Address[] | null>(null);
+  const [emirates, setEmirates] = useState<Emirate[]>([]);
+  const [addressId, setAddressId] = useState<string | null>(null);
+  const [form, setForm] = useState({ emirate: '', area: '', street: '', building: '' });
 
   useEffect(() => {
     if (!venueId) {
@@ -53,6 +66,7 @@ export function BookScreen() {
         setVenue(v);
         const service = v.services.find((x) => x.id === state.bookServiceId);
         setBranchId(service?.branchIds[0] ?? null);
+        setLocation(service?.locationMode === 'home' ? 'home' : 'venue');
         setDate(localDateOf(new Date(), v.branches[0]?.timezone ?? 'Asia/Dubai'));
       })
       .catch(() => {
@@ -71,6 +85,18 @@ export function BookScreen() {
     typeof venue === 'object' ? venue.branches.find((b) => b.id === branchId) : undefined;
   const timeZone = branch?.timezone ?? 'Asia/Dubai';
 
+  // Saved addresses, once a home visit is chosen and the customer is signed in.
+  useEffect(() => {
+    if (location !== 'home' || !state.session || addresses !== null) return;
+    Promise.all([api.addresses({ limit: 50 }), api.emirates()])
+      .then(([a, e]) => {
+        setAddresses(a.items);
+        setEmirates(e.items);
+        setAddressId((a.items.find((x) => x.isDefault) ?? a.items[0])?.id ?? null);
+      })
+      .catch((e) => setError(tr(errorKey(e).key)));
+  }, [api, location, state.session, addresses, tr]);
+
   useEffect(() => {
     if (!service || !branchId || !date) return;
     let cancelled = false;
@@ -81,6 +107,7 @@ export function BookScreen() {
         branchId,
         serviceId: service.id,
         date,
+        location,
         ...(staffId !== ANY ? { staffId } : {}),
       })
       .then((a) => {
@@ -95,7 +122,7 @@ export function BookScreen() {
     return () => {
       cancelled = true;
     };
-  }, [api, service, branchId, date, staffId, tr]);
+  }, [api, service, branchId, date, staffId, location, tr]);
 
   const run = useCallback(
     async (fn: () => Promise<void>) => {
@@ -119,8 +146,10 @@ export function BookScreen() {
         dispatch({ type: 'requireSignIn', returnTo: '/services/book' });
         return;
       }
-      if (holdKey.current?.slot !== slot) {
-        holdKey.current = { slot, key: newIdempotencyKey('hold') };
+      if (location === 'home' && !addressId) return;
+      const choice = `${slot}|${location}|${addressId ?? ''}`;
+      if (holdKey.current?.slot !== choice) {
+        holdKey.current = { slot: choice, key: newIdempotencyKey('hold') };
       }
       const booking = await api.holdBooking(
         {
@@ -128,10 +157,20 @@ export function BookScreen() {
           serviceId: service.id,
           startAt: slot,
           staffId: staffId === ANY ? null : staffId,
+          location,
+          ...(location === 'home' ? { addressId } : {}),
         },
         holdKey.current.key,
       );
       setStep({ name: 'pay', booking, payment: await api.payBooking(booking.id) });
+    });
+
+  const saveAddress = () =>
+    run(async () => {
+      const a = await api.createAddress({ ...form, emirate: form.emirate as Address['emirate'] });
+      setAddresses((list) => [...(list ?? []), a]);
+      setAddressId(a.id);
+      setForm({ emirate: '', area: '', street: '', building: '' });
     });
 
   const pay = (payment: PayBookingResponse, outcome: 'success' | 'fail') =>
@@ -197,6 +236,14 @@ export function BookScreen() {
   );
   const today = localDateOf(new Date(), timeZone);
   const dates = Array.from({ length: DAYS }, (_, i) => addDays(today, i));
+  const home = venue.homeServices;
+  const offersBoth = service.locationMode === 'both' && home !== null;
+  const address = addresses?.find((a) => a.id === addressId);
+  const coverage = home && address ? coverageFor(home.areas, address) : null;
+  const belowMinimum = home !== null && service.priceFils < home.minOrderFils;
+  const homeBlocked = location === 'home' && (!address || !coverage || belowMinimum);
+  const emirateName = (code: string) =>
+    emirates.find((e) => e.code === code)?.name[state.locale] ?? code;
   const policy = tr('book.policy', {
     hours: service.cancelCutoffHours,
     percent: service.lateCancelRefundBps / 100,
@@ -217,7 +264,110 @@ export function BookScreen() {
 
       {step.name === 'pick' ? (
         <>
-          {service.branchIds.length > 1 ? (
+          {offersBoth ? (
+            <>
+              <Text style={s.section} accessibilityRole="header">
+                {tr('book.where')}
+              </Text>
+              <Chips
+                label={tr('book.where')}
+                value={location}
+                onChange={setLocation}
+                options={[
+                  { value: 'venue', label: tr('book.atVenue') },
+                  { value: 'home', label: tr('book.atHome') },
+                ]}
+              />
+            </>
+          ) : null}
+          {location === 'home' && home ? (
+            <View style={s.card}>
+              <Text style={s.text}>{tr('book.homeAddress')}</Text>
+              {!state.session ? (
+                <Body muted>{tr('book.homeSignIn')}</Body>
+              ) : addresses === null ? (
+                <ActivityIndicator
+                  color={colors.accent}
+                  accessibilityLabel={tr('common.loading')}
+                />
+              ) : (
+                <>
+                  {addresses.length > 0 ? (
+                    <Chips
+                      label={tr('book.homeAddress')}
+                      value={addressId}
+                      onChange={setAddressId}
+                      options={addresses.map((a) => ({
+                        value: a.id,
+                        label: [a.label, a.building, a.area].filter(Boolean).join(', '),
+                      }))}
+                    />
+                  ) : (
+                    <Body muted>{tr('book.noAddresses')}</Body>
+                  )}
+                  {address && coverage ? (
+                    <Body>
+                      {tr('book.travelFee', {
+                        amount: money(coverage.travelFeeFils, state.locale),
+                      })}
+                    </Body>
+                  ) : null}
+                  {address && !coverage ? (
+                    <Banner kind="error">{tr('book.notCovered')}</Banner>
+                  ) : null}
+                  {belowMinimum ? (
+                    <Banner kind="error">
+                      {tr('book.belowMinimum', {
+                        amount: money(home.minOrderFils, state.locale),
+                      })}
+                    </Banner>
+                  ) : null}
+                  <Body muted>
+                    {tr('book.coverage', {
+                      areas: home.areas
+                        .map(
+                          (a) => `${emirateName(a.emirate)} (${a.area ?? tr('home.wholeEmirate')})`,
+                        )
+                        .join(', '),
+                    })}
+                  </Body>
+                  <Text style={s.text}>{tr('checkout.addAddress')}</Text>
+                  <Chips
+                    label={tr('checkout.addAddress')}
+                    value={form.emirate || null}
+                    onChange={(emirate) => setForm({ ...form, emirate })}
+                    options={[...new Set(home.areas.map((a) => a.emirate))].map((code) => ({
+                      value: code,
+                      label: emirateName(code),
+                    }))}
+                  />
+                  <Field
+                    label={tr('checkout.area')}
+                    value={form.area}
+                    onChangeText={(area) => setForm({ ...form, area })}
+                  />
+                  <Field
+                    label={tr('checkout.street')}
+                    value={form.street}
+                    onChangeText={(street) => setForm({ ...form, street })}
+                  />
+                  <Field
+                    label={tr('checkout.building')}
+                    value={form.building}
+                    onChangeText={(building) => setForm({ ...form, building })}
+                  />
+                  <Button
+                    variant="secondary"
+                    label={tr('checkout.saveAddress')}
+                    onPress={() => void saveAddress()}
+                    disabled={!form.emirate || !form.area || !form.street || !form.building}
+                    busy={busy}
+                  />
+                </>
+              )}
+            </View>
+          ) : null}
+          {service.branchIds.length > 1 && location === 'venue' ? (
             <>
               <Text style={s.section} accessibilityRole="header">
                 {tr('book.branch')}
@@ -235,7 +385,7 @@ export function BookScreen() {
               />
             </>
           ) : null}
-          {branch ? (
+          {branch && location === 'venue' ? (
             <Body muted>{[branch.building, branch.street, branch.area].join(', ')}</Body>
           ) : null}
           <Text style={s.section} accessibilityRole="header">
@@ -284,7 +434,7 @@ export function BookScreen() {
           <Button
             label={state.session ? tr('book.hold') : tr('book.signIn')}
             onPress={() => void hold()}
-            disabled={!slot}
+            disabled={!slot || (Boolean(state.session) && homeBlocked)}
             busy={busy}
           />
         </>
@@ -299,6 +449,18 @@ export function BookScreen() {
             })}{' '}
             · {tr('booking.with', { name: step.booking.staff.displayName })}
           </Text>
+          {step.booking.homeAddress ? (
+            <Body>
+              {tr('book.homeAt', {
+                address: [
+                  step.booking.homeAddress.building,
+                  step.booking.homeAddress.street,
+                  step.booking.homeAddress.area,
+                ].join(', '),
+              })}{' '}
+              · {tr('book.travelFee', { amount: money(step.booking.travelFeeFils, state.locale) })}
+            </Body>
+          ) : null}
           <Body>
             {tr('book.held', {
               time: step.booking.holdExpiresAt

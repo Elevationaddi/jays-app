@@ -345,12 +345,42 @@ export async function recordBookingCapture(
   const b = await trx
     .selectFrom('bookings as b')
     .innerJoin('services as s', 's.id', 'b.service_id')
-    .select(['b.user_id', 'b.tax_fils', 'b.snapshot', 's.category_id', 's.tax_class'])
+    .select([
+      'b.user_id',
+      'b.tax_fils',
+      'b.snapshot',
+      'b.travel_fee_fils',
+      's.category_id',
+      's.tax_class',
+    ])
     .where('b.id', '=', booking.id)
     .executeTakeFirstOrThrow();
   const snap = b.snapshot as { service: { title: Localized } };
   const rate =
     b.tax_fils > 0 ? Math.round((b.tax_fils * 10_000) / (booking.priceFils - b.tax_fils)) : 0;
+  // A home visit shows its travel fee as its own line; the VAT splits in proportion.
+  const travel = b.travel_fee_fils;
+  const travelVat = travel > 0 ? Math.round((b.tax_fils * travel) / booking.priceFils) : 0;
+  const documentLines = [
+    {
+      description: snap.service.title,
+      qty: 1,
+      totalFils: booking.priceFils - travel,
+      vatRateBps: rate,
+      vatFils: b.tax_fils - travelVat,
+    },
+    ...(travel > 0
+      ? [
+          {
+            description: { en: 'Travel fee', ar: 'رسوم الانتقال' },
+            qty: 1,
+            totalFils: travel,
+            vatRateBps: rate,
+            vatFils: travelVat,
+          },
+        ]
+      : []),
+  ];
   await recordEarning(
     trx,
     {
@@ -368,15 +398,7 @@ export async function recordBookingCapture(
       source: { bookingId: booking.id },
       documents: {
         customerUserId: b.user_id,
-        lines: [
-          {
-            description: snap.service.title,
-            qty: 1,
-            totalFils: booking.priceFils,
-            vatRateBps: rate,
-            vatFils: b.tax_fils,
-          },
-        ],
+        lines: documentLines,
         vatFils: b.tax_fils,
         reference: `appointment ${booking.id.slice(0, 8).toUpperCase()}`,
       },

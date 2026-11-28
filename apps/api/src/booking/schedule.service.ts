@@ -293,6 +293,7 @@ export class ScheduleService {
     const id = await this.db.transaction().execute(async (trx) => {
       await this.assertServiceCategory(trx, body.categoryId);
       await this.assertOwnBranches(trx, a.businessId, body.branchIds);
+      await this.assertHomeAllowed(trx, a.businessId, body.locationMode);
       const service = await trx
         .insertInto('services')
         .values({
@@ -307,6 +308,7 @@ export class ScheduleService {
           buffer_after_min: body.bufferAfterMin,
           cancel_cutoff_hours: body.cancelCutoffHours,
           late_cancel_refund_bps: body.lateCancelRefundBps,
+          location_mode: body.locationMode,
           created_by: a.userId,
         })
         .returning('id')
@@ -330,7 +332,7 @@ export class ScheduleService {
       const now = this.clock.now();
       const current = await trx
         .selectFrom('services')
-        .select(['id', 'status'])
+        .select(['id', 'status', 'location_mode'])
         .where('id', '=', serviceId)
         .where('business_id', '=', a.businessId)
         .forUpdate()
@@ -356,6 +358,10 @@ export class ScheduleService {
       if (body.cancelCutoffHours !== undefined) set.cancel_cutoff_hours = body.cancelCutoffHours;
       if (body.lateCancelRefundBps !== undefined) {
         set.late_cancel_refund_bps = body.lateCancelRefundBps;
+      }
+      if (body.locationMode && body.locationMode !== current.location_mode) {
+        await this.assertHomeAllowed(trx, a.businessId, body.locationMode);
+        set.location_mode = body.locationMode;
       }
       if (body.status === 'archived') {
         await assertNoUpcomingBookings(trx, a.businessId, { serviceId }, now);
@@ -400,6 +406,23 @@ export class ScheduleService {
       .where('mode', '=', 'services')
       .executeTakeFirst();
     if (!category) throw invalid('categoryId', 'Pick a services category.');
+  }
+
+  /** Home visits need an approved home-service licence (D9). */
+  private async assertHomeAllowed(trx: Trx, businessId: string, mode: Service['locationMode']) {
+    if (mode === 'in_venue') return;
+    const profile = await trx
+      .selectFrom('home_service_profiles')
+      .select('status')
+      .where('business_id', '=', businessId)
+      .executeTakeFirst();
+    if (profile?.status !== 'approved') {
+      throw new ApiError(
+        HttpStatus.CONFLICT,
+        'HOME_SERVICES_NOT_APPROVED',
+        'Home visits need an approved home-service licence first.',
+      );
+    }
   }
 
   private async assertOwnBranches(trx: Trx, businessId: string, ids: string[]) {
@@ -447,6 +470,7 @@ export class ScheduleService {
       buffer_after_min: number;
       cancel_cutoff_hours: number;
       late_cancel_refund_bps: number;
+      location_mode: Service['locationMode'];
       status: Service['status'];
       suspension_reason: string | null;
       version: number;
@@ -482,6 +506,7 @@ export class ScheduleService {
       bufferAfterMin: r.buffer_after_min,
       cancelCutoffHours: r.cancel_cutoff_hours,
       lateCancelRefundBps: r.late_cancel_refund_bps,
+      locationMode: r.location_mode,
       status: r.status,
       suspensionReason: r.suspension_reason,
       version: r.version,

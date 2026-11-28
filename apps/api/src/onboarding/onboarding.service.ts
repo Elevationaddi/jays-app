@@ -232,7 +232,10 @@ export class OnboardingService {
     const key = newObjectKey('private', ctx.businessId, body.contentType);
     const id = await this.db.transaction().execute(async (trx) => {
       const b = await this.lockBusiness(trx, ctx.businessId);
-      if (!legalProfileEditable(b.status)) throw locked(b.status);
+      // A home-service licence (D9) can be added after approval; the legal profile cannot.
+      if (body.kind !== 'home_service_license' && !legalProfileEditable(b.status)) {
+        throw locked(b.status);
+      }
       const row = await trx
         .insertInto('verification_documents')
         .values({

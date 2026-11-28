@@ -7,6 +7,7 @@ export const DOCUMENT_KINDS = [
   'tax_certificate',
   'owner_identity',
   'other',
+  'home_service_license',
 ] as const;
 export type DocumentKind = (typeof DOCUMENT_KINDS)[number];
 

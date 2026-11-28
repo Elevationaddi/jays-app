@@ -14,7 +14,7 @@ import type {
   PublicVenue,
   RescheduleRequest,
 } from '@jays/contracts';
-import type { Db } from '@jays/db';
+import type { Db, HomeAddress } from '@jays/db';
 import { sql, type SqlBool } from 'kysely';
 
 type Localized = { en: string; ar: string };
@@ -31,10 +31,16 @@ import {
   DEFAULT_TIMEZONE,
   extractInclusiveTax,
   fils,
+  homeVisitTerms,
+  HomeVisitError,
   localDateOf,
   localToUtc,
   MAX_ACTIVE_HOLDS_PER_USER,
+  offersLocation,
   rankStaff,
+  type BookingLocation,
+  type ServiceLocationMode,
+  withTravel,
 } from '@jays/domain';
 import type { BusinessContext } from '../businesses/business-access.guard.js';
 import { writeAudit } from '../common/audit.js';
@@ -48,6 +54,7 @@ import { currentTaxRates } from '../commerce/checkout.service.js';
 import { API_ENV, type ApiEnv } from '../config.js';
 import { PaymentsService, type RefundJob } from '../payments/payments.service.js';
 import { PAYMENT_PROVIDER, type PaymentProvider } from '../payments/provider.js';
+import { homeTermsOf } from './home-services.service.js';
 import {
   BOOKING_COLUMNS,
   type BookingRow,
@@ -80,6 +87,7 @@ interface ServiceRow {
   buffer_after_min: number;
   cancel_cutoff_hours: number;
   late_cancel_refund_bps: number;
+  location_mode: ServiceLocationMode;
 }
 
 interface BranchRow {
@@ -203,6 +211,17 @@ export class BookingsService {
         : [],
     ]);
     const base = this.env.API_PUBLIC_URL.replace(/\/$/, '');
+    const home = await homeTermsOf(this.db, businessId, this.clock.now());
+    const enabled = new Set(
+      (
+        await this.db.selectFrom('emirates').select('code').where('enabled', '=', true).execute()
+      ).map((e) => e.code),
+    );
+    const homeAreas = home?.areas.filter((a) => enabled.has(a.emirate)) ?? [];
+    const homeOpen = homeAreas.length > 0;
+    // Without active home services, home-only services are hidden and "both" means the venue.
+    const effectiveMode = (mode: ServiceLocationMode): ServiceLocationMode | null =>
+      homeOpen ? mode : mode === 'home' ? null : 'in_venue';
     return {
       id: business.id,
       name: business.live_name ?? business.display_name,
@@ -229,9 +248,21 @@ export class BookingsService {
           durationMin: s.duration_min,
           cancelCutoffHours: s.cancel_cutoff_hours,
           lateCancelRefundBps: s.late_cancel_refund_bps,
+          locationMode: effectiveMode(s.location_mode)!,
           branchIds: branchServices.filter((x) => x.service_id === s.id).map((x) => x.branch_id),
         }))
-        .filter((s) => s.branchIds.length > 0),
+        .filter((s) => s.branchIds.length > 0 && s.locationMode !== null),
+      homeServices:
+        home && homeOpen
+          ? {
+              minOrderFils: home.minOrderFils,
+              areas: homeAreas.map((a) => ({
+                emirate: a.emirate as PublicVenue['branches'][number]['emirate'],
+                area: a.area,
+                travelFeeFils: a.travelFeeFils,
+              })),
+            }
+          : null,
       staff: staff
         .map((s) => ({
           id: s.id,
@@ -248,11 +279,12 @@ export class BookingsService {
     const { branch, service } = await this.bookable(this.db, query.branchId, query.serviceId, true);
     const now = this.clock.now();
     this.assertInHorizon(query.date, branch.timezone, now);
+    const travel = await this.travelFor(this.db, service, query.location, null, now);
     let staffIds = await qualifiedStaff(this.db, branch.business_id, branch.id, service.id);
     if (query.staffId) staffIds = staffIds.filter((id) => id === query.staffId);
     const input = await loadDay(this.db, {
       branch,
-      service: durations(service),
+      service: withTravel(durations(service), travel.travelBufferMin),
       staffIds,
       date: query.date,
       now,
@@ -316,6 +348,7 @@ export class BookingsService {
         's.buffer_after_min',
         's.cancel_cutoff_hours',
         's.late_cancel_refund_bps',
+        's.location_mode',
       ])
       .where('s.id', '=', serviceId)
       .where('s.status', '=', 'active')
@@ -323,6 +356,104 @@ export class BookingsService {
       .executeTakeFirst();
     if (!service) throw notFound();
     return { branch: branch as BranchRow, service: service as ServiceRow };
+  }
+
+  /**
+   * Travel terms for a location. A venue booking has none. For a home visit the business must
+   * be approved with an unexpired licence; with an address, it must also be covered and the
+   * service at or above the minimum (D9). Without an address (availability), any coverage will do.
+   */
+  private async travelFor(
+    conn: Conn,
+    service: ServiceRow,
+    location: BookingLocation,
+    address: { emirate: string; area: string } | null,
+    now: Date,
+  ): Promise<{ travelFeeFils: number; travelBufferMin: number }> {
+    if (location === 'venue') {
+      if (!offersLocation(service.location_mode, 'venue')) {
+        throw new ApiError(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'LOCATION_NOT_OFFERED',
+          'This service is offered only at your address.',
+        );
+      }
+      return { travelFeeFils: 0, travelBufferMin: 0 };
+    }
+    const terms = await homeTermsOf(conn, service.business_id, now);
+    try {
+      if (address) {
+        return homeVisitTerms({
+          profile: terms,
+          serviceMode: service.location_mode,
+          servicePriceFils: service.price_fils,
+          areas: terms?.areas ?? [],
+          address,
+        });
+      }
+      const any = terms?.areas[0];
+      return homeVisitTerms({
+        profile: terms,
+        serviceMode: service.location_mode,
+        servicePriceFils: service.price_fils,
+        areas: terms?.areas ?? [],
+        address: any ? { emirate: any.emirate, area: any.area ?? '' } : { emirate: '', area: '' },
+      });
+    } catch (error) {
+      if (error instanceof HomeVisitError) {
+        throw new ApiError(HttpStatus.UNPROCESSABLE_ENTITY, error.code, error.message);
+      }
+      throw error;
+    }
+  }
+
+  /** One of the customer's saved addresses, in an emirate that is open (D11). */
+  private async homeAddress(conn: Conn, userId: string, addressId: string): Promise<HomeAddress> {
+    const a = await conn
+      .selectFrom('addresses as a')
+      .innerJoin('emirates as e', 'e.code', 'a.emirate_code')
+      .select([
+        'a.id',
+        'a.label',
+        'a.emirate_code',
+        'a.area',
+        'a.street',
+        'a.building',
+        'a.unit',
+        'a.directions',
+        'e.enabled',
+      ])
+      .where('a.id', '=', addressId)
+      .where('a.user_id', '=', userId)
+      .where('a.archived_at', 'is', null)
+      .executeTakeFirst();
+    if (!a) {
+      throw new ApiError(
+        HttpStatus.BAD_REQUEST,
+        'VALIDATION_FAILED',
+        'Pick one of your addresses.',
+        {
+          addressId: ['unknown address'],
+        },
+      );
+    }
+    if (!a.enabled) {
+      throw new ApiError(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'EMIRATE_NOT_AVAILABLE',
+        'Bookings are not open in this emirate yet.',
+      );
+    }
+    return {
+      addressId: a.id,
+      label: a.label,
+      emirate: a.emirate_code,
+      area: a.area,
+      street: a.street,
+      building: a.building,
+      unit: a.unit,
+      directions: a.directions,
+    };
   }
 
   private assertInHorizon(date: string, timeZone: string, now: Date) {
@@ -432,7 +563,7 @@ export class BookingsService {
     };
   }
 
-  private async priceOf(conn: Conn, service: ServiceRow, now: Date) {
+  private async priceOf(conn: Conn, service: ServiceRow, now: Date, travelFeeFils = 0) {
     const [rates, business] = await Promise.all([
       currentTaxRates(conn, now),
       conn
@@ -443,9 +574,11 @@ export class BookingsService {
     ]);
     // D4: prices include VAT; a business that is not VAT registered charges none.
     const bps = business.tax_registered ? rates[service.tax_class] : 0;
+    // The travel fee is part of the same supply, so it takes the service's VAT treatment.
+    const total = service.price_fils + travelFeeFils;
     return {
-      price_fils: service.price_fils,
-      tax_fils: extractInclusiveTax(fils(service.price_fils), bps, 'half_up'),
+      price_fils: total,
+      tax_fils: extractInclusiveTax(fils(total), bps, 'half_up'),
     };
   }
 
@@ -486,7 +619,12 @@ export class BookingsService {
             );
           }
           const { branch, service } = await this.bookable(trx, body.branchId, body.serviceId, true);
-          const price = await this.priceOf(trx, service, now);
+          const address =
+            body.location === 'home' && body.addressId
+              ? await this.homeAddress(trx, userId, body.addressId)
+              : null;
+          const travel = await this.travelFor(trx, service, body.location, address, now);
+          const price = await this.priceOf(trx, service, now, travel.travelFeeFils);
           const policy: PolicySnapshot = {
             cutoffHours: service.cancel_cutoff_hours,
             lateRefundBps: service.late_cancel_refund_bps,
@@ -495,7 +633,7 @@ export class BookingsService {
             trx,
             {
               branch,
-              service: durations(service),
+              service: withTravel(durations(service), travel.travelBufferMin),
               serviceId: service.id,
               startAt: new Date(body.startAt),
               staffId: body.staffId ?? null,
@@ -525,6 +663,10 @@ export class BookingsService {
                   customer_phone: user.phone,
                   note: body.note ?? null,
                   created_by: userId,
+                  location_type: body.location,
+                  home_address: address ? JSON.stringify(address) : null,
+                  travel_fee_fils: travel.travelFeeFils,
+                  travel_buffer_min: travel.travelBufferMin,
                 })
                 .returning('id')
                 .executeTakeFirstOrThrow(),
@@ -536,7 +678,7 @@ export class BookingsService {
             targetType: 'booking',
             targetId: booking.id,
             businessId: branch.business_id,
-            diff: { startAt: body.startAt, serviceId: service.id },
+            diff: { startAt: body.startAt, serviceId: service.id, location: body.location },
             requestId: meta.requestId,
           });
           return booking.id;
@@ -797,6 +939,7 @@ export class BookingsService {
           'snapshot',
           'policy_snapshot',
           'business_id',
+          'travel_buffer_min',
         ])
         .where('id', '=', bookingId)
         .where('user_id', '=', userId)
@@ -838,12 +981,15 @@ export class BookingsService {
         trx,
         {
           branch: branch as BranchRow,
-          // The booking keeps the duration and buffers it was made with (T13).
-          service: {
-            durationMin: snap.service.durationMin,
-            bufferBeforeMin: snap.service.bufferBeforeMin,
-            bufferAfterMin: snap.service.bufferAfterMin,
-          },
+          // The booking keeps the duration, buffers and travel time it was made with (T13).
+          service: withTravel(
+            {
+              durationMin: snap.service.durationMin,
+              bufferBeforeMin: snap.service.bufferBeforeMin,
+              bufferAfterMin: snap.service.bufferAfterMin,
+            },
+            b.travel_buffer_min,
+          ),
           serviceId: b.service_id,
           startAt: new Date(body.startAt),
           staffId: body.staffId ?? null,

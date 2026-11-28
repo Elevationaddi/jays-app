@@ -169,6 +169,7 @@ describe('T07: no double booking', () => {
           ...copy,
           snapshot: JSON.stringify(copy.snapshot),
           policy_snapshot: JSON.stringify(copy.policy_snapshot),
+          home_address: null,
           start_at: new Date(row.start_at.getTime() + 30 * 60_000),
           end_at: new Date(row.end_at.getTime() + 30 * 60_000),
           occupied_start: new Date(row.occupied_start.getTime() + 30 * 60_000),

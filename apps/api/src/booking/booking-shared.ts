@@ -1,6 +1,6 @@
 import { HttpStatus } from '@nestjs/common';
 import type { Booking, MerchantBooking } from '@jays/contracts';
-import type { Database, Db } from '@jays/db';
+import type { Database, Db, HomeAddress } from '@jays/db';
 
 type Localized = { en: string; ar: string };
 import {
@@ -49,8 +49,11 @@ export interface PolicySnapshot {
   lateRefundBps: number;
 }
 
-/** Buffers are at most 120 minutes, so this margin catches every interval touching a day. */
-const MARGIN_MS = 3 * 3_600_000;
+/**
+ * Buffers are at most 120 minutes each side and travel at most 120 more, so this margin catches
+ * every interval touching a day.
+ */
+const MARGIN_MS = 6 * 3_600_000;
 
 export const hhmm = (time: string) => time.slice(0, 5);
 
@@ -417,6 +420,9 @@ export const BOOKING_COLUMNS = [
   'b.rescheduled_count',
   'b.version',
   'b.created_at',
+  'b.location_type',
+  'b.home_address',
+  'b.travel_fee_fils',
 ] as const;
 
 export interface BookingRow {
@@ -442,6 +448,9 @@ export interface BookingRow {
   rescheduled_count: number;
   version: number;
   created_at: Date;
+  location_type: 'venue' | 'home';
+  home_address: HomeAddress | null;
+  travel_fee_fils: number;
 }
 
 function core(row: BookingRow) {
@@ -469,6 +478,14 @@ function core(row: BookingRow) {
       durationMin: snap.service.durationMin,
     },
     staff: snap.staff,
+    location: row.location_type,
+    homeAddress: row.home_address
+      ? {
+          ...row.home_address,
+          emirate: row.home_address.emirate as Booking['branch']['emirate'],
+        }
+      : null,
+    travelFeeFils: row.travel_fee_fils,
     priceFils: row.price_fils,
     taxFils: row.tax_fils,
     currency: 'AED' as const,

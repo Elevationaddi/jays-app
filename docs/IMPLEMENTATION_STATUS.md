@@ -17,6 +17,24 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 
 Founder decisions: [ADR-0018](adr/0018-founder-decisions-2026-11-28.md). Phase 8 ships as slices. Each slice is its own PR, merged once CI passes.
 
+### 8.5 Home services (D9)
+
+Decision: [ADR-0022](adr/0022-home-services.md). Which licence each emirate requires is still a legal question; admins review the licence the business uploads.
+
+- **Business portal:** a Home services page under Services for the licence (number, authority, expiry, uploaded document), the travel time before and after each visit, the minimum service price and coverage areas with travel fees. The owner asks for review there. Each service can be set to the venue, the customer's address, or both once approved. The calendar shows the visit address and travel fee.
+- **Admin:** a Home services queue with the licence, a download link, coverage and approve, reject, suspend and reinstate. Every decision is audited and needs the version the admin saw.
+- **Customer app:** a service offered both ways asks "Where". At home, the customer picks or adds an address and sees the travel fee, the areas covered and the minimum before holding a time.
+- **Rules:** home visits need an approved, unexpired licence, an address in a covered area of an open emirate, and a service price at or above the minimum. The travel time widens the professional's occupied time, so the database still refuses any overlap, travel included. The travel fee is added to the price, taxed like the service and shown as its own invoice line. Rescheduling keeps the booked travel time.
+- **Privacy:** account deletion now also clears the address, name and phone kept on the customer's bookings.
+- **Screens:** see [`docs/screenshots/phase-8/`](screenshots/phase-8/):
+  - admin: the queue and a review (`admin-20`, `admin-21`);
+  - business portal: home services, a service's location and a home visit in the calendar (`business-52` to `business-54`);
+  - customer app: a venue with home visits and choosing an address (`customer-17`, `customer-18`).
+
+  All are in English and Arabic.
+
+- **API:** migration 0011. 5 new paths (185 in total).
+
 ### 8.4 Commission, VAT, invoices and weekly payouts (D2, D3, D4, D6)
 
 Decision: [ADR-0021](adr/0021-commission-vat-invoices-weekly-payouts.md). Rates, VAT treatment and document wording are proposed. Every document is marked as a draft until a UAE tax professional approves the tax rules, and no production tax rule is active.

@@ -78,7 +78,8 @@ export function AppointmentsScreen() {
               {when(b, state.locale, tr)} · {tr('booking.with', { name: b.staff.displayName })}
             </Text>
             <Text style={s.muted}>
-              {b.business.name[state.locale]} · {b.branch.name[state.locale]}
+              {b.business.name[state.locale]} ·{' '}
+              {b.homeAddress ? tr('booking.homeVisit') : b.branch.name[state.locale]}
             </Text>
           </Pressable>
         ))
@@ -142,7 +143,12 @@ export function AppointmentScreen() {
     setSlots('loading');
     setSlot(null);
     api
-      .availability({ branchId: booking.branch.id, serviceId: booking.service.id, date })
+      .availability({
+        branchId: booking.branch.id,
+        serviceId: booking.service.id,
+        date,
+        location: booking.location,
+      })
       .then((a) => {
         if (!cancelled) setSlots(a);
       })
@@ -243,12 +249,35 @@ export function AppointmentScreen() {
             price: money(b.priceFils, state.locale),
           })}
         </Text>
-        <Text style={s.text}>
-          {b.business.name[state.locale]} · {b.branch.name[state.locale]}
-        </Text>
-        <Text style={s.muted}>
-          {[b.branch.building, b.branch.street, b.branch.area].join(', ')}
-        </Text>
+        {b.homeAddress ? (
+          <>
+            <Text style={s.text}>
+              {b.business.name[state.locale]} · {tr('booking.homeVisit')}
+            </Text>
+            <Text style={s.muted}>
+              {[
+                b.homeAddress.unit,
+                b.homeAddress.building,
+                b.homeAddress.street,
+                b.homeAddress.area,
+              ]
+                .filter(Boolean)
+                .join(', ')}
+            </Text>
+            <Text style={s.muted}>
+              {tr('booking.travelFee', { amount: money(b.travelFeeFils, state.locale) })}
+            </Text>
+          </>
+        ) : (
+          <>
+            <Text style={s.text}>
+              {b.business.name[state.locale]} · {b.branch.name[state.locale]}
+            </Text>
+            <Text style={s.muted}>
+              {[b.branch.building, b.branch.street, b.branch.area].join(', ')}
+            </Text>
+          </>
+        )}
         <Text style={s.muted}>
           {tr('book.policy', {
             hours: b.policy.cutoffHours,

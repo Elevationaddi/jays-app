@@ -99,6 +99,12 @@ export function errorMessageKey(code: string | undefined): MessageKey | null {
       return 'error.outsideWindow';
     case 'SERVICE_SUSPENDED':
       return 'error.serviceSuspended';
+    case 'HOME_SERVICES_NOT_APPROVED':
+      return 'error.homeNotApproved';
+    case 'HOME_PROFILE_LOCKED':
+      return 'error.homeLocked';
+    case 'HOME_PROFILE_INCOMPLETE':
+      return 'error.homeIncomplete';
     case 'MEMBER_ALREADY_STAFF':
       return 'error.memberAlreadyStaff';
     case 'CANCEL_TOO_LATE':

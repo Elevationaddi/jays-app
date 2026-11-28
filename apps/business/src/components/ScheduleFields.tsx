@@ -1,5 +1,6 @@
 import type { Branch, CategoryView, Emirate, Service } from '@jays/contracts';
 import { t, type Locale, type MessageKey } from '@jays/i18n';
+import { SERVICE_LOCATION_MODES } from '@jays/domain';
 import { aedInput } from './Workspace';
 
 const WEEK = [1, 2, 3, 4, 5, 6, 0] as const; // Monday first, as UAE calendars show it.
@@ -149,11 +150,14 @@ export function ServiceFields({
   service,
   categories,
   branches,
+  homeApproved = false,
 }: {
   locale: Locale;
   service: Service | null;
   categories: CategoryView[];
   branches: Branch[];
+  /** Home visits can be chosen only once the marketplace approved the home-service licence. */
+  homeApproved?: boolean;
 }) {
   const tr = (key: MessageKey) => t(locale, key);
   const number = (
@@ -291,6 +295,28 @@ export function ServiceFields({
           (service?.lateCancelRefundBps ?? 0) / 100,
           { min: 0, max: 100, step: 1 },
         )}
+      </div>
+      <div className="field">
+        <label htmlFor="locationMode">{tr('service.location')}</label>
+        <select
+          id="locationMode"
+          name="locationMode"
+          defaultValue={service?.locationMode ?? 'in_venue'}
+          aria-describedby="locationModeHint"
+        >
+          {SERVICE_LOCATION_MODES.map((m) => (
+            <option
+              key={m}
+              value={m}
+              disabled={m !== 'in_venue' && !homeApproved && service?.locationMode !== m}
+            >
+              {tr(`service.location.${m}`)}
+            </option>
+          ))}
+        </select>
+        <p id="locationModeHint" className="hint">
+          {tr(homeApproved ? 'service.locationHint' : 'service.locationNeedsApproval')}
+        </p>
       </div>
       <fieldset className="plain">
         <legend style={{ fontWeight: 600, marginBottom: 8 }}>{tr('service.branches')}</legend>

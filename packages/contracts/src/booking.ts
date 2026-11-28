@@ -1,7 +1,9 @@
 import {
   BLOCK_KINDS,
+  BOOKING_LOCATIONS,
   BOOKING_STATUSES,
   BUSINESS_BOOKING_TRANSITIONS,
+  SERVICE_LOCATION_MODES,
   TAX_CLASSES,
 } from '@jays/domain';
 import { z } from 'zod';
@@ -149,6 +151,8 @@ const serviceFields = {
   /** Share refunded for a customer cancellation after the cutoff, in basis points. */
   lateCancelRefundBps: z.number().int().min(0).max(10_000),
   branchIds: z.array(z.uuid()).max(50),
+  /** At the venue, at the customer's address, or both (D9). Home needs approved home services. */
+  locationMode: z.enum(SERVICE_LOCATION_MODES),
 };
 
 export const serviceInputSchema = z.strictObject({
@@ -158,6 +162,7 @@ export const serviceInputSchema = z.strictObject({
   bufferAfterMin: serviceFields.bufferAfterMin.default(0),
   cancelCutoffHours: serviceFields.cancelCutoffHours.default(24),
   lateCancelRefundBps: serviceFields.lateCancelRefundBps.default(0),
+  locationMode: serviceFields.locationMode.default('in_venue'),
 });
 export type ServiceInput = z.infer<typeof serviceInputSchema>;
 
@@ -174,6 +179,7 @@ export const updateServiceRequestSchema = z
     cancelCutoffHours: serviceFields.cancelCutoffHours.optional(),
     lateCancelRefundBps: serviceFields.lateCancelRefundBps.optional(),
     branchIds: serviceFields.branchIds.optional(),
+    locationMode: serviceFields.locationMode.optional(),
     status: z.enum(['active', 'archived']).optional(),
   })
   .refine((b) => Object.keys(b).length > 0, 'nothing to change');
@@ -193,6 +199,7 @@ export const serviceSchema = z.object({
   bufferAfterMin: z.number().int(),
   cancelCutoffHours: z.number().int(),
   lateCancelRefundBps: z.number().int(),
+  locationMode: z.enum(SERVICE_LOCATION_MODES),
   status: serviceStatusSchema,
   suspensionReason: z.string().nullable(),
   version: z.number().int(),
@@ -314,9 +321,23 @@ export const publicVenueSchema = z.object({
       durationMin: z.number().int(),
       cancelCutoffHours: z.number().int(),
       lateCancelRefundBps: z.number().int(),
+      locationMode: z.enum(SERVICE_LOCATION_MODES),
       branchIds: z.array(z.uuid()),
     }),
   ),
+  /** Home visits, when the business is approved for them; null otherwise. */
+  homeServices: z
+    .object({
+      minOrderFils: z.number().int(),
+      areas: z.array(
+        z.object({
+          emirate: emirateCodeSchema,
+          area: z.string().nullable(),
+          travelFeeFils: z.number().int(),
+        }),
+      ),
+    })
+    .nullable(),
   staff: z.array(
     z.object({
       id: z.uuid(),
@@ -333,6 +354,8 @@ export const availabilityQuerySchema = z.strictObject({
   serviceId: z.uuid(),
   date: localDateSchema,
   staffId: z.uuid().optional(),
+  /** Home visits keep the travel buffer free around each appointment. */
+  location: z.enum(BOOKING_LOCATIONS).default('venue'),
 });
 export type AvailabilityQuery = z.infer<typeof availabilityQuerySchema>;
 
@@ -348,14 +371,26 @@ export type Availability = z.infer<typeof availabilitySchema>;
 // ---------------------------------------------------------------------------------------------
 // Customer bookings
 
-export const holdRequestSchema = z.strictObject({
-  branchId: z.uuid(),
-  serviceId: z.uuid(),
-  startAt: isoDateTime,
-  /** Omit or null for "any professional". */
-  staffId: z.uuid().nullable().optional(),
-  note: z.string().trim().max(500).nullable().optional(),
-});
+export const holdRequestSchema = z
+  .strictObject({
+    branchId: z.uuid(),
+    serviceId: z.uuid(),
+    startAt: isoDateTime,
+    /** Omit or null for "any professional". */
+    staffId: z.uuid().nullable().optional(),
+    note: z.string().trim().max(500).nullable().optional(),
+    location: z.enum(BOOKING_LOCATIONS).default('venue'),
+    /** One of the customer's saved addresses; required for a home visit. */
+    addressId: z.uuid().nullable().optional(),
+  })
+  .refine((b) => b.location !== 'home' || !!b.addressId, {
+    message: 'required for a home visit',
+    path: ['addressId'],
+  })
+  .refine((b) => b.location === 'home' || !b.addressId, {
+    message: 'only for a home visit',
+    path: ['addressId'],
+  });
 export type HoldRequest = z.infer<typeof holdRequestSchema>;
 
 export const rescheduleRequestSchema = z.strictObject({
@@ -373,6 +408,18 @@ const policySchema = z.object({
   cutoffHours: z.number().int(),
   lateRefundBps: z.number().int(),
 });
+
+export const homeAddressSchema = z.object({
+  addressId: z.uuid(),
+  label: z.string().nullable(),
+  emirate: emirateCodeSchema,
+  area: z.string(),
+  street: z.string(),
+  building: z.string(),
+  unit: z.string().nullable(),
+  directions: z.string().nullable(),
+});
+export type HomeAddressView = z.infer<typeof homeAddressSchema>;
 
 const bookingCore = {
   id: z.uuid(),
@@ -392,6 +439,11 @@ const bookingCore = {
   }),
   service: z.object({ id: z.uuid(), title: localized, durationMin: z.number().int() }),
   staff: z.object({ id: z.uuid(), displayName: z.string() }),
+  location: z.enum(BOOKING_LOCATIONS),
+  /** The address as booked, for a home visit. */
+  homeAddress: homeAddressSchema.nullable(),
+  /** Included in priceFils. */
+  travelFeeFils: z.number().int(),
   priceFils: z.number().int(),
   taxFils: z.number().int(),
   currency: z.literal('AED'),

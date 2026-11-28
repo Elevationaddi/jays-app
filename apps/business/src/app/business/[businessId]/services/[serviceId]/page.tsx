@@ -20,10 +20,11 @@ export default async function ServicePage({
   const business = await loadBusiness(businessId);
   const path = `/business/${businessId}/services/${serviceId}`;
   const api = await serverApi();
-  const [service, branches, categories] = await Promise.all([
+  const [service, branches, categories, home] = await Promise.all([
     api.service(businessId, serviceId),
     api.branches(businessId),
     api.categories('services'),
+    api.homeServices(businessId),
   ]);
   return (
     <Workspace
@@ -46,6 +47,12 @@ export default async function ServicePage({
           {tr('service.suspendedNote', { reason: service.suspensionReason ?? '' })}
         </div>
       ) : null}
+      {service.locationMode !== 'in_venue' && !home.active ? (
+        <div className="alert" role="status">
+          {tr('service.homePaused')}{' '}
+          <Link href={`/business/${businessId}/services/home`}>{tr('home.title')}</Link>
+        </div>
+      ) : null}
       <p className="muted">
         {tr('service.policy', {
           hours: service.cancelCutoffHours,
@@ -60,6 +67,7 @@ export default async function ServicePage({
           service={service}
           categories={categories.items.filter((c) => c.status === 'active')}
           branches={branches.filter((b) => b.status === 'active')}
+          homeApproved={home.status === 'approved'}
         />
         <p className="inline-form">
           <button className="btn" type="submit">
