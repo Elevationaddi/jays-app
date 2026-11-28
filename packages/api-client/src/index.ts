@@ -1,14 +1,10 @@
 import {
-  acceptLegalRequestSchema,
   adminLegalDocumentSchema,
   adminLegalListSchema,
-  createLegalDraftRequestSchema,
   legalDocumentListSchema,
   legalDocumentSchema,
   merchantAgreementSchema,
   myLegalSchema,
-  publishLegalRequestSchema,
-  updateLegalDraftRequestSchema,
   addonListSchema,
   addonSchema,
   type addonInputSchema,
@@ -84,6 +80,10 @@ import type {
   inviteMemberRequestSchema,
   registerRequestSchema,
   updateMeRequestSchema,
+  acceptLegalRequestSchema,
+  createLegalDraftRequestSchema,
+  publishLegalRequestSchema,
+  updateLegalDraftRequestSchema,
 } from '@jays/contracts';
 import type {
   blockInputSchema,

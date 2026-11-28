@@ -1747,7 +1747,6 @@ const en = {
     'Legal documents cannot be published in production until a lawyer has reviewed them.',
   'legal.error.frozen': 'A published version cannot be changed. Start a new version.',
   'legal.error.draftExists': 'This document already has a draft. Edit that draft instead.',
-  'legal.error.effectiveInPast': 'The effective date cannot be in the past.',
   'admin.nav.legal': 'Legal',
   'admin.legal.title': 'Legal documents',
   'admin.legal.intro':
@@ -3497,7 +3496,6 @@ const ar: Record<MessageKey, string> = {
     'لا يمكن نشر المستندات القانونية في بيئة الإنتاج قبل مراجعة محامٍ لها.',
   'legal.error.frozen': 'لا يمكن تعديل إصدار منشور. ابدأ إصدارًا جديدًا.',
   'legal.error.draftExists': 'لهذا المستند مسودة بالفعل. عدّل تلك المسودة.',
-  'legal.error.effectiveInPast': 'لا يمكن أن يكون تاريخ السريان في الماضي.',
   'admin.nav.legal': 'الشؤون القانونية',
   'admin.legal.title': 'المستندات القانونية',
   'admin.legal.intro':

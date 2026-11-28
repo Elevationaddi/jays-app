@@ -14,8 +14,6 @@ export function errorMessageKey(code: string | undefined): MessageKey | null {
       return 'legal.error.frozen';
     case 'DRAFT_EXISTS':
       return 'legal.error.draftExists';
-    case 'EFFECTIVE_IN_PAST':
-      return 'legal.error.effectiveInPast';
     case 'OTP_INVALID':
       return 'auth.error.otpInvalid';
     case 'OTP_EXPIRED':
