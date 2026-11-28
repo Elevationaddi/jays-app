@@ -15,6 +15,7 @@ import { ModeHome } from './screens/ModeHome';
 import { DocumentScreen } from './screens/DocumentScreen';
 import { NotificationsScreen } from './screens/NotificationsScreen';
 import { OrderScreen, OrdersScreen } from './screens/OrdersScreen';
+import { LegalDocumentScreen, LegalScreen } from './screens/LegalScreens';
 import { PrivacyScreen, UnsubscribeScreen } from './screens/PrivacyScreens';
 import { ProductScreen } from './screens/ProductScreen';
 import { ResetScreen } from './screens/ResetScreen';
@@ -153,6 +154,10 @@ export function App() {
         return <NotificationsScreen />;
       case '/privacy':
         return <PrivacyScreen />;
+      case '/legal':
+        return <LegalScreen />;
+      case '/legal/detail':
+        return <LegalDocumentScreen />;
       case '/unsubscribe':
         return <UnsubscribeScreen />;
       case '/shop/store':

@@ -1392,6 +1392,50 @@ export interface BookingTravelEventsTable {
   occurred_at: CreatedAt;
 }
 
+export type LegalDocumentKindColumn =
+  | 'customer_terms'
+  | 'merchant_agreement'
+  | 'privacy_policy'
+  | 'returns_refunds'
+  | 'appointment_cancellation'
+  | 'home_services'
+  | 'marketing_consent'
+  | 'prohibited_items'
+  | 'review_moderation'
+  | 'merchant_licensing'
+  | 'authenticity'
+  | 'promotional_pricing';
+
+export interface LegalDocumentsTable {
+  id: Id;
+  kind: LegalDocumentKindColumn;
+  version: number;
+  title: Localized;
+  body: Localized;
+  summary_of_changes: string | null;
+  status: Generated<'draft' | 'published' | 'retired'>;
+  effective_at: Timestamp | null;
+  created_by: string | null;
+  published_by: string | null;
+  published_at: Timestamp | null;
+  retired_at: Timestamp | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface LegalAcceptancesTable {
+  id: Id;
+  user_id: string;
+  document_id: string;
+  kind: LegalDocumentKindColumn;
+  version: number;
+  business_id: string | null;
+  locale: 'en' | 'ar';
+  source: 'sign_up' | 'reaccept' | 'merchant_onboarding';
+  request_id: string | null;
+  accepted_at: CreatedAt;
+}
+
 export interface Database {
   emirates: EmiratesTable;
   users: UsersTable;
@@ -1475,6 +1519,8 @@ export interface Database {
   portfolio_items: PortfolioItemsTable;
   booking_waitlist: BookingWaitlistTable;
   booking_travel_events: BookingTravelEventsTable;
+  legal_documents: LegalDocumentsTable;
+  legal_acceptances: LegalAcceptancesTable;
 }
 
 /** Every column of every table, used by the drift test. Keep in the same order as above. */
@@ -2467,6 +2513,34 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'status',
     'actor_user_id',
     'occurred_at',
+  ],
+  legal_documents: [
+    'id',
+    'kind',
+    'version',
+    'title',
+    'body',
+    'summary_of_changes',
+    'status',
+    'effective_at',
+    'created_by',
+    'published_by',
+    'published_at',
+    'retired_at',
+    'created_at',
+    'updated_at',
+  ],
+  legal_acceptances: [
+    'id',
+    'user_id',
+    'document_id',
+    'kind',
+    'version',
+    'business_id',
+    'locale',
+    'source',
+    'request_id',
+    'accepted_at',
   ],
   payout_runs: [
     'id',

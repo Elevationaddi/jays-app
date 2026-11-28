@@ -121,6 +121,10 @@ export function errorMessageKey(code: string | undefined): MessageKey | null {
       return 'error.cancelTooLate';
     case 'NOT_REFUNDABLE':
       return 'error.notRefundable';
+    case 'MERCHANT_AGREEMENT_REQUIRED':
+      return 'legal.error.agreementRequired';
+    case 'VERSION_NOT_CURRENT':
+      return 'legal.error.versionNotCurrent';
     case 'ALREADY_REPORTED':
       return 'error.alreadyReported';
     default:

@@ -96,10 +96,16 @@ export async function acceptAgreement(formData: FormData) {
   const id = idOf(formData);
   if (formData.get('accept') !== 'on')
     redirect(`/business/${id}/onboarding?error=VALIDATION_FAILED#agreement`);
+  const legalVersion = Number(formData.get('legalVersion') ?? '');
   try {
-    await (
-      await serverApi()
-    ).acceptAgreement(id, String(formData.get('version') ?? MERCHANT_AGREEMENT_VERSION));
+    const api = await serverApi();
+    if (formData.get('onboardingAccepted') !== '1') {
+      await api.acceptAgreement(id, String(formData.get('version') ?? MERCHANT_AGREEMENT_VERSION));
+    }
+    // The versioned agreement in force (ADR-0028), recorded with who accepted it and when.
+    if (Number.isInteger(legalVersion) && legalVersion > 0) {
+      await api.acceptMerchantAgreement(id, legalVersion);
+    }
   } catch (error) {
     back(id, error, '#agreement');
   }

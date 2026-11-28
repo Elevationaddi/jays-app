@@ -50,6 +50,7 @@ export default async function OnboardingPage({
     );
   }
   const view: OnboardingView = await api.onboarding(businessId);
+  const merchantAgreement = await api.merchantAgreement(businessId);
   const emirates = (await api.emirates()).items;
   const date = new Intl.DateTimeFormat(locale === 'ar' ? 'ar-AE' : 'en-AE', {
     dateStyle: 'medium',
@@ -328,20 +329,52 @@ export default async function OnboardingPage({
               <p className="muted">
                 {tr('onboarding.agreement.body', { version: view.agreement.currentVersion })}
               </p>
+              {merchantAgreement.document ? (
+                <p>
+                  <Link href="/legal/merchant_agreement" target="_blank">
+                    {merchantAgreement.document.title[locale]} (
+                    {tr('legal.version', { version: merchantAgreement.document.version })})
+                  </Link>
+                  <br />
+                  <span className="muted">{tr('legal.draftNotice')}</span>
+                </p>
+              ) : null}
               {view.agreement.acceptedVersion === view.agreement.currentVersion &&
-              view.agreement.acceptedAt ? (
+              view.agreement.acceptedAt &&
+              !merchantAgreement.required ? (
                 <p>
                   ✓{' '}
                   {tr('onboarding.agreement.accepted', {
-                    version: view.agreement.acceptedVersion,
-                    date: date.format(new Date(view.agreement.acceptedAt)),
+                    version: merchantAgreement.accepted
+                      ? String(merchantAgreement.accepted.version)
+                      : view.agreement.acceptedVersion,
+                    date: date.format(
+                      new Date(merchantAgreement.accepted?.acceptedAt ?? view.agreement.acceptedAt),
+                    ),
                   })}
                 </p>
               ) : (
                 <form action={acceptAgreement}>
                   <input type="hidden" name="businessId" value={businessId} />
                   <input type="hidden" name="version" value={view.agreement.currentVersion} />
-                  <fieldset disabled={disabled} className="plain">
+                  {view.agreement.acceptedVersion === view.agreement.currentVersion ? (
+                    <input type="hidden" name="onboardingAccepted" value="1" />
+                  ) : null}
+                  {merchantAgreement.required && merchantAgreement.document ? (
+                    <input
+                      type="hidden"
+                      name="legalVersion"
+                      value={merchantAgreement.document.version}
+                    />
+                  ) : null}
+                  <fieldset
+                    disabled={
+                      disabled &&
+                      // A new agreement version can be accepted after approval too.
+                      view.agreement.acceptedVersion !== view.agreement.currentVersion
+                    }
+                    className="plain"
+                  >
                     <label className="check">
                       <input type="checkbox" name="accept" required />
                       <span>{tr('onboarding.agreement.accept')}</span>

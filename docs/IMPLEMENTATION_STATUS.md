@@ -31,6 +31,20 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 
 Founder decisions: [ADR-0018](adr/0018-founder-decisions-2026-11-28.md). Phase 8 ships as slices. Each slice is its own PR, merged once CI passes.
 
+### 8.8 Policies, refunds and legal drafts (part 2: legal documents)
+
+Decision: [ADR-0028](adr/0028-legal-documents-and-acceptance-records.md). **Every document is a draft. No lawyer has reviewed any of them, and nothing is marked approved.** Publishing is refused in production (`LEGAL_REVIEW_COMPLETE = false`).
+
+- **Documents:** twelve drafts in English and Arabic in [legal/drafts/](legal/drafts/): customer terms, merchant agreement, privacy policy, return and refund policy, appointment cancellation, home services, marketing consent, prohibited products and services, review moderation, merchant licensing requirements, authenticity and counterfeits, and promotional pricing. Unknown facts and rules are `[●]` placeholders; no licensing requirement has been invented.
+- **Review documents:** the [legal review checklist](legal/LEGAL_REVIEW_CHECKLIST.md) (federal questions, the same questions for each of the seven emirates and free zones, each document, acceptance records, pricing) and the [tax review](TAX_REVIEW.md) for a UAE tax professional (what the software does and the questions to answer; no TRN assumed; VAT stays configurable).
+- **Versions and records:** numbered versions per document, one published at a time, published text frozen by the database, and an append-only acceptance record (user, exact version, language, source, request id, time).
+- **Customer app:** a Legal documents screen from Account, each document's text, and a home-screen banner with "accept" when a required document has a new version. Sign-up records acceptance of the published terms and privacy policy.
+- **Business portal:** the onboarding agreement card links to the published merchant agreement and records the versioned acceptance; submitting for review needs it. A public page shows each document.
+- **Admin portal:** a Legal page (compliance and superadmin) lists every document and version with acceptance counts, starts a new version from the latest, edits drafts and publishes them with a draft acknowledgement.
+- **Screens:** `customer-29` to `customer-31` (update banner, documents, a document), `business-61` (merchant agreement) and `business-62` (public document), `admin-22` (documents) and `admin-23` (draft), in English and Arabic.
+- **Tests:** 3 new API integration tests (185 in total, all passing on a fresh database) and domain tests.
+- **API:** migration 0015. 10 new paths (213 in total).
+
 ### 8.8 Policies, refunds and legal drafts (part 1: booking policies)
 
 Decision: [ADR-0027](adr/0027-booking-policies-and-component-amounts.md). The home-visit cancellation rule stays proposed until reviewed for UAE consumer protection.
@@ -41,7 +55,7 @@ Decision: [ADR-0027](adr/0027-booking-policies-and-component-amounts.md). The ho
 - **Screens:** `business-59` (amounts and travel), `business-60` (no-show policy), `customer-28` (on the way), in English and Arabic.
 - **Tests:** 4 new API integration tests (182 in total), domain tests for refunds, travel and allocation.
 - **API:** migration 0014. 1 new path.
-- **Still to do in 8.8:** delivery methods and tracking, return policies, draft legal documents, the legal review checklist and the tax review document.
+- **Still to do in 8.8:** delivery methods and tracking, and return policies (part 3).
 
 ### 8.7 Service discovery
 

@@ -1,4 +1,14 @@
 import {
+  acceptLegalRequestSchema,
+  adminLegalDocumentSchema,
+  adminLegalListSchema,
+  createLegalDraftRequestSchema,
+  legalDocumentListSchema,
+  legalDocumentSchema,
+  merchantAgreementSchema,
+  myLegalSchema,
+  publishLegalRequestSchema,
+  updateLegalDraftRequestSchema,
   addonListSchema,
   addonSchema,
   type addonInputSchema,
@@ -611,6 +621,12 @@ export function createApiClient(options: ApiClientOptions) {
       call('DELETE', `/me/waitlist/${encodeURIComponent(entryId)}`, waitlistListSchema),
     rebook: (bookingId: string) =>
       call('GET', `/bookings/${encodeURIComponent(bookingId)}/rebook`, rebookSchema),
+    legalDocuments: () => call('GET', '/legal', legalDocumentListSchema),
+    legalDocument: (kind: string) =>
+      call('GET', `/legal/${encodeURIComponent(kind)}`, legalDocumentSchema),
+    myLegal: () => call('GET', '/me/legal', myLegalSchema),
+    acceptLegal: (body: z.input<typeof acceptLegalRequestSchema>) =>
+      call('POST', '/me/legal/accept', myLegalSchema, body),
     /** Send the same idempotency key when retrying, so a lost response never holds twice. */
     holdBooking: (body: z.input<typeof holdRequestSchema>, idempotencyKey: string) =>
       call('POST', '/bookings/hold', bookingSchema, body, idem(idempotencyKey)),
@@ -813,6 +829,12 @@ export function createApiClient(options: ApiClientOptions) {
       id: string,
       params: Omit<z.input<typeof merchantBookingListQuerySchema>, 'limit'> & { limit?: number },
     ) => call('GET', `${biz(id)}/bookings${query(params)}`, pageSchema(merchantBookingSchema)),
+    merchantAgreement: (id: string) =>
+      call('GET', `${biz(id)}/legal/merchant-agreement`, merchantAgreementSchema),
+    acceptMerchantAgreement: (id: string, version: number) =>
+      call('POST', `${biz(id)}/legal/merchant-agreement/accept`, merchantAgreementSchema, {
+        version,
+      }),
     merchantBooking: (id: string, bookingId: string) =>
       call('GET', `${biz(id)}/bookings/${encodeURIComponent(bookingId)}`, merchantBookingSchema),
     createManualBooking: (id: string, body: z.input<typeof manualBookingRequestSchema>) =>
@@ -1210,6 +1232,20 @@ export function createApiClient(options: ApiClientOptions) {
         signedUrlSchema,
       ),
     adminEmirates: () => call('GET', '/admin/operations/emirates', adminEmirateListSchema),
+    adminLegal: () => call('GET', '/admin/legal', adminLegalListSchema),
+    adminLegalDocument: (id: string) =>
+      call('GET', `/admin/legal/${encodeURIComponent(id)}`, adminLegalDocumentSchema),
+    adminCreateLegalDraft: (body: z.input<typeof createLegalDraftRequestSchema>) =>
+      call('POST', '/admin/legal', adminLegalDocumentSchema, body),
+    adminUpdateLegalDraft: (id: string, body: z.input<typeof updateLegalDraftRequestSchema>) =>
+      call('PATCH', `/admin/legal/${encodeURIComponent(id)}`, adminLegalDocumentSchema, body),
+    adminPublishLegal: (id: string, body: z.input<typeof publishLegalRequestSchema> = {}) =>
+      call(
+        'POST',
+        `/admin/legal/${encodeURIComponent(id)}/publish`,
+        adminLegalDocumentSchema,
+        body,
+      ),
     adminSetEmirate: (code: string, enabled: boolean) =>
       call(
         'PATCH',

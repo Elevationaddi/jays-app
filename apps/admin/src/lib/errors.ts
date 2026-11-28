@@ -8,6 +8,14 @@ export function errorMessageKey(code: string | undefined): MessageKey | null {
       return null;
     case 'INVALID_CREDENTIALS':
       return 'auth.error.invalidCredentials';
+    case 'LEGAL_REVIEW_REQUIRED':
+      return 'legal.error.reviewRequired';
+    case 'DOCUMENT_FROZEN':
+      return 'legal.error.frozen';
+    case 'DRAFT_EXISTS':
+      return 'legal.error.draftExists';
+    case 'EFFECTIVE_IN_PAST':
+      return 'legal.error.effectiveInPast';
     case 'OTP_INVALID':
       return 'auth.error.otpInvalid';
     case 'OTP_EXPIRED':

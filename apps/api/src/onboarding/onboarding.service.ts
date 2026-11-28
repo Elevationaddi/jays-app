@@ -51,6 +51,7 @@ import {
   toMediaView,
 } from './views.js';
 import { LIMITS } from '../auth/policy.js';
+import { LegalService } from '../legal/legal.service.js';
 
 type Trx = Transaction<Database>;
 
@@ -78,6 +79,7 @@ export class OnboardingService {
     @Inject(RATE_LIMITER) private readonly limiter: RateLimiter,
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
     @Inject(MALWARE_SCANNER) private readonly scanner: MalwareScanner,
+    @Inject(LegalService) private readonly legal: LegalService,
   ) {}
 
   private async lockBusiness(trx: Trx, businessId: string) {
@@ -446,6 +448,8 @@ export class OnboardingService {
           { checklist: missing },
         );
       }
+      // The merchant agreement in force, when one is published (D13, ADR-0028).
+      await this.legal.assertMerchantAgreementAccepted(trx, ctx.businessId);
       await this.bump(
         trx,
         ctx.businessId,
