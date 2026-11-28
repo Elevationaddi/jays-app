@@ -6,12 +6,15 @@ Step-by-step instructions for the accounts JAYS needs. Every account here is fre
 
 - **Never paste a key into a chat**, an email or a document. Keys go only into Vercel's environment variables, as described below. If a key is ever exposed, delete it in the provider's dashboard and create a new one.
 - **Never add a payment method, start a trial or upgrade a plan** while following this guide. The only exception is your existing Vercel subscription. If a screen asks for a card to continue, stop and ask.
-- The variable names below match the code planned for phases 9 and 10. The file `.env.example` in the repository is the final reference, and it will be updated when those phases land.
+- The variable names below match the code. The file `.env.example` in the repository and [STAGING.md](STAGING.md) are the final reference.
+- **Staging first.** You approved a private staging environment (28 November 2026). Create the **staging** accounts and projects first: [STAGING.md](STAGING.md) is the order to follow. Production accounts wait for your later approval.
+- **Random secrets:** run `node scripts/staging/generate-secrets.mjs` on your own computer. It prints new values to your screen only. Paste them straight into Vercel.
 
 ## 1. Vercel (you already have it)
 
 1. Sign in at https://vercel.com.
-2. Open **Settings → Billing** and note your plan (Hobby or Pro). JAYS needs **Pro**: it allows commercial use, cron jobs every minute and longer function times. Tell the team which plan you are on.
+2. Open **Settings → Billing** and note your plan (Hobby or Pro). JAYS needs **Pro**: it allows commercial use, cron jobs every minute and longer function times. Tell the team which plan you are on. The team's Vercel connector can see your team ("elevationaddi's projects") and its one existing project, but not the plan or the billing settings.
+   - Also look at **Usage**: staging shares the included usage with your existing project `elevation-platform`.
 3. **Turn on spend protection now.**
    - Go to **Settings → Billing → Spend Management**.
    - Set a low monthly amount, for example the $20 included credit.
@@ -20,7 +23,10 @@ Step-by-step instructions for the accounts JAYS needs. Every account here is fre
 
    This stops unexpected charges.
 
-4. **Do not create projects yet.** The team prepares the configuration in phase 10. You will be asked to approve the first deployment.
+4. **Staging projects:** once the plan and spending controls are confirmed, the four staging projects are created as described in [STAGING.md](STAGING.md), step 1:
+   - Vercel Authentication (free Standard Protection) is on for the business portal, the admin console and the web app;
+   - **Password Protection** is a paid add-on: do not turn it on.
+5. **Do not create production projects yet.** They need your separate approval.
 
 ## 2. Supabase: database and file storage (Free)
 
@@ -46,11 +52,14 @@ You will create **two** projects: one for staging and one for production. Supaba
    - Uploaded files are scanned by ClamAV, which is free and open source but needs a computer that stays on. It cannot run on Vercel or Supabase.
    - Where it runs is your decision. The options are in `docs/adr/0032-supabase-storage-and-malware-scanning.md`. Do not sign up for anything for it until you have chosen.
    - Once it runs, set `MALWARE_SCANNER=clamav`, `CLAMAV_HOST`, `CLAMAV_PORT` and `CLAMAV_TLS=true` on the API project. Production will not start without it. Staging can use `MALWARE_SCANNER=mock` until then.
+   - The review of every no-cost hosting option is in [CLAMAV_HOSTING_REVIEW.md](CLAMAV_HOSTING_REVIEW.md). Its finding: no reliable no-cost production host exists today, so the production blocker stays. On staging, document uploads are switched off (`DOCUMENT_UPLOADS=disabled`).
 9. **Free projects pause after a week with no activity.** Staging may pause. Restore it from the dashboard when needed. Production will have regular traffic during the pilot.
 
 ## 3. Resend: email (Free)
 
 1. Go to https://resend.com and sign up. Stay on the **Free** plan, which allows 100 emails a day and 3,000 a month.
+   - **A domain is needed.** Without a verified domain, Resend only delivers to your own sign-up address. Buying a domain needs your approval (section 8).
+   - Until a domain exists, staging keeps `NOTIFY_PROVIDER=mock`, and codes appear in the staging API log.
 2. **Add your domain:**
    - Go to **Domains → Add Domain** and enter the domain JAYS will send from, for example `mail.yourdomain.ae`.
    - Resend shows DNS records (SPF, DKIM, and optionally DMARC). Add them where your domain's DNS is managed (your registrar, or Vercel if the domain is on Vercel).
@@ -87,11 +96,14 @@ You will create **two** projects: one for staging and one for production. Supaba
 
 ## 5. Firebase: push notifications (Spark, no cost)
 
-1. Go to https://console.firebase.google.com and click **Add project**. Name it `jays`. Google Analytics is optional; you can turn it off.
+1. Go to https://console.firebase.google.com and click **Add project**.
+   - Name the staging project `jays-staging`. Production later gets its own, `jays`.
+   - Google Analytics is optional; you can turn it off.
 2. Stay on the **Spark** plan. **Never** click "Upgrade" to Blaze.
 3. **Add the apps:**
-   - **Android:** click **Add app → Android** with the package name the team gives you, and download `google-services.json`.
-   - **iOS:** click **Add app → Apple** with the bundle ID, and download `GoogleService-Info.plist`.
+   - **Android:** click **Add app → Android** with the provisional package name `ae.jays.customer` (question 7: provisional, not registered in any store), and download `google-services.json`.
+   - **iOS:** click **Add app → Apple** with the bundle ID `ae.jays.customer`, and download `GoogleService-Info.plist`.
+   - Adding an app in Firebase registers nothing with Apple or Google, and costs nothing.
    - Both files are needed only for building the mobile apps. Send them to the team through a shared private folder, not chat.
 4. **Create the server key:**
    - Go to **Project settings → Service accounts → Generate new private key**.
@@ -100,15 +112,20 @@ You will create **two** projects: one for staging and one for production. Supaba
 5. **iOS push:** this needs an APNs key from your Apple Developer account (see section 9).
    - Upload it under **Project settings → Cloud Messaging → Apple app configuration**.
 
-## 6. GitHub: backups
+## 6. GitHub: staging workflows (and backups later)
 
-The daily encrypted database backup runs in GitHub Actions (free).
+**Staging migrations and demonstration data** run from two manual workflows in GitHub Actions (free).
 
-1. In the repository, open **Settings → Secrets and variables → Actions**.
-2. Add these secrets:
-   - `BACKUP_DATABASE_URL`: the **direct** production connection string from step 2.5.
-   - `BACKUP_PASSPHRASE`: a long random passphrase. Keep a copy in your password manager. Without it, backups cannot be restored.
-3. Do not add a payment method to GitHub to get more Actions minutes.
+1. In the repository, open **Settings → Environments → New environment** and name it `staging`.
+2. Under **Environment secrets**, add:
+   - `STAGING_DATABASE_DIRECT_URL`: the **direct** staging connection string (step 2.5, port 5432);
+   - `STAGING_MFA_ENCRYPTION_KEY`: the same value you gave the staging API's `MFA_ENCRYPTION_KEY`;
+   - `DEMO_CREDENTIALS_PASSPHRASE`: a long passphrase from your password manager. It encrypts the file of demo account passwords.
+3. Run them from the **Actions** tab: [STAGING.md](STAGING.md), step 3.
+
+**Backups:** do not set them up yet. The options are compared in [ADR-0037](adr/0037-encrypted-backups.md), and the destination needs your approval first (question 8). Never put an unencrypted dump, personal information or a production key in GitHub.
+
+Do not add a payment method to GitHub to get more Actions minutes.
 
 ## 7. Adding keys in Vercel
 
@@ -119,30 +136,33 @@ When the team asks, after the projects exist:
 3. Add each key:
    - **Name:** the variable name, for example `PSP_API_KEY`.
    - **Value:** paste the key.
-   - **Environments:** tick **Preview** for staging values, or **Production** for production values. Staging and production must use different keys and different Supabase projects.
+   - **Environments:** in the **staging** projects (`jays-staging-…`), tick **Production**. In those projects, "Production" is staging, because cron jobs only run there (ADR-0035). The real production projects come later. Staging and production must use different keys and different Supabase projects.
    - Mark it **Sensitive**.
 4. Save, then ask the team to redeploy.
 
-| Variable                                                                                  | Project          | Where it comes from                                                           |
-| ----------------------------------------------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------- |
-| `DATABASE_URL`                                                                            | API              | Supabase transaction pooler (step 2.5)                                        |
-| `DATABASE_DIRECT_URL`                                                                     | API (migrations) | Supabase direct connection (step 2.5)                                         |
-| `SUPABASE_URL`                                                                            | API              | Supabase Project URL (step 2.6)                                               |
-| `SUPABASE_SERVICE_ROLE_KEY`                                                               | API              | Supabase service role key (step 2.6)                                          |
-| `EMAIL_KEY`, `EMAIL_FROM`                                                                 | API              | Resend (step 3)                                                               |
-| `PSP_API_KEY`                                                                             | API              | Stripe test secret key (step 4.4)                                             |
-| `PSP_WEBHOOK_SECRET`                                                                      | API              | Stripe webhook signing secret (step 4.5)                                      |
-| `PSP_CONNECT_WEBHOOK_SECRET`                                                              | API              | Stripe Connect webhook signing secret (step 4.5)                              |
-| `PSP_PUBLISHABLE_KEY`                                                                     | API              | Stripe test publishable key (step 4.4)                                        |
-| `BUSINESS_WEB_URL`                                                                        | API              | The business portal's address, for Stripe's return links                      |
-| `FCM_SERVICE_ACCOUNT_JSON`                                                                | API              | Firebase service account (step 5.4)                                           |
-| `NOTIFY_PROVIDER`, `PUSH_PROVIDER`                                                        | API              | `resend` (step 3.5) and `fcm` (step 5.4)                                      |
-| `CRON_SECRET`                                                                             | API              | A random value you generate (Vercel sends it with each cron call)             |
-| `RATE_LIMIT_STORE=postgres`, `SCHEDULERS=off`, `DB_POOL_MAX=3`, `TRUST_PROXY_HOPS=1`      | API              | Fixed values for Vercel (docs/DEPLOYMENT.md)                                  |
-| `STORAGE_PROVIDER=supabase`, `STORAGE_BUCKET=jays-files`                                  | API              | Fixed values once the bucket exists (step 2.7)                                |
-| `EXPO_PUBLIC_API_URL`                                                                     | Web              | The API's address (not a secret)                                              |
-| `JWT_KEYS`, `OTP_SECRET`, `MFA_ENCRYPTION_KEY`, `STORAGE_SIGNING_SECRET`, `METRICS_TOKEN` | API              | Random values the team's script generates for you. Never reuse the local ones |
-| `API_URL`                                                                                 | Business, admin  | The API's address                                                             |
+| Variable                                                                                  | Project                        | Where it comes from                                                           |
+| ----------------------------------------------------------------------------------------- | ------------------------------ | ----------------------------------------------------------------------------- |
+| `DATABASE_URL`                                                                            | API                            | Supabase transaction pooler (step 2.5)                                        |
+| `DATABASE_DIRECT_URL`                                                                     | API (migrations)               | Supabase direct connection (step 2.5)                                         |
+| `SUPABASE_URL`                                                                            | API                            | Supabase Project URL (step 2.6)                                               |
+| `SUPABASE_SERVICE_ROLE_KEY`                                                               | API                            | Supabase service role key (step 2.6)                                          |
+| `EMAIL_KEY`, `EMAIL_FROM`                                                                 | API                            | Resend (step 3)                                                               |
+| `PSP_API_KEY`                                                                             | API                            | Stripe test secret key (step 4.4)                                             |
+| `PSP_WEBHOOK_SECRET`                                                                      | API                            | Stripe webhook signing secret (step 4.5)                                      |
+| `PSP_CONNECT_WEBHOOK_SECRET`                                                              | API                            | Stripe Connect webhook signing secret (step 4.5)                              |
+| `PSP_PUBLISHABLE_KEY`                                                                     | API                            | Stripe test publishable key (step 4.4)                                        |
+| `BUSINESS_WEB_URL`                                                                        | API                            | The business portal's address, for Stripe's return links                      |
+| `FCM_SERVICE_ACCOUNT_JSON`                                                                | API                            | Firebase service account (step 5.4)                                           |
+| `NOTIFY_PROVIDER`, `PUSH_PROVIDER`                                                        | API                            | `resend` (step 3.5) and `fcm` (step 5.4)                                      |
+| `CRON_SECRET`                                                                             | API                            | A random value you generate (Vercel sends it with each cron call)             |
+| `RATE_LIMIT_STORE=postgres`, `SCHEDULERS=off`, `DB_POOL_MAX=3`, `TRUST_PROXY_HOPS=1`      | API                            | Fixed values for Vercel (docs/DEPLOYMENT.md)                                  |
+| `STORAGE_PROVIDER=supabase`, `STORAGE_BUCKET=jays-files`                                  | API                            | Fixed values once the bucket exists (step 2.7)                                |
+| `EXPO_PUBLIC_API_URL`                                                                     | Web                            | The API's address (not a secret)                                              |
+| `JWT_KEYS`, `OTP_SECRET`, `MFA_ENCRYPTION_KEY`, `STORAGE_SIGNING_SECRET`, `METRICS_TOKEN` | API                            | Random values the team's script generates for you. Never reuse the local ones |
+| `API_URL`                                                                                 | Business, admin                | The API's address                                                             |
+| `STAGING_ACCESS_TOKEN`                                                                    | API, business, admin (staging) | Generated. Web: `EXPO_PUBLIC_STAGING_ACCESS_TOKEN` (same value)               |
+| `SIGNUP_MODE=allowlist`, `SIGNUP_ALLOWLIST`, `DOCUMENT_UPLOADS=disabled`                  | API (staging)                  | Fixed values, plus your testers' emails ([STAGING.md](STAGING.md))            |
+| `APP_ENV=staging` / `EXPO_PUBLIC_APP_ENV=staging`                                         | All staging projects           | Shows the demonstration-data notice and turns on the staging rules            |
 
 ## 8. Domain
 

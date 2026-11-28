@@ -18,6 +18,7 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 | 10 | Vercel deployment design (replaces AWS) | Merged (PR #23); nothing deployed |
 | 11 | Security, QA, app store preparation | Merged (PR #24); real devices not tested |
 | 12 | Pilot preparation (Abu Dhabi) | Built (PR #25); pilot not launched, needs founder approval |
+| 13 | Private staging preparation, image privacy, scanner and backup reviews | Built; **not deployed** (waits for Vercel plan and spending confirmation) |
 
 **Mandatory constraint (28 November 2026):** no paid software subscriptions beyond Vercel, ChatGPT and Claude. AWS and Twilio are removed. See [ADR-0024](adr/0024-cost-constraints-and-vercel-first-architecture.md), the [founder decision register](FOUNDER_DECISIONS.md), [infrastructure costs](INFRASTRUCTURE_COSTS.md), the [founder setup guide](FOUNDER_SETUP_GUIDE.md) and the [launch checklist](LAUNCH_CHECKLIST.md).
 
@@ -26,6 +27,26 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 - **Travel fees:** no longer carry commission ([ADR-0025](adr/0025-travel-fees-home-cancellations-pilot-promotion.md)). The booking ledger line leaves the travel fee out of the commission base, and a test checks it.
 - **Home-visit cancellations:** built in 8.8 ([ADR-0027](adr/0027-booking-policies-and-component-amounts.md)); the rule is still proposed until a consumer-protection review.
 - **Pilot promotion:** built in phase 12 ([ADR-0034](adr/0034-pilot-promotion.md)).
+
+## Phase 13: Private staging preparation
+
+Decisions: [ADR-0035](adr/0035-private-staging.md) (staging), [ADR-0036](adr/0036-image-privacy-and-scanner-review.md) (Sharp, scanner review), [ADR-0037](adr/0037-encrypted-backups.md) (backups, proposed). Runbook: [STAGING.md](STAGING.md). **Nothing is deployed.** The founder must first confirm the Vercel plan (Pro), usage and Spend Management. The connector shows the team and one unrelated project, but not the plan.
+
+| Area                                                                                    | Completed development                   | Locally tested                                                                                           | Staging-tested                    | Real-provider-tested          |
+| --------------------------------------------------------------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------- | ----------------------------- |
+| API staging gate (`x-staging-access`), noindex, `robots.txt`                            | Yes                                     | Unit tests; CI container check                                                                           | No                                | –                             |
+| Invite-only registration (`SIGNUP_MODE=allowlist`)                                      | Yes                                     | Unit tests                                                                                               | No                                | –                             |
+| Document uploads off in staging (`DOCUMENT_UPLOADS=disabled`)                           | Yes                                     | Configuration tests                                                                                      | No                                | –                             |
+| Demonstration-data notice (portals, customer app) and portal noindex                    | Yes                                     | Typecheck, build                                                                                         | No                                | –                             |
+| Customer web staging build: `robots.txt` and noindex meta                               | Yes                                     | Script run locally                                                                                       | No                                | –                             |
+| Separate staging projects (cron on Production), Vercel Authentication                   | Documented                              | –                                                                                                        | No                                | –                             |
+| Sharp re-encoding: EXIF/GPS removed, orientation, limits, bomb and corrupt-file refusal | Yes                                     | 7 unit tests; upload integration tests                                                                   | No (Vercel runtime check pending) | –                             |
+| ClamAV                                                                                  | Unchanged adapter; local Docker service | Real `clamd` 1.5.4 with a local test signature (official databases blocked by the environment's network) | No                                | No (no host)                  |
+| Encrypted backups with `age` public keys                                                | Scripts                                 | Restore drill passed (age and openssl)                                                                   | No                                | No (destination not approved) |
+
+- **Security blockers:** malware scanner host (production refuses to start without one); document uploads stay off in staging.
+- **Deployment blockers:** Vercel plan, usage and spending controls to confirm; Supabase, Resend, Stripe test and Firebase staging accounts to create (setup guide); a domain is needed for Resend to email testers.
+- **Financial blockers:** none added. Live payments stay refused by configuration.
 
 ## Phase 12: Pilot preparation (Abu Dhabi)
 

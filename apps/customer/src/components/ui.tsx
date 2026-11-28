@@ -11,12 +11,18 @@ import {
   type TextInputProps,
   View,
 } from 'react-native';
+import { IS_STAGING } from '../api';
 import { useApp } from '../context';
 
 export function Screen({ children, footer }: { children: ReactNode; footer?: ReactNode }) {
-  const { rtl } = useApp();
+  const { rtl, tr } = useApp();
   return (
     <SafeAreaView style={[styles.screen, { direction: rtl ? 'rtl' : 'ltr' }]}>
+      {IS_STAGING ? (
+        <Text accessibilityRole="text" style={styles.stagingNotice}>
+          {tr('staging.notice')}
+        </Text>
+      ) : null}
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {children}
       </ScrollView>
@@ -152,6 +158,14 @@ export function Checkbox({
 
 export const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.surface },
+  stagingNotice: {
+    backgroundColor: '#FBF1E4',
+    color: colors.text,
+    fontSize: 13,
+    paddingHorizontal: spacing[2],
+    paddingVertical: 6,
+    textAlign: 'center',
+  },
   content: { padding: spacing[3], paddingBottom: spacing[6], gap: spacing[2] },
   title: { color: colors.text, fontSize: 28, fontWeight: '700' },
   body: { color: colors.text, fontSize: typography.minBodySize, lineHeight: 24 },

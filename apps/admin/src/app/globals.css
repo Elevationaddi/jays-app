@@ -744,3 +744,13 @@ a.card.stat {
   background: #ecfdf3;
   color: #027a48;
 }
+
+/* Private staging only (ADR-0035): says every record is fictional demonstration data. */
+.staging-notice {
+  background: var(--warning-bg);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.875rem;
+  padding: 6px 16px;
+  text-align: center;
+}

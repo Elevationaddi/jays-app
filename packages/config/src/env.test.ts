@@ -23,6 +23,47 @@ function issuesOf(fn: () => unknown): string[] {
   throw new Error('expected EnvValidationError');
 }
 
+describe('private staging rules (ADR-0035)', () => {
+  const staging = { ...local, APP_ENV: 'staging' };
+  const token = 's'.repeat(40);
+
+  it('requires the access token, invite-only sign-up and disabled document uploads', () => {
+    const issues = issuesOf(() => parseEnv(apiEnvSchema, staging));
+    expect(issues).toEqual(
+      expect.arrayContaining(['STAGING_ACCESS_TOKEN', 'SIGNUP_MODE', 'DOCUMENT_UPLOADS']),
+    );
+  });
+
+  it('starts when the staging protections are configured', () => {
+    const env = parseEnv(apiEnvSchema, {
+      ...staging,
+      STAGING_ACCESS_TOKEN: token,
+      SIGNUP_MODE: 'allowlist',
+      SIGNUP_ALLOWLIST: 'tester@example.test, @demo.example',
+      DOCUMENT_UPLOADS: 'disabled',
+    });
+    expect(env.SIGNUP_ALLOWLIST).toEqual(['tester@example.test', '@demo.example']);
+  });
+
+  it('refuses a short staging token', () => {
+    expect(
+      issuesOf(() =>
+        parseEnv(apiEnvSchema, {
+          ...staging,
+          STAGING_ACCESS_TOKEN: 'short',
+          SIGNUP_MODE: 'allowlist',
+          DOCUMENT_UPLOADS: 'disabled',
+        }),
+      ),
+    ).toContain('STAGING_ACCESS_TOKEN');
+  });
+
+  it('does not apply to local development or the worker', () => {
+    expect(parseEnv(apiEnvSchema, local).SIGNUP_MODE).toBe('open');
+    expect(() => parseEnv(workerEnvSchema, { ...staging })).not.toThrow();
+  });
+});
+
 describe('apiEnvSchema', () => {
   it('accepts the local example environment and applies defaults', () => {
     const env = parseEnv(apiEnvSchema, local);

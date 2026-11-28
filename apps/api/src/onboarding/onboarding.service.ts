@@ -52,6 +52,7 @@ import {
 } from './views.js';
 import { LIMITS } from '../auth/policy.js';
 import { LegalService } from '../legal/legal.service.js';
+import { API_ENV, type ApiEnv } from '../config.js';
 
 type Trx = Transaction<Database>;
 
@@ -80,6 +81,7 @@ export class OnboardingService {
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
     @Inject(MALWARE_SCANNER) private readonly scanner: MalwareScanner,
     @Inject(LegalService) private readonly legal: LegalService,
+    @Inject(API_ENV) private readonly env: ApiEnv,
   ) {}
 
   private async lockBusiness(trx: Trx, businessId: string) {
@@ -228,6 +230,15 @@ export class OnboardingService {
     body: { kind: DocumentKind; fileName: string; contentType: string; sizeBytes: number },
     meta: RequestMeta,
   ): Promise<UploadTicket> {
+    // Private staging must not collect real merchant documents (ADR-0035): uploads are switched off
+    // there, and the demo dataset carries fictional documents instead.
+    if (this.env.DOCUMENT_UPLOADS === 'disabled') {
+      throw new ApiError(
+        HttpStatus.FORBIDDEN,
+        'DOCUMENT_UPLOADS_DISABLED',
+        'Document uploads are switched off in this environment. Do not upload real documents.',
+      );
+    }
     await enforce(this.limiter, [[LIMITS.uploadPerBusiness, ctx.businessId]]);
     const now = this.clock.now();
     const expiresAt = addSeconds(now, UPLOAD_URL_TTL_SECONDS);

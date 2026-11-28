@@ -35,7 +35,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Create an account and send a verification code',
     description:
-      'Provide exactly one of email or phone. The answer is the same whether or not the contact is already registered. Unknown fields (for example a role) are rejected.',
+      'Provide exactly one of email or phone. The answer is the same whether or not the contact is already registered. Unknown fields (for example a role) are rejected. In private staging, only invited (allowlisted) emails may register: others get 403 SIGNUP_RESTRICTED.',
   })
   @ApiZodBody(registerRequestSchema)
   @ApiZodResponse(
@@ -43,7 +43,7 @@ export class AuthController {
     challengeSchema,
     'A code was sent (or the owner was told the account exists).',
   )
-  @ApiErrors(400, 429, 503)
+  @ApiErrors(400, 403, 429, 503)
   register(@ZodBody(registerRequestSchema) body: RegisterRequest, @Req() req: Request) {
     return this.auth.register(body, requestMeta(req));
   }

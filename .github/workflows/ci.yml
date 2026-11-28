@@ -74,12 +74,14 @@ jobs:
       - run: pnpm test:integration
       - name: Seed data applies and is idempotent
         run: pnpm db:seed && pnpm db:seed
-      - name: Encrypted backup restores into an empty database (restore drill)
+      - name: Install age (public-key backup encryption, ADR-0037)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq age
+      - name: Encrypted backup restores into an empty database (restore drill, age and openssl)
         env:
           PG_DUMP: docker run --rm -i --network host postgres:17-alpine pg_dump
           PG_RESTORE: docker run --rm -i --network host postgres:17-alpine pg_restore
           PSQL: docker run --rm -i --network host postgres:17-alpine psql
-        run: infra/backup/drill.sh
+        run: DRILL_ENCRYPTION=age infra/backup/drill.sh && DRILL_ENCRYPTION=openssl infra/backup/drill.sh
 
   images:
     name: Container images build and start (staging)
@@ -112,6 +114,7 @@ jobs:
         run: |
           # A throwaway token generated per run, so no credential-shaped value is committed.
           metrics_token="$(openssl rand -hex 24)"
+          staging_token="$(openssl rand -hex 24)"
           cat > ci.env <<'ENV'
           APP_ENV=staging
           DATABASE_URL=postgresql://jays:jays@127.0.0.1:5432/jays
@@ -124,8 +127,12 @@ jobs:
           STORAGE_SIGNING_SECRET=local-dev-only-ci-storage-00000000000000
           PSP_WEBHOOK_SECRET=local-dev-only-ci-webhook
           API_URL=http://127.0.0.1:3000/v1
+          SIGNUP_MODE=allowlist
+          SIGNUP_ALLOWLIST=@example.test
+          DOCUMENT_UPLOADS=disabled
           ENV
           echo "METRICS_TOKEN=$metrics_token" >> ci.env
+          echo "STAGING_ACCESS_TOKEN=$staging_token" >> ci.env
           docker run --rm --network host --env-file ci.env -w /app/packages/db jays-api:ci node dist/cli.js
           docker run -d --name api --network host --env-file ci.env jays-api:ci
           docker run -d --name worker --network host --env-file ci.env jays-worker:ci
@@ -137,6 +144,11 @@ jobs:
           curl -fs http://127.0.0.1:3000/v1/health/ready
           curl -fs -H "authorization: Bearer $metrics_token" http://127.0.0.1:3000/v1/metrics | grep -q '^jays_outbox_pending '
           curl -fs -o /dev/null http://127.0.0.1:3001/sign-in
+          # Private staging (ADR-0035): API routes need the staging access header, and nothing is indexable.
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/v1/emirates)" = 401
+          curl -fs -H "x-staging-access: $staging_token" -o /dev/null http://127.0.0.1:3000/v1/emirates
+          curl -fsI http://127.0.0.1:3000/v1/health | grep -qi '^x-robots-tag: noindex'
+          curl -fs http://127.0.0.1:3000/robots.txt | grep -q 'Disallow: /'
           test "$(docker inspect -f '{{.State.Running}}' worker)" = true
       - name: Vercel mode (no Redis, timers off, cron route) and portal security headers
         run: |
