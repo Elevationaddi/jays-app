@@ -136,6 +136,7 @@ Acceptance coverage: T07, T08, T09, T13 (services), T14 and T06 (mock, bookings)
 
 - RTL and accessibility audit, concurrency and security tests, load test (p95 read < 500 ms target), backups with tested restore, observability (request IDs, error rates, p95, queue lag, expired holds, reconciliation mismatches, alerts), staging environment and pilot.
 - Tests: T11, T12, full regression of T01–T16.
+- Status (2026-11-28): hardening, observability, backups and a staging stack are built ([ADR-0017](adr/0017-hardening-observability-backups.md)). Hosting a staging server and running the pilot wait on hosting and pilot-scope decisions.
 
 ## Founder decisions that block later phases
 

@@ -13,3 +13,7 @@ next-env.d.ts
 # Local Redis snapshot
 dump.rdb
 .local-storage/
+
+# Staging secrets (infra/staging)
+infra/staging/staging.env
+infra/staging/postgres_password.txt

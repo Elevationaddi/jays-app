@@ -519,6 +519,59 @@ export class NotificationsService {
     return this.templates();
   }
 
+  /** The most recent events that gave up, newest first, for the admin console. */
+  async failedEvents(limit = 50) {
+    const rows = await this.db
+      .selectFrom('outbox')
+      .select(['id', 'event_type', 'attempts', 'last_error', 'created_at', 'updated_at'])
+      .where('status', '=', 'failed')
+      .orderBy('updated_at', 'desc')
+      .limit(limit)
+      .execute();
+    return rows.map((r) => ({
+      id: r.id,
+      eventType: r.event_type,
+      attempts: r.attempts,
+      lastError: r.last_error ? r.last_error.slice(0, 500) : null,
+      createdAt: r.created_at.toISOString(),
+      updatedAt: r.updated_at.toISOString(),
+    }));
+  }
+
+  /**
+   * Puts a failed event back in the queue with fresh attempts. Deliveries already made are recorded
+   * per (event, user, channel), so the retry only sends what is still missing. Audited.
+   */
+  async retryFailed(adminId: string, outboxId: string, meta: RequestMeta) {
+    await this.db.transaction().execute(async (trx) => {
+      const row = await trx
+        .selectFrom('outbox')
+        .select(['status', 'event_type', 'attempts'])
+        .where('id', '=', outboxId)
+        .forUpdate()
+        .executeTakeFirst();
+      if (!row) throw new ApiError(404, 'NOT_FOUND', 'Not found.');
+      if (row.status !== 'failed') {
+        throw new ApiError(409, 'NOT_FAILED', 'Only a failed event can be retried.');
+      }
+      await trx
+        .updateTable('outbox')
+        .set({ status: 'pending', attempts: 0, available_at: this.clock.now() })
+        .where('id', '=', outboxId)
+        .execute();
+      await writeAudit(trx, {
+        actorType: 'admin',
+        actorId: adminId,
+        action: 'notification.retried',
+        targetType: 'outbox',
+        targetId: outboxId,
+        diff: { eventType: row.event_type, attemptsBefore: row.attempts },
+        requestId: meta.requestId,
+      });
+    });
+    return this.outboxHealth();
+  }
+
   async outboxHealth() {
     const r = await this.db
       .selectFrom('outbox')

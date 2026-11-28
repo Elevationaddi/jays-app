@@ -344,6 +344,17 @@ export const outboxHealthSchema = z.object({
   oldestPendingSeconds: z.number().int().nullable(),
 });
 
+/** An event that used every attempt. No payload: it can hold personal data. */
+export const failedOutboxEventSchema = z.object({
+  id: z.uuid(),
+  eventType: z.string(),
+  attempts: z.number().int(),
+  lastError: z.string().nullable(),
+  createdAt: isoDateTime,
+  updatedAt: isoDateTime,
+});
+export type FailedOutboxEvent = z.infer<typeof failedOutboxEventSchema>;
+
 // Dashboards and exports ----------------------------------------------------------------------------
 
 export const dashboardRangeSchema = z.strictObject({

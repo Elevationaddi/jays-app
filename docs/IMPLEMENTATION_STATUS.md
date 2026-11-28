@@ -10,12 +10,71 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 | 3     | Catalog, inventory, cart, multi-seller checkout (mock PSP)   | Merged (PR #4)                        |
 | 4     | Services, staff, availability, booking holds                 | Merged (PR #5)                        |
 | 5     | Ledger, refunds, payouts, reconciliation (mock PSP)          | Merged (PR #6); real PSP needs D3, D5 |
-| 6     | Fulfillment, reviews, support, notifications, dashboards     | In review; D7, D12, D14 assumed       |
-| 7     | RTL/accessibility, hardening, backups, observability, pilot  | Not started                           |
+| 6     | Fulfillment, reviews, support, notifications, dashboards     | Merged (PR #7); D7, D12, D14 assumed  |
+| 7     | RTL/accessibility, hardening, backups, observability, pilot  | In review; pilot waits on decisions   |
+
+## Phase 7: Hardening, observability, backups and staging
+
+Date: 2026-11-28. Branch: `claude/project-thread-qyds1l`. Decision: [ADR-0017](adr/0017-hardening-observability-backups.md). Hosting, alerting destination, backup storage and pilot scope are not decided, so staging is ready to deploy but no pilot was started.
+
+### Delivered
+
+- **Observability:**
+  - Token-protected `GET /v1/metrics` in Prometheus format: request counts, a latency histogram labelled by route pattern, outbox lag, stuck holds and reservations, payments needing attention, reconciliation mismatches, overdue tickets.
+  - `METRICS_TOKEN` is required in production.
+  - 11 alert rules and a runbook with a section for each alert.
+- **Failed notifications:** admins can list events that used every attempt and queue them again, audited (`GET /admin/notifications/failed`, `POST /admin/notifications/failed/:id/retry`). The admin console Notifications page shows them in English and Arabic.
+- **Backups (T12):**
+  - Encrypted `pg_dump` with a checksum, and a restore that checks it and runs in one transaction.
+  - A restore drill that compares every table's row count, the migrations, the ledger balance and the append-only triggers. CI runs it on every push.
+- **Concurrency tests:** ship against cancel, double-submitted fulfillment steps, parallel return requests and parallel reviews. One request wins, and stock and refunds match the winner.
+- **T14:** unit tests for Dubai midnight boundaries in dashboard ranges.
+- **Accessibility (T11):** an axe-core audit script for both portals in English and Arabic.
+- **Load:** a read load test script with a p95 target.
+- **Staging:**
+  - A `Dockerfile` with four targets.
+  - A single-host staging compose (migrate first, mock adapters, ports bound to localhost behind TLS).
+  - A CI job that builds every image, migrates, starts the stack and checks readiness and metrics.
+- **Screenshots:** [`docs/screenshots/phase-7/`](screenshots/phase-7/) shows failed notifications in English and Arabic, and the result of a retry.
+
+### Verified locally (2026-11-28)
+
+| Command                           | Result                                                                                                                     |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm format:check`               | pass                                                                                                                       |
+| `pnpm lint`                       | pass                                                                                                                       |
+| `pnpm typecheck`                  | pass                                                                                                                       |
+| `pnpm test`                       | pass, 228 unit tests                                                                                                       |
+| `pnpm build`                      | pass                                                                                                                       |
+| `pnpm openapi`                    | 160 paths; committed with the code                                                                                         |
+| `pnpm test:integration`           | pass, 160 tests (22 database, 138 API against Postgres and Redis)                                                          |
+| `infra/backup/drill.sh`           | pass: 69 tables match, migrations match, ledger balanced, append-only triggers present                                     |
+| `node scripts/a11y/audit.mjs`     | 74 page views (business portal and admin console, English and Arabic), 0 violations of any severity                        |
+| `node scripts/load/read-load.mjs` | 50 users for 30 s: 16,111 requests at 536 req/s, p95 218 ms (target 500 ms), slowest is availability at 264 ms, 0 failures |
+
+The Docker images could not be built in this environment (no Docker daemon); CI builds and starts them.
+
+Full regression of T01 to T16 is the API integration suite, which runs in CI on every push:
+
+- T01 to T09: earlier phases.
+- T10 and T12: phase 6 and this phase.
+- T13 to T16: phases 3 to 5, plus the T14 unit tests above.
+
+### Known limitations and follow-ups
+
+- The load test ran on seed-sized data on one machine. Repeat it on staging with pilot-sized data.
+- The customer mobile app has no accessibility audit yet. It needs a device or simulator pass with VoiceOver and TalkBack. The app also still lacks its after-sales screens (phase 6 follow-up).
+- The images include development dependencies. Slimming them is an optimisation, not a blocker.
+- No security scanner beyond the CI secret scan and dependency audit (for example, OWASP ZAP against staging). Run one once staging is hosted.
+- Production cannot start until real payment, email/SMS, storage and malware-scanning adapters exist. Those depend on D3, D5 and D14.
+
+### Rollback
+
+No migration. Reverting the PR removes the metrics endpoint, the retry endpoints and the scripts. `METRICS_TOKEN` then becomes an unknown variable, which the environment schema ignores.
 
 ## Phase 6: Fulfillment, returns, reviews, support, notifications, dashboards and exports
 
-Date: 2026-11-28. Branch: `claude/project-thread-qyds1l`. Decision: [ADR-0016](adr/0016-fulfillment-returns-reviews-support-notifications.md). The return window (D7), support hours (D12) and email/SMS providers (D14) are assumptions until the founders decide.
+Date: 2026-11-28. Branch: `claude/project-thread-qyds1l`. Merged in PR #7. Decision: [ADR-0016](adr/0016-fulfillment-returns-reviews-support-notifications.md). The return window (D7), support hours (D12) and email/SMS providers (D14) are assumptions until the founders decide.
 
 ### Delivered
 

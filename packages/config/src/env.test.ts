@@ -77,6 +77,7 @@ describe('apiEnvSchema', () => {
         'MOCK_PAYMENT_OUTCOMES',
         'MAPS_KEY',
         'EMAIL_KEY',
+        'METRICS_TOKEN',
         'JWT_KEYS',
         'PSP_WEBHOOK_SECRET',
         'OTP_SECRET',

@@ -1,0 +1,13 @@
+.git
+**/node_modules
+**/dist
+**/.next
+**/.expo
+**/.turbo
+**/.local-storage
+.env
+.env.*
+!.env.example
+backups
+docs/screenshots
+*.dump.enc

@@ -7,6 +7,7 @@ import { Logger } from 'nestjs-pino';
 import { AppModule, type AppModuleOptions } from './app.module.js';
 import { ErrorEnvelopeFilter } from './common/error.filter.js';
 import { ErrorEnvelopeDto } from './health/health.dto.js';
+import { HttpMetrics } from './observability/http-metrics.js';
 
 export const API_PREFIX = 'v1';
 
@@ -18,6 +19,7 @@ export async function createApp(options: AppModuleOptions): Promise<INestApplica
     rawBody: true,
   });
   app.useLogger(app.get(Logger));
+  app.use(app.get(HttpMetrics).middleware());
   app.use(helmet());
   // Client IPs feed the rate limiters; only trust X-Forwarded-For from configured proxies.
   app.getHttpAdapter().getInstance().set('trust proxy', options.env.TRUST_PROXY_HOPS);

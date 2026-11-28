@@ -114,6 +114,8 @@ export function errorMessageKey(code: string | undefined): MessageKey | null {
       return 'error.unknownPlaceholder';
     case 'NO_OPEN_REPORT':
       return 'error.noOpenReport';
+    case 'NOT_FAILED':
+      return 'error.notFailed';
     default:
       return 'common.error';
   }

@@ -1,0 +1,96 @@
+# Prometheus alert rules for the API (ADR-0017). Scrape GET /v1/metrics with
+# "authorization: Bearer $METRICS_TOKEN". Each alert links to its section in RUNBOOK.md.
+groups:
+  - name: jays-api
+    rules:
+      - alert: ApiDown
+        expr: up{job="jays-api"} == 0
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: The API has not answered a scrape for 2 minutes.
+          runbook: infra/observability/RUNBOOK.md#apidown
+
+      - alert: ApiHighErrorRate
+        expr: |
+          sum(rate(jays_http_requests_total{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(jays_http_requests_total[5m])), 1e-9) > 0.02
+        for: 10m
+        labels: { severity: page }
+        annotations:
+          summary: More than 2% of requests fail with a 5xx.
+          runbook: infra/observability/RUNBOOK.md#apihigherrorrate
+
+      - alert: ApiSlowReads
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(jays_http_request_duration_seconds_bucket{method="GET",route!="/v1/metrics"}[10m]))
+          ) > 0.5
+        for: 15m
+        labels: { severity: ticket }
+        annotations:
+          summary: p95 read latency is above the 500 ms target.
+          runbook: infra/observability/RUNBOOK.md#apislowreads
+
+      - alert: NotificationQueueLagging
+        expr: jays_outbox_oldest_pending_seconds > 300
+        for: 5m
+        labels: { severity: ticket }
+        annotations:
+          summary: A notification event has waited more than 5 minutes.
+          runbook: infra/observability/RUNBOOK.md#notificationqueuelagging
+
+      - alert: NotificationsFailed
+        expr: increase(jays_outbox_failed[1h]) > 0
+        labels: { severity: ticket }
+        annotations:
+          summary: Notification events gave up after all retries.
+          runbook: infra/observability/RUNBOOK.md#notificationsfailed
+
+      - alert: ExpiredHoldsNotReleased
+        expr: jays_booking_holds_stuck > 0 or jays_stock_reservations_stuck > 0
+        for: 5m
+        labels: { severity: page }
+        annotations:
+          summary: Expired booking holds or stock reservations are still blocking sales.
+          runbook: infra/observability/RUNBOOK.md#expiredholdsnotreleased
+
+      - alert: PaymentsNeedAttention
+        expr: jays_payments_needing_attention > 0 or jays_payout_exceptions > 0
+        for: 15m
+        labels: { severity: ticket }
+        annotations:
+          summary: Payments or payouts are flagged for operations.
+          runbook: infra/observability/RUNBOOK.md#paymentsneedattention
+
+      - alert: ReconciliationMismatch
+        expr: jays_reconciliation_open_mismatches > 0
+        for: 30m
+        labels: { severity: ticket }
+        annotations:
+          summary: Reconciliation found differences with the payment provider.
+          runbook: infra/observability/RUNBOOK.md#reconciliationmismatch
+
+      - alert: ReconciliationNotRunning
+        expr: time() - jays_reconciliation_last_success_timestamp_seconds > 2 * 86400
+        for: 1h
+        labels: { severity: ticket }
+        annotations:
+          summary: No reconciliation run has completed for 2 days.
+          runbook: infra/observability/RUNBOOK.md#reconciliationnotrunning
+
+      - alert: SupportTicketsOverdue
+        expr: jays_support_tickets_overdue > 0
+        for: 30m
+        labels: { severity: ticket }
+        annotations:
+          summary: Support tickets are past the first-reply SLA.
+          runbook: infra/observability/RUNBOOK.md#supportticketsoverdue
+
+      - alert: BackupMissing
+        expr: time() - jays_backup_last_success_timestamp_seconds > 26 * 3600
+        for: 30m
+        labels: { severity: page }
+        annotations:
+          summary: No successful database backup in the last 26 hours.
+          runbook: infra/observability/RUNBOOK.md#backupmissing
