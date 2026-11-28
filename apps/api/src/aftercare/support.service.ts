@@ -511,7 +511,7 @@ export class SupportService {
       });
       return row.id;
     });
-    const signed = this.storage.signUpload(key, {
+    const signed = await this.storage.signUpload(key, {
       contentType: body.contentType,
       maxBytes: body.sizeBytes,
       expiresAt,
@@ -621,7 +621,7 @@ export class SupportService {
         requestId: meta.requestId,
       });
     }
-    const signed = this.storage.signDownload(att.object_key, {
+    const signed = await this.storage.signDirectDownload(att.object_key, {
       expiresAt: addSeconds(this.clock.now(), DOWNLOAD_URL_TTL_SECONDS),
       fileName: att.file_name,
       disposition: 'attachment',

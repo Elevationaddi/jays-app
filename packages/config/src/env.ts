@@ -41,10 +41,13 @@ export const PUSH_PROVIDERS = ['none', 'mock', 'fcm'] as const;
  * itself, so uploads behave like signed S3 URLs locally. A real S3-compatible adapter is required
  * before production (ADR-0012), so production refuses `local`.
  */
-export const STORAGE_PROVIDERS = ['local'] as const;
+export const STORAGE_PROVIDERS = ['local', 'supabase'] as const;
 
-/** Malware scanners. The mock flags the EICAR test file; production refuses it (ADR-0012). */
-export const MALWARE_SCANNERS = ['mock'] as const;
+/**
+ * Malware scanners. The mock flags the EICAR test file; production refuses it (ADR-0012).
+ * `clamav` talks to a clamd the founder hosts (ADR-0032); production requires TLS to it.
+ */
+export const MALWARE_SCANNERS = ['mock', 'clamav'] as const;
 
 /**
  * Delivery-partner adapters (ADR-0029). `none`: businesses enter tracking themselves. `mock`
@@ -143,6 +146,12 @@ const apiShape = {
   /** Public base URL of this API (with /v1), used to build signed storage URLs. */
   API_PUBLIC_URL: z.url().default('http://localhost:3000/v1'),
   MALWARE_SCANNER: z.enum(MALWARE_SCANNERS).default('mock'),
+  CLAMAV_HOST: z.string().min(1).max(253).optional(),
+  CLAMAV_PORT: z.coerce.number().int().min(1).max(65535).default(3310),
+  CLAMAV_TLS: booleanFlag,
+  /** Supabase project URL and service role key (server only; never sent to a client). */
+  SUPABASE_URL: z.url().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(20).optional(),
   DELIVERY_PARTNER: z.enum(DELIVERY_PARTNERS).default('none'),
   PSP_PROVIDER: z.enum(PSP_PROVIDERS).default('mock'),
   PSP_API_KEY: z.string().min(1).optional(),
@@ -276,6 +285,33 @@ function withProductionGuards<T extends z.ZodRawShape>(shape: T) {
         path: ['PSP_API_KEY'],
         message: 'is required for a real payment provider',
       });
+    }
+    if (record['STORAGE_PROVIDER'] === 'supabase') {
+      for (const key of ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'] as const) {
+        if (!record[key]) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [key],
+            message: 'is required for Supabase storage',
+          });
+        }
+      }
+      const url = record['SUPABASE_URL'];
+      if (typeof url === 'string' && !url.startsWith('https://') && record['APP_ENV'] !== 'local') {
+        ctx.addIssue({ code: 'custom', path: ['SUPABASE_URL'], message: 'must be https://' });
+      }
+    }
+    if (record['MALWARE_SCANNER'] === 'clamav') {
+      if (!record['CLAMAV_HOST']) {
+        ctx.addIssue({ code: 'custom', path: ['CLAMAV_HOST'], message: 'is required for ClamAV' });
+      }
+      if (record['APP_ENV'] === 'production' && record['CLAMAV_TLS'] !== true) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['CLAMAV_TLS'],
+          message: 'must be true in production (files are sent to the scanner)',
+        });
+      }
     }
     if (record['NOTIFY_PROVIDER'] === 'resend') {
       for (const key of ['EMAIL_KEY', 'EMAIL_FROM'] as const) {

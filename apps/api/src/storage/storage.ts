@@ -1,3 +1,5 @@
+import type { StorageClaims } from './signed-urls.js';
+
 /**
  * Object storage behind an adapter (ADR-0012). Private verification documents live under
  * `private/`, images under `media/`. Clients never get storage credentials: they get short-lived
@@ -21,14 +23,27 @@ export interface StoredObject {
 }
 
 export interface ObjectStorage {
+  readonly name: 'local' | 'supabase';
+  /** A URL the client uploads to directly; the API never receives the file body. */
   signUpload(
     key: string,
     options: { contentType: string; maxBytes: number; expiresAt: Date },
-  ): SignedUpload;
+  ): Promise<SignedUpload>;
+  /**
+   * A URL served by the API's storage route (HMAC-signed, no network call), used for images so
+   * the CDN can cache them. Not for large files: serverless responses are size-limited.
+   */
   signDownload(
     key: string,
     options: { expiresAt: Date; fileName?: string; disposition: 'inline' | 'attachment' },
   ): SignedDownload;
+  /** A URL served by the storage provider itself, for private documents and attachments. */
+  signDirectDownload(
+    key: string,
+    options: { expiresAt: Date; fileName?: string; disposition: 'inline' | 'attachment' },
+  ): Promise<SignedDownload>;
+  /** Verifies a token of a URL from `signDownload` (or a local upload URL). */
+  verify(token: string, now: Date): StorageClaims | null;
   head(key: string): Promise<StoredObject | null>;
   /** Reads at most `maxBytes + 1` bytes, so callers can detect oversize objects cheaply. */
   read(key: string, maxBytes: number): Promise<Buffer>;

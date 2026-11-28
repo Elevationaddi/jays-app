@@ -17,7 +17,11 @@ export const DOCUMENT_MAX_BYTES = 10 * 1024 * 1024;
 
 export const IMAGE_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 export type ImageContentType = (typeof IMAGE_CONTENT_TYPES)[number];
-export const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+/**
+ * Images are served through the API's storage route so the CDN can cache them (ADR-0032), and a
+ * Vercel function response is limited to 4.5 MB, so images stay at 4 MB or less.
+ */
+export const IMAGE_MAX_BYTES = 4 * 1024 * 1024;
 
 export const MEDIA_PURPOSES = [
   'storefront_logo',

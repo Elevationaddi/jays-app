@@ -77,7 +77,17 @@ export async function verifyStoredUpload(
   if (!check.ok) {
     result = { ok: false, reason: check.reason };
   } else {
-    const scan = await scanner.scan(bytes);
+    let scan: Awaited<ReturnType<MalwareScanner['scan']>>;
+    try {
+      scan = await scanner.scan(bytes);
+    } catch {
+      // Fail closed: the object stays pending and unserved, and the client can try again.
+      throw new ApiError(
+        HttpStatus.SERVICE_UNAVAILABLE,
+        'SCANNER_UNAVAILABLE',
+        'We could not check the file just now. Try again in a few minutes.',
+      );
+    }
     result = scan.clean
       ? {
           ok: true,
