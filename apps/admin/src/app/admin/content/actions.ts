@@ -42,6 +42,18 @@ export async function setCategoryStatus(formData: FormData) {
   redirect('/admin/content?saved=1');
 }
 
+/** Switch a category off for customers without archiving it (D10, D11). */
+export async function setCategoryEnabled(formData: FormData) {
+  const id = text(formData, 'id');
+  if (!UUID.test(id)) redirect('/admin/content');
+  try {
+    await (await serverApi()).updateCategory(id, { enabled: text(formData, 'enabled') === 'on' });
+  } catch (error) {
+    fail(error);
+  }
+  redirect('/admin/content?saved=1');
+}
+
 export async function createBrand(formData: FormData) {
   try {
     await (

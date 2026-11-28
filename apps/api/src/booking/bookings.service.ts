@@ -15,6 +15,7 @@ import type {
   RescheduleRequest,
 } from '@jays/contracts';
 import type { Db } from '@jays/db';
+import { sql, type SqlBool } from 'kysely';
 
 type Localized = { en: string; ar: string };
 import {
@@ -146,11 +147,15 @@ export class BookingsService {
   async venue(businessId: string): Promise<PublicVenue> {
     const business = await this.visibleBusiness(this.db, businessId);
     if (!business) throw notFound();
+    // Branches in an emirate an admin switched off are not offered (D11).
     const branches = await this.db
       .selectFrom('branches')
       .selectAll()
       .where('business_id', '=', businessId)
       .where('status', '=', 'active')
+      .where('emirate_code', 'in', (eb) =>
+        eb.selectFrom('emirates').select('code').where('enabled', '=', true),
+      )
       .orderBy('created_at')
       .orderBy('id')
       .execute();
@@ -160,6 +165,7 @@ export class BookingsService {
       .selectAll()
       .where('business_id', '=', businessId)
       .where('status', '=', 'active')
+      .where(sql<SqlBool>`category_is_live(category_id)`)
       .orderBy('created_at')
       .orderBy('id')
       .execute();
@@ -280,6 +286,20 @@ export class BookingsService {
       .executeTakeFirst();
     if (!branch) throw notFound();
     if (requirePublic && !(await this.visibleBusiness(conn, branch.business_id))) throw notFound();
+    if (requirePublic) {
+      const emirate = await conn
+        .selectFrom('emirates')
+        .select('enabled')
+        .where('code', '=', branch.emirate_code)
+        .executeTakeFirst();
+      if (!emirate?.enabled) {
+        throw new ApiError(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'EMIRATE_NOT_AVAILABLE',
+          'Bookings are not open in this emirate yet.',
+        );
+      }
+    }
     const service = await conn
       .selectFrom('services as s')
       .innerJoin('branch_services as bs', (j) =>
@@ -299,6 +319,7 @@ export class BookingsService {
       ])
       .where('s.id', '=', serviceId)
       .where('s.status', '=', 'active')
+      .$if(requirePublic, (q) => q.where(sql<SqlBool>`category_is_live(s.category_id)`))
       .executeTakeFirst();
     if (!service) throw notFound();
     return { branch: branch as BranchRow, service: service as ServiceRow };

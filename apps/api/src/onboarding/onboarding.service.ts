@@ -37,7 +37,7 @@ import {
   OBJECT_STORAGE,
   type ObjectStorage,
 } from '../storage/storage.js';
-import { newObjectKey, verifyStoredUpload } from '../storage/uploads.js';
+import { newObjectKey, uploadFailure, verifyStoredUpload } from '../storage/uploads.js';
 import {
   legalProfile,
   loadBusinessRow,
@@ -63,43 +63,6 @@ const locked = (status: BusinessStatus) =>
       ? 'Your business is being reviewed. You can make changes once the review is finished.'
       : 'Verified business details can no longer be changed here. Contact support to update them.',
   );
-
-const uploadFailure = (reason: string) => {
-  switch (reason) {
-    case 'missing':
-      return new ApiError(
-        HttpStatus.CONFLICT,
-        'UPLOAD_MISSING',
-        'We did not receive the file. Upload it again.',
-      );
-    case 'malware':
-      return new ApiError(
-        HttpStatus.UNPROCESSABLE_ENTITY,
-        'FILE_INFECTED',
-        'This file failed our security scan and was deleted.',
-      );
-    case 'dimensions':
-      return new ApiError(
-        HttpStatus.UNPROCESSABLE_ENTITY,
-        'IMAGE_DIMENSIONS',
-        'The image size or shape is not allowed for this use.',
-      );
-    case 'too_large':
-      return new ApiError(
-        HttpStatus.UNPROCESSABLE_ENTITY,
-        'FILE_TOO_LARGE',
-        'The file is too large.',
-      );
-    case 'empty':
-      return new ApiError(HttpStatus.UNPROCESSABLE_ENTITY, 'FILE_EMPTY', 'The file is empty.');
-    default:
-      return new ApiError(
-        HttpStatus.UNPROCESSABLE_ENTITY,
-        'FILE_TYPE_MISMATCH',
-        'The file content does not match its type.',
-      );
-  }
-};
 
 /**
  * Merchant side of onboarding (docs/03-business.md): legal profile, private documents, merchant

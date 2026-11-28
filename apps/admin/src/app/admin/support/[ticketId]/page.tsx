@@ -5,7 +5,13 @@ import { ErrorAlert } from '../../../../components/ErrorAlert';
 import { Shell } from '../../../../components/Shell';
 import { requireAdmin } from '../../../../lib/admin';
 import { translator } from '../../../../lib/i18n';
-import { ticketAction, ticketMessage } from '../../aftercare-actions';
+import {
+  ticketAction,
+  ticketAttachment,
+  ticketEscalate,
+  ticketMessage,
+  ticketPriority,
+} from '../../aftercare-actions';
 
 /** One ticket: the conversation with internal notes, reply, note, assign and resolve. */
 export default async function TicketPage({
@@ -45,6 +51,10 @@ export default async function TicketPage({
         <Link href="/admin/support">{tr('admin.support.back')}</Link>
         <span className={`badge ticket-${t.status}`}>{tr(`ticketStatus.${t.status}`)}</span>
         {t.overdue ? <span className="badge failed">{tr('admin.support.overdue')}</span> : null}
+        <span className={`badge priority-${t.priority}`}>{tr(`ticketPriority.${t.priority}`)}</span>
+        {t.escalation ? (
+          <span className="badge failed">{tr(`ticketEscalation.${t.escalation}`)}</span>
+        ) : null}
       </p>
       <h1>{t.subject}</h1>
       <ErrorAlert locale={locale} code={query['error']} />
@@ -62,6 +72,27 @@ export default async function TicketPage({
               </li>
             ))}
           </ol>
+          {t.attachments.length ? (
+            <>
+              <h2>{tr('admin.support.attachments')}</h2>
+              <ul className="list">
+                {t.attachments.map((a) => (
+                  <li key={a.id}>
+                    <form action={ticketAttachment}>
+                      <input type="hidden" name="ticketId" value={t.id} />
+                      <input type="hidden" name="attachmentId" value={a.id} />
+                      <button className="btn ghost" type="submit">
+                        {a.fileName}
+                      </button>{' '}
+                      <span className="muted">
+                        {Math.ceil(a.sizeBytes / 1024)} KB · {when.format(new Date(a.createdAt))}
+                      </span>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
           <form action={ticketMessage} className="stack">
             <input type="hidden" name="ticketId" value={t.id} />
             <div className="field">
@@ -95,6 +126,8 @@ export default async function TicketPage({
             <dd>{t.assignedTo?.name ?? '—'}</dd>
             <dt>{tr('admin.support.due')}</dt>
             <dd>{when.format(new Date(t.slaDueAt))}</dd>
+            <dt>{tr('admin.support.firstResponse')}</dt>
+            <dd>{t.firstResponseAt ? when.format(new Date(t.firstResponseAt)) : '—'}</dd>
           </dl>
           {!resolved ? (
             <div className="stack">
@@ -118,6 +151,46 @@ export default async function TicketPage({
                 <button className="btn" name="action" value="resolve">
                   {tr('admin.support.resolve')}
                 </button>
+              </form>
+              <form action={ticketPriority} className="stack">
+                <input type="hidden" name="ticketId" value={t.id} />
+                <div className="field">
+                  <label htmlFor="priority">{tr('admin.support.priority')}</label>
+                  <select id="priority" name="priority" defaultValue={t.priority}>
+                    {(['low', 'normal', 'high', 'urgent'] as const).map((p) => (
+                      <option key={p} value={p}>
+                        {tr(`ticketPriority.${p}`)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button className="btn secondary">{tr('admin.support.setPriority')}</button>
+              </form>
+              <form action={ticketEscalate} className="stack">
+                <input type="hidden" name="ticketId" value={t.id} />
+                <div className="field">
+                  <label htmlFor="escalation">{tr('admin.support.escalate')}</label>
+                  <select id="escalation" name="escalation" defaultValue="payment">
+                    {(['payment', 'security', 'operations'] as const).map((e) => (
+                      <option key={e} value={e}>
+                        {tr(`ticketEscalation.${e}`)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label htmlFor="reason">{tr('admin.support.escalateReason')}</label>
+                  <textarea
+                    id="reason"
+                    name="reason"
+                    required
+                    minLength={3}
+                    maxLength={1000}
+                    rows={2}
+                  />
+                </div>
+                <p className="muted">{tr('admin.support.escalateHint')}</p>
+                <button className="btn secondary">{tr('admin.support.escalate')}</button>
               </form>
             </div>
           ) : null}

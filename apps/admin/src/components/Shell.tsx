@@ -25,6 +25,7 @@ export function Shell({
     | 'support'
     | 'notifications'
     | 'content'
+    | 'operations'
     | 'security';
   children: ReactNode;
 }) {
@@ -94,6 +95,12 @@ export function Shell({
       href: '/admin/content',
       label: t(locale, 'admin.nav.content'),
       show: admin.capabilities.includes('taxonomy.manage'),
+    },
+    {
+      key: 'operations',
+      href: '/admin/operations',
+      label: t(locale, 'admin.nav.operations'),
+      show: admin.capabilities.includes('operations.manage'),
     },
     {
       key: 'security',

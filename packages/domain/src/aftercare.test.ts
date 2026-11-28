@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  escalatedPriority,
+  initialTicketPriority,
+  supportOpenAt,
   canReview,
   customerCanCancel,
   fulfillmentTransition,
@@ -90,5 +93,24 @@ describe('notification templates', () => {
     expect(retryDelayMs(1)).toBe(30_000);
     expect(retryDelayMs(2)).toBe(60_000);
     expect(retryDelayMs(20)).toBe(3_600_000);
+  });
+});
+
+describe('support hours and priorities (D12)', () => {
+  it('is open 9 AM to 9 PM UAE time', () => {
+    expect(supportOpenAt(new Date('2026-11-28T04:59:00Z'))).toBe(false); // 08:59 Dubai
+    expect(supportOpenAt(new Date('2026-11-28T05:00:00Z'))).toBe(true); // 09:00
+    expect(supportOpenAt(new Date('2026-11-28T16:59:00Z'))).toBe(true); // 20:59
+    expect(supportOpenAt(new Date('2026-11-28T17:00:00Z'))).toBe(false); // 21:00
+    expect(supportOpenAt(new Date('2026-11-28T21:30:00Z'))).toBe(false); // 01:30 next day
+  });
+
+  it('starts payment tickets high and makes payment and security escalations urgent', () => {
+    expect(initialTicketPriority('payment')).toBe('high');
+    expect(initialTicketPriority('order')).toBe('normal');
+    expect(escalatedPriority('payment', 'low')).toBe('urgent');
+    expect(escalatedPriority('security', 'normal')).toBe('urgent');
+    expect(escalatedPriority('operations', 'normal')).toBe('high');
+    expect(escalatedPriority('operations', 'urgent')).toBe('urgent');
   });
 });

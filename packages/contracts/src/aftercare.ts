@@ -237,6 +237,27 @@ export const ticketStatusSchema = z.enum([
   'reopened',
 ]);
 export const ticketTypeSchema = z.enum(['order', 'booking', 'payment', 'account', 'other']);
+export const ticketPrioritySchema = z.enum(['low', 'normal', 'high', 'urgent']);
+export const ticketEscalationSchema = z.enum(['payment', 'security', 'operations']);
+
+/** A scanned file on a ticket (PDF, JPEG or PNG). Only clean files are listed. */
+export const ticketAttachmentSchema = z.object({
+  id: z.uuid(),
+  fileName: z.string(),
+  contentType: z.string(),
+  sizeBytes: z.number().int(),
+  author: z.enum(['customer', 'support']),
+  createdAt: isoDateTime,
+});
+export const ticketAttachmentUploadSchema = z.strictObject({
+  fileName: z.string().trim().min(1).max(200),
+  contentType: z.enum(['application/pdf', 'image/jpeg', 'image/png']),
+  sizeBytes: z
+    .number()
+    .int()
+    .min(1)
+    .max(10 * 1024 * 1024),
+});
 
 export const ticketInputSchema = z.strictObject({
   type: ticketTypeSchema,
@@ -264,13 +285,15 @@ export const ticketSchema = z.object({
   bookingId: z.uuid().nullable(),
   subject: z.string(),
   status: ticketStatusSchema,
+  priority: ticketPrioritySchema,
   createdAt: isoDateTime,
   lastMessageAt: isoDateTime,
   messages: z.array(ticketMessageSchema),
+  attachments: z.array(ticketAttachmentSchema),
 });
 export type TicketView = z.infer<typeof ticketSchema>;
 
-export const ticketListItemSchema = ticketSchema.omit({ messages: true });
+export const ticketListItemSchema = ticketSchema.omit({ messages: true, attachments: true });
 export const ticketListQuerySchema = z.strictObject({ ...cursorQuery });
 
 export const adminTicketSchema = ticketSchema.extend({
@@ -278,12 +301,19 @@ export const adminTicketSchema = ticketSchema.extend({
   assignedTo: actor,
   slaDueAt: isoDateTime,
   overdue: z.boolean(),
+  escalation: ticketEscalationSchema.nullable(),
+  escalatedAt: isoDateTime.nullable(),
+  /** When support first replied to the customer (not internal notes). */
+  firstResponseAt: isoDateTime.nullable(),
 });
 export type AdminTicketView = z.infer<typeof adminTicketSchema>;
-export const adminTicketListItemSchema = adminTicketSchema.omit({ messages: true });
+export const adminTicketListItemSchema = adminTicketSchema.omit({
+  messages: true,
+  attachments: true,
+});
 
 export const adminTicketListQuerySchema = z.strictObject({
-  queue: z.enum(['open', 'mine', 'awaiting_reply', 'resolved', 'all']).default('open'),
+  queue: z.enum(['open', 'mine', 'awaiting_reply', 'escalated', 'resolved', 'all']).default('open'),
   ...cursorQuery,
 });
 export type AdminTicketListQuery = z.infer<typeof adminTicketListQuerySchema>;
@@ -293,9 +323,17 @@ export const adminTicketMessageSchema = z.strictObject({
   body: z.string().trim().min(1).max(5000),
   internal: z.boolean().default(false),
 });
-export const adminTicketActionSchema = z.strictObject({
-  action: z.enum(['assign_to_me', 'unassign', 'resolve']),
-});
+export const adminTicketActionSchema = z.discriminatedUnion('action', [
+  z.strictObject({ action: z.enum(['assign_to_me', 'unassign', 'resolve']) }),
+  z.strictObject({ action: z.literal('set_priority'), priority: ticketPrioritySchema }),
+  /** Payment and security incidents follow their own procedure and become urgent (D12). */
+  z.strictObject({
+    action: z.literal('escalate'),
+    escalation: ticketEscalationSchema,
+    reason: z.string().trim().min(3).max(1000),
+  }),
+]);
+export type AdminTicketAction = z.infer<typeof adminTicketActionSchema>;
 
 // Notifications -------------------------------------------------------------------------------------
 

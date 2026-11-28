@@ -23,7 +23,11 @@ import {
   reviewInputSchema,
   reviewListQuerySchema,
   reviewSummarySchema,
+  ticketAttachmentUploadSchema,
   ticketInputSchema,
+  signedUrlSchema,
+  supportInfoSchema,
+  uploadTicketSchema,
   ticketListItemSchema,
   ticketListQuerySchema,
   ticketReplySchema,
@@ -37,6 +41,8 @@ import {
 import type { Request } from 'express';
 import type { z } from 'zod';
 import { CurrentUser, UserAuthGuard, type UserPrincipal } from '../auth/guards.js';
+import { SUPPORT_HOURS, supportOpenAt, TICKET_SLA_HOURS } from '@jays/domain';
+import { CLOCK, type Clock } from '../common/clock.js';
 import { UuidParam } from '../common/params.js';
 import { requestMeta } from '../common/request-context.js';
 import {
@@ -176,6 +182,61 @@ export class CustomerAftercareController {
     return this.reviews.mine(user.userId, q);
   }
 
+  @Post('support/tickets/:ticketId/attachments')
+  @idParam('ticketId')
+  @ApiOperation({
+    summary: 'Start uploading a file to my ticket (PDF, JPEG or PNG, up to 10 MB, 5 per ticket)',
+  })
+  @ApiZodBody(ticketAttachmentUploadSchema)
+  @ApiZodResponse(201, uploadTicketSchema, 'A signed upload link.')
+  @ApiErrors(400, 401, 404, 409, 429)
+  attachmentUpload(
+    @CurrentUser() user: UserPrincipal,
+    @UuidParam('ticketId') id: string,
+    @ZodBody(ticketAttachmentUploadSchema) body: z.infer<typeof ticketAttachmentUploadSchema>,
+    @Req() req: Request,
+  ) {
+    return this.support.createAttachmentUpload(user.userId, id, body, requestMeta(req));
+  }
+
+  @Post('support/tickets/:ticketId/attachments/:attachmentId/complete')
+  @HttpCode(HttpStatus.OK)
+  @idParam('ticketId')
+  @idParam('attachmentId')
+  @ApiOperation({
+    summary: 'Finish an upload: the type is checked and the file scanned before it is attached',
+  })
+  @ApiZodResponse(200, ticketSchema, 'The ticket with the file.')
+  @ApiErrors(401, 404, 409, 422)
+  attachmentComplete(
+    @CurrentUser() user: UserPrincipal,
+    @UuidParam('ticketId') id: string,
+    @UuidParam('attachmentId') attachmentId: string,
+    @Req() req: Request,
+  ) {
+    return this.support.completeAttachment(user.userId, id, attachmentId, requestMeta(req));
+  }
+
+  @Get('support/tickets/:ticketId/attachments/:attachmentId/download')
+  @idParam('ticketId')
+  @idParam('attachmentId')
+  @ApiOperation({ summary: 'A five-minute download link for a file on my ticket' })
+  @ApiZodResponse(200, signedUrlSchema, 'The link.')
+  @ApiErrors(401, 404)
+  attachmentDownload(
+    @CurrentUser() user: UserPrincipal,
+    @UuidParam('ticketId') id: string,
+    @UuidParam('attachmentId') attachmentId: string,
+    @Req() req: Request,
+  ) {
+    return this.support.attachmentDownload(
+      { userId: user.userId },
+      id,
+      attachmentId,
+      requestMeta(req),
+    );
+  }
+
   @Post('support/tickets')
   @ApiOperation({ summary: 'Contact support about an order, a booking, a payment or my account' })
   @ApiZodBody(ticketInputSchema)
@@ -245,5 +306,25 @@ export class CustomerAftercareController {
     @ZodBody(markNotificationsReadSchema) body: z.infer<typeof markNotificationsReadSchema>,
   ) {
     return this.notifications.markRead(user.userId, body.ids);
+  }
+}
+
+/** Support hours and the first-reply target, shown before a customer writes (D12). */
+@ApiTags('support')
+@Controller('support')
+export class SupportInfoController {
+  constructor(@Inject(CLOCK) private readonly clock: Clock) {}
+
+  @Get('info')
+  @ApiOperation({ summary: 'Support hours (proposed 9 AM to 9 PM UAE time) and response target' })
+  @ApiZodResponse(200, supportInfoSchema, 'Support hours.')
+  info() {
+    const now = this.clock.now();
+    return {
+      hours: { ...SUPPORT_HOURS },
+      openNow: supportOpenAt(now),
+      firstResponseHours: TICKET_SLA_HOURS,
+      checkedAt: now.toISOString(),
+    };
   }
 }

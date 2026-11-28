@@ -25,3 +25,4 @@ Status values: **Accepted** (engineering decision, in force), **Proposed** (need
 | [0017](0017-hardening-observability-backups.md)                   | Hardening, observability, backups and staging                                 | Accepted |
 | [0018](0018-founder-decisions-2026-11-28.md)                      | Founder decisions D1–D15 (28 November 2026)                                   | Accepted |
 | [0019](0019-account-privacy-consent-deletion.md)                  | Account privacy, marketing consent and account deletion                       | Accepted |
+| [0020](0020-operations-controls.md)                               | Operations controls: categories, emirates and support                         | Accepted |

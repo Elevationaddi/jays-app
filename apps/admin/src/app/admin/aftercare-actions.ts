@@ -62,6 +62,69 @@ export async function ticketAction(f: FormData) {
   redirect(`${path}?saved=1`);
 }
 
+export async function ticketPriority(f: FormData) {
+  const ticketId = id(f, 'ticketId', '/admin/support');
+  const path = `/admin/support/${ticketId}`;
+  const priority = str(f, 'priority');
+  if (!['low', 'normal', 'high', 'urgent'].includes(priority)) redirect(path);
+  try {
+    await (
+      await serverApi()
+    ).adminTicketAction(ticketId, {
+      action: 'set_priority',
+      priority: priority as 'low' | 'normal' | 'high' | 'urgent',
+    });
+  } catch (error) {
+    fail(path, error);
+  }
+  redirect(`${path}?saved=1`);
+}
+
+/** Payment and security incidents follow their own procedure (D12; RUNBOOK). */
+export async function ticketEscalate(f: FormData) {
+  const ticketId = id(f, 'ticketId', '/admin/support');
+  const path = `/admin/support/${ticketId}`;
+  const escalation = str(f, 'escalation');
+  if (!['payment', 'security', 'operations'].includes(escalation)) redirect(path);
+  try {
+    await (
+      await serverApi()
+    ).adminTicketAction(ticketId, {
+      action: 'escalate',
+      escalation: escalation as 'payment' | 'security' | 'operations',
+      reason: str(f, 'reason'),
+    });
+  } catch (error) {
+    fail(path, error);
+  }
+  redirect(`${path}?saved=1`);
+}
+
+/** Opens a five-minute link to a scanned attachment (audited). */
+export async function ticketAttachment(f: FormData) {
+  const ticketId = id(f, 'ticketId', '/admin/support');
+  const attachmentId = id(f, 'attachmentId', `/admin/support/${ticketId}`);
+  let url: string;
+  try {
+    url = (await (await serverApi()).adminTicketAttachment(ticketId, attachmentId)).url;
+  } catch (error) {
+    fail(`/admin/support/${ticketId}`, error);
+  }
+  redirect(url);
+}
+
+export async function setEmirate(f: FormData) {
+  const path = '/admin/operations';
+  const code = str(f, 'code');
+  if (!/^[A-Z]{3}$/.test(code)) redirect(path);
+  try {
+    await (await serverApi()).adminSetEmirate(code, str(f, 'enabled') === 'on');
+  } catch (error) {
+    fail(path, error);
+  }
+  redirect(`${path}?saved=1`);
+}
+
 export async function saveTemplate(f: FormData) {
   const path = '/admin/notifications';
   const locale = str(f, 'locale');

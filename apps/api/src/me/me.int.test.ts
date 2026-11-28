@@ -1,6 +1,15 @@
 import { addressSchema, emirateListSchema, meSchema, pageSchema } from '@jays/contracts';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { bearer, type Harness, signUp, startHarness } from '../testing/harness.js';
+import { adminEmirateListSchema } from '@jays/contracts';
+import { approvedVenue, dubaiDay, holdRequest } from '../testing/booking.js';
+import {
+  adminLogin,
+  bearer,
+  type Harness,
+  provisionAdmin,
+  signUp,
+  startHarness,
+} from '../testing/harness.js';
 
 let h: Harness;
 beforeAll(async () => {
@@ -83,6 +92,78 @@ describe('profile', () => {
     } finally {
       await h.db.updateTable('emirates').set({ enabled: true }).where('code', '=', 'FUJ').execute();
     }
+  });
+});
+
+// Emirate switches live here, next to the other FUJ test, because files run in parallel and the
+// public emirate list is shared.
+describe('operations by emirate (D11)', () => {
+  it('lets operations admins switch an emirate off, which stops bookings and hides branches there', async () => {
+    const ops = bearer(await adminLogin(h, await provisionAdmin(h, ['operations'])));
+    const finance = bearer(await adminLogin(h, await provisionAdmin(h, ['finance'])));
+    await h.http().get('/v1/admin/operations/emirates').set('Authorization', finance).expect(403);
+    const v = await approvedVenue(h);
+    await h.db
+      .updateTable('branches')
+      .set({ emirate_code: 'FUJ' })
+      .where('id', '=', v.branchId)
+      .execute();
+    const customer = await signUp(h);
+    const fujAddress = await h
+      .http()
+      .post('/v1/me/addresses')
+      .set('Authorization', bearer(customer))
+      .send({ ...address, emirate: 'FUJ' })
+      .expect(201);
+    try {
+      const res = await h
+        .http()
+        .patch('/v1/admin/operations/emirates/FUJ')
+        .set('Authorization', ops)
+        .send({ enabled: false })
+        .expect(200);
+      const fuj = adminEmirateListSchema.parse(res.body).items.find((e) => e.code === 'FUJ');
+      expect(fuj).toMatchObject({ enabled: false, branches: expect.any(Number) });
+      expect(fuj!.branches).toBeGreaterThanOrEqual(1);
+
+      const venue = await h.http().get(`/v1/venues/${v.businessId}`).expect(200);
+      expect(venue.body.branches).toEqual([]);
+      const hold = await holdRequest(h, customer, {
+        branchId: v.branchId,
+        serviceId: v.serviceId,
+        startAt: dubaiDay(h, 2).at('11:00'),
+      });
+      expect(hold.status).toBe(422);
+      expect(hold.body.error.code).toBe('EMIRATE_NOT_AVAILABLE');
+      // No new deliveries to an address already saved there.
+      const quote = await h
+        .http()
+        .post('/v1/checkout/quote')
+        .set('Authorization', bearer(customer))
+        .send({ addressId: fujAddress.body.id })
+        .expect(422);
+      expect(quote.body.error.code).toBe('EMIRATE_NOT_AVAILABLE');
+      await h
+        .http()
+        .patch('/v1/admin/operations/emirates/XX')
+        .set('Authorization', ops)
+        .send({ enabled: true })
+        .expect(400);
+      const audit = await h.db
+        .selectFrom('audit_logs')
+        .select('action')
+        .where('action', '=', 'emirate.disabled')
+        .execute();
+      expect(audit.length).toBeGreaterThanOrEqual(1);
+    } finally {
+      await h.db.updateTable('emirates').set({ enabled: true }).where('code', '=', 'FUJ').execute();
+    }
+    const again = await holdRequest(h, customer, {
+      branchId: v.branchId,
+      serviceId: v.serviceId,
+      startAt: dubaiDay(h, 2).at('11:00'),
+    });
+    expect(again.status).toBe(201);
   });
 });
 

@@ -17,6 +17,21 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 
 Founder decisions: [ADR-0018](adr/0018-founder-decisions-2026-11-28.md). Phase 8 ships as slices. Each slice is its own PR, merged once CI passes.
 
+### 8.3 Operations controls (D10, D11, D12)
+
+Decision: [ADR-0020](adr/0020-operations-controls.md). Support hours and the 24-hour target follow D12. The Abu Dhabi pilot is proposed and not started.
+
+- **Categories:** the D10 lists (renamed and new categories, no medical services). Admins switch a category on or off. A switched-off category hides its subcategories, products and services from customers and stops new bookings and purchases. Changes are audited.
+- **Emirates:** a new Operations page lets operations admins switch an emirate on or off. When it is off, its branches are hidden, and new bookings, addresses and checkout quotes there are refused. Existing orders and appointments carry on.
+- **Support:**
+  - Priorities, with payment tickets starting high.
+  - Escalation for payment, security and operations incidents: urgent, with a private reason and an "Escalated" queue. The procedure is in the runbook.
+  - First reply time recorded.
+  - Published hours (09:00–21:00 UAE time) shown in the customer app.
+- **Attachments:** customers attach PDF, JPEG or PNG files (up to 5 per ticket, 10 MB each). Each file's type is checked and it is scanned for malware before anyone can open it. Only the customer and support can download files, and admin downloads are audited.
+- **Screens:** see [`docs/screenshots/phase-8/`](screenshots/phase-8/): admin Operations, the escalated queue, the ticket page and category switches (`admin-13` to `admin-16`), and customer support hours and attachments (`customer-13`, `customer-14`), in English and Arabic.
+- **API:** migration 0009. 7 new paths (172 in total): emirate switches, support info, and ticket attachment upload, completion and download (customer and admin).
+
 ### 8.2 Account and privacy (D14, D15)
 
 Decision: [ADR-0019](adr/0019-account-privacy-consent-deletion.md). Consent wording, the 14-day grace period and the retention list are proposed, pending legal approval.

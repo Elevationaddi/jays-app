@@ -4,7 +4,7 @@ import { requireAdmin } from '../../../lib/admin';
 import { translator } from '../../../lib/i18n';
 
 type Search = Promise<Record<string, string | undefined>>;
-const QUEUES = ['open', 'mine', 'awaiting_reply', 'resolved', 'all'] as const;
+const QUEUES = ['open', 'mine', 'awaiting_reply', 'escalated', 'resolved', 'all'] as const;
 
 /** The support queue (docs/04-admin.md, /admin/support) with first-reply SLA due times. */
 export default async function SupportPage({ searchParams }: { searchParams: Search }) {
@@ -55,6 +55,7 @@ export default async function SupportPage({ searchParams }: { searchParams: Sear
               <tr>
                 <th>{tr('admin.support.subject')}</th>
                 <th>{tr('admin.support.type')}</th>
+                <th>{tr('admin.support.priority')}</th>
                 <th>{tr('admin.support.status')}</th>
                 <th>{tr('admin.support.customer')}</th>
                 <th>{tr('admin.support.assignee')}</th>
@@ -68,6 +69,14 @@ export default async function SupportPage({ searchParams }: { searchParams: Sear
                     <Link href={`/admin/support/${t.id}`}>{t.subject}</Link>
                   </td>
                   <td>{tr(`ticketType.${t.type}`)}</td>
+                  <td>
+                    <span className={`badge priority-${t.priority}`}>
+                      {tr(`ticketPriority.${t.priority}`)}
+                    </span>
+                    {t.escalation ? (
+                      <span className="badge failed">{tr(`ticketEscalation.${t.escalation}`)}</span>
+                    ) : null}
+                  </td>
                   <td>
                     <span className={`badge ticket-${t.status}`}>
                       {tr(`ticketStatus.${t.status}`)}

@@ -7,6 +7,7 @@ import { BusinessAftercareController } from './aftercare/business-aftercare.cont
 import {
   CustomerAftercareController,
   PublicReviewsController,
+  SupportInfoController,
 } from './aftercare/customer-aftercare.controller.js';
 import { DashboardsService } from './aftercare/dashboards.service.js';
 import { ExportsService } from './aftercare/exports.service.js';
@@ -100,6 +101,8 @@ import { Infrastructure } from './health/infrastructure.js';
 import { MeController } from './me/me.controller.js';
 import { PrivacyController, UnsubscribeController } from './privacy/privacy.controller.js';
 import { PrivacyService } from './privacy/privacy.service.js';
+import { AdminOperationsController } from './operations/operations.controller.js';
+import { OperationsService } from './operations/operations.service.js';
 import { HttpMetrics } from './observability/http-metrics.js';
 import { MetricsController } from './observability/metrics.controller.js';
 import { MeService } from './me/me.service.js';
@@ -179,6 +182,7 @@ export class AppModule {
         MeController,
         PrivacyController,
         UnsubscribeController,
+        AdminOperationsController,
         BusinessesController,
         AdminAuthController,
         AdminController,
@@ -195,6 +199,7 @@ export class AppModule {
         BusinessFinanceController,
         AdminFinanceController,
         PublicReviewsController,
+        SupportInfoController,
         CustomerAftercareController,
         BusinessAftercareController,
         AdminAftercareController,
@@ -244,6 +249,7 @@ export class AppModule {
         AuthService,
         MeService,
         PrivacyService,
+        OperationsService,
         BusinessesService,
         AdminService,
         OnboardingService,

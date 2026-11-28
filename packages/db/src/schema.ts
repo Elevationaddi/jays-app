@@ -315,6 +315,8 @@ export interface CategoriesTable {
   status: Generated<'active' | 'archived'>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+  /** Switched off by an admin without archiving (migration 0009). */
+  enabled: Generated<boolean>;
 }
 
 export interface BrandsTable {
@@ -1070,6 +1072,32 @@ export interface SupportTicketsTable {
   resolved_at: Timestamp | null;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+  priority: Generated<TicketPriority>;
+  escalation: TicketEscalation | null;
+  escalated_at: Timestamp | null;
+  first_response_at: Timestamp | null;
+}
+
+export type TicketPriority = 'low' | 'normal' | 'high' | 'urgent';
+export type TicketEscalation = 'payment' | 'security' | 'operations';
+
+export interface TicketAttachmentsTable {
+  id: Id;
+  ticket_id: string;
+  author_type: 'customer' | 'admin';
+  author_id: string;
+  object_key: string;
+  file_name: string;
+  content_type: 'application/pdf' | 'image/jpeg' | 'image/png';
+  declared_size_bytes: number;
+  size_bytes: number | null;
+  sha256: string | null;
+  status: Generated<'pending_upload' | 'clean' | 'infected' | 'rejected'>;
+  rejection_reason: 'type_mismatch' | 'too_large' | 'empty' | 'malware' | null;
+  upload_expires_at: Timestamp;
+  uploaded_at: Timestamp | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
 }
 
 export interface TicketMessagesTable {
@@ -1209,6 +1237,7 @@ export interface Database {
   review_reports: ReviewReportsTable;
   support_tickets: SupportTicketsTable;
   ticket_messages: TicketMessagesTable;
+  ticket_attachments: TicketAttachmentsTable;
   notification_templates: NotificationTemplatesTable;
   notifications: NotificationsTable;
   notification_deliveries: NotificationDeliveriesTable;
@@ -1463,6 +1492,7 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'status',
     'created_at',
     'updated_at',
+    'enabled',
   ],
   brands: ['id', 'slug', 'name', 'status', 'created_by', 'created_at', 'updated_at'],
   tax_rates: ['id', 'tax_class', 'rate_bps', 'effective_at', 'created_at'],
@@ -2006,6 +2036,28 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'sla_due_at',
     'last_message_at',
     'resolved_at',
+    'created_at',
+    'updated_at',
+    'priority',
+    'escalation',
+    'escalated_at',
+    'first_response_at',
+  ],
+  ticket_attachments: [
+    'id',
+    'ticket_id',
+    'author_type',
+    'author_id',
+    'object_key',
+    'file_name',
+    'content_type',
+    'declared_size_bytes',
+    'size_bytes',
+    'sha256',
+    'status',
+    'rejection_reason',
+    'upload_expires_at',
+    'uploaded_at',
     'created_at',
     'updated_at',
   ],

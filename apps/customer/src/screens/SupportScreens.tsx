@@ -1,7 +1,8 @@
-import type { TicketView } from '@jays/contracts';
+import type { SupportInfo, TicketView } from '@jays/contracts';
+import * as DocumentPicker from 'expo-document-picker';
 import { colors } from '@jays/ui';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, Text, View } from 'react-native';
 import { Chips, cardStyles as s } from '../components/Picker';
 import { Tabs } from '../components/Tabs';
 import { Banner, Body, Button, Field, Screen, Title } from '../components/ui';
@@ -9,7 +10,7 @@ import { useApp } from '../context';
 import { errorKey } from '../errors';
 import type { Route, TicketDraft } from '../state';
 
-type TicketItem = Omit<TicketView, 'messages'>;
+type TicketItem = Omit<TicketView, 'messages' | 'attachments'>;
 const TYPES: TicketDraft['type'][] = ['order', 'booking', 'payment', 'account', 'other'];
 
 const stamp = (iso: string, locale: 'en' | 'ar') =>
@@ -36,6 +37,14 @@ function Back({ route, label }: { route: Route; label: string }) {
 export function SupportScreen() {
   const { state, api, dispatch, tr } = useApp();
   const [items, setItems] = useState<TicketItem[] | 'error' | null>(null);
+  const [info, setInfo] = useState<SupportInfo | null>(null);
+
+  useEffect(() => {
+    api
+      .supportInfo()
+      .then(setInfo)
+      .catch(() => setInfo(null));
+  }, [api]);
 
   useEffect(() => {
     if (!state.session) {
@@ -52,6 +61,18 @@ export function SupportScreen() {
     <Screen footer={<Tabs />}>
       <Back route="/account" label={tr('account.title')} />
       <Title>{tr('support.title')}</Title>
+      {info ? (
+        <View style={s.card}>
+          <Body>
+            {tr('support.hours', {
+              opens: info.hours.opens,
+              closes: info.hours.closes,
+              hours: String(info.firstResponseHours),
+            })}
+          </Body>
+          <Body muted>{info.openNow ? tr('support.openNow') : tr('support.closedNow')}</Body>
+        </View>
+      ) : null}
       <Button
         label={tr('support.new')}
         onPress={() => dispatch({ type: 'newTicket', draft: { type: 'other' } })}
@@ -173,6 +194,44 @@ export function TicketScreen() {
   }, [api, state.ticketId]);
   useEffect(load, [load]);
 
+  const [attachNote, setAttachNote] = useState<string | null>(null);
+  const attach = async () => {
+    if (typeof ticket !== 'object' || !ticket) return;
+    const picked = await DocumentPicker.getDocumentAsync({
+      type: ['application/pdf', 'image/jpeg', 'image/png'],
+      copyToCacheDirectory: true,
+    });
+    const file = picked.canceled ? null : picked.assets[0];
+    if (!file) return;
+    const contentType = file.mimeType as 'application/pdf' | 'image/jpeg' | 'image/png';
+    setBusy(true);
+    setError(null);
+    setAttachNote(null);
+    try {
+      const bytes = await (await fetch(file.uri)).blob();
+      const upload = await api.ticketAttachmentUpload(ticket.id, {
+        fileName: file.name,
+        contentType,
+        sizeBytes: file.size ?? bytes.size,
+      });
+      await api.upload(upload, bytes);
+      setTicket(await api.completeTicketAttachment(ticket.id, upload.id));
+      setAttachNote(tr('support.attached'));
+    } catch (e: unknown) {
+      setError(tr(errorKey(e).key));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const open = (attachmentId: string) => {
+    if (typeof ticket !== 'object' || !ticket) return;
+    api
+      .ticketAttachment(ticket.id, attachmentId)
+      .then((link) => Linking.openURL(link.url))
+      .catch((e: unknown) => setError(tr(errorKey(e).key)));
+  };
+
   const send = () => {
     if (typeof ticket !== 'object' || !ticket) return;
     setBusy(true);
@@ -214,6 +273,24 @@ export function TicketScreen() {
               <Text style={s.muted}>{stamp(m.createdAt, state.locale)}</Text>
             </View>
           ))}
+          {ticket.attachments.length ? (
+            <View style={{ gap: 4 }}>
+              <Text style={s.text}>{tr('support.attachments')}</Text>
+              {ticket.attachments.map((a) => (
+                <Pressable
+                  key={a.id}
+                  accessibilityRole="link"
+                  onPress={() => open(a.id)}
+                  style={{ minHeight: 44, justifyContent: 'center' }}
+                >
+                  <Text style={[s.text, { color: colors.accent }]}>
+                    {a.fileName} · {Math.ceil(a.sizeBytes / 1024)} KB
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+          {attachNote ? <Banner kind="info">{attachNote}</Banner> : null}
           {ticket.status === 'resolved' ? <Body muted>{tr('support.resolvedHint')}</Body> : null}
           <Field
             label={tr('support.reply')}
@@ -229,6 +306,7 @@ export function TicketScreen() {
             disabled={reply.trim().length < 1}
             onPress={send}
           />
+          <Button variant="secondary" label={tr('support.attach')} busy={busy} onPress={attach} />
         </>
       )}
     </Screen>
