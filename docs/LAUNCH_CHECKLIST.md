@@ -8,7 +8,7 @@ Last updated: 28 November 2026. Related: [founder decisions](FOUNDER_DECISIONS.m
 
 - [ ] Founder confirms the Vercel plan and sets the spend limit and pause action (setup guide, step 1)
 - [ ] Supabase staging project created (founder)
-- [ ] Phase 10 configuration merged: Vercel projects, cron routes, the PostgreSQL rate limiter, pooled connections
+- [x] Phase 10 configuration merged: Vercel project files, cron routes, the PostgreSQL rate limiter, pooled connections (PR #23; nothing deployed)
 - [ ] Migrations applied to staging through the direct connection
 - [ ] Resend domain verified and staging key added (founder)
 - [ ] Stripe test mode keys and webhook added (founder)
@@ -29,7 +29,7 @@ Last updated: 28 November 2026. Related: [founder decisions](FOUNDER_DECISIONS.m
 
 ## Production (blocked until each item has a sign-off)
 
-- [ ] **Malware scanning:** a real scanner is running. Today this is a **blocker** (ADR-0024, section 6)
+- [ ] **Malware scanning:** a real scanner is running. The ClamAV adapter is built; where it runs is a founder decision. Today this is a **blocker** (ADR-0032)
 - [ ] **Data residency:** a lawyer confirms whether storing data in Mumbai is acceptable (no UAE region on Supabase)
 - [ ] **Legal:** a lawyer approves every document and the per-emirate checklist. No lawyer is appointed yet
 - [ ] **Tax:** a UAE tax adviser approves the VAT rules; JAYS's TRN status is confirmed. No adviser is appointed yet
@@ -38,4 +38,4 @@ Last updated: 28 November 2026. Related: [founder decisions](FOUNDER_DECISIONS.m
 - [ ] **Capacity:** the free tiers are enough for the expected volume, or the founder approves the paid upgrade
 - [ ] **App Store and Google Play:** accounts registered (official fees) and review passed
 - [ ] **Real devices:** iOS and Android testing actually performed and recorded
-- [ ] **Security review:** phase 11 complete, with no open high-severity findings
+- [ ] **Security review:** phase 11 review done (docs/SECURITY_REVIEW.md); no open high-severity code finding, but the scanner host and data residency are open, and no external penetration test has been done

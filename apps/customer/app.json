@@ -2,11 +2,38 @@
   "expo": {
     "name": "JAYS",
     "slug": "jays-customer",
-    "version": "0.0.0",
+    "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "ios": { "supportsTablet": false },
-    "android": {},
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "ae.jays.customer",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleAllowMixedLocalizations": true
+      }
+    },
+    "android": {
+      "package": "ae.jays.customer",
+      "versionCode": 1,
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
+      "blockedPermissions": ["ACCESS_BACKGROUND_LOCATION"]
+    },
+    "locales": {
+      "en": "./locales/en.json",
+      "ar": "./locales/ar.json"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "JAYS uses your location only when you tap \"Use my location\", to suggest your emirate. You can choose it from the list instead.",
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
+        }
+      ]
+    ],
     "extra": { "supportsRTL": true }
   }
 }

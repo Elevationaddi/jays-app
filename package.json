@@ -21,7 +21,8 @@
     "dev:deps": "docker compose up -d --wait postgres redis",
     "dev:deps:down": "docker compose down",
     "db:migrate": "pnpm --filter @jays/db migrate",
-    "db:seed": "pnpm --filter @jays/api build && pnpm --filter @jays/api seed"
+    "db:seed": "pnpm --filter @jays/api build && pnpm --filter @jays/api seed",
+    "test:e2e": "node tests/e2e/smoke.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

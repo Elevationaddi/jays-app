@@ -138,9 +138,24 @@ jobs:
           curl -fs -H "authorization: Bearer $metrics_token" http://127.0.0.1:3000/v1/metrics | grep -q '^jays_outbox_pending '
           curl -fs -o /dev/null http://127.0.0.1:3001/sign-in
           test "$(docker inspect -f '{{.State.Running}}' worker)" = true
+      - name: Vercel mode (no Redis, timers off, cron route) and portal security headers
+        run: |
+          cron_secret="$(openssl rand -hex 24)"
+          grep -v '^REDIS_URL=' ci.env > vercel.env
+          printf 'RATE_LIMIT_STORE=postgres\nSCHEDULERS=off\nDB_POOL_MAX=3\nAPI_PORT=3010\n' >> vercel.env
+          echo "CRON_SECRET=$cron_secret" >> vercel.env
+          docker run -d --name api-vercel --network host --env-file vercel.env jays-api:ci
+          for i in $(seq 1 30); do
+            curl -fs http://127.0.0.1:3010/v1/health/ready && break
+            sleep 2
+          done
+          curl -fs http://127.0.0.1:3010/v1/health/ready | grep -q '"redis":"not_used"'
+          curl -fs -H "authorization: Bearer $cron_secret" http://127.0.0.1:3010/v1/internal/cron/minute
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3010/v1/internal/cron/minute)" = 401
+          curl -fsI http://127.0.0.1:3001/sign-in | grep -qi '^x-frame-options: DENY'
       - name: Container logs
         if: always()
-        run: for c in api worker business; do docker logs "$c" 2>&1 | tail -40 || true; done
+        run: for c in api api-vercel worker business; do docker logs "$c" 2>&1 | tail -40 || true; done
 
   security:
     name: Secret scan and dependency audit

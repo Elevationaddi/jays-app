@@ -15,8 +15,8 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 
 | 8 | Complete application functionality | 8.1 to 8.8 merged (PRs #9 to #14, #16 to #19) |
 | 9 | Provider integrations in test mode (Stripe, Resend, FCM, Supabase) | Merged (PRs #20, #21, #22) |
-| 10 | Vercel deployment design (replaces AWS) | Design and code done; nothing deployed |
-| 11 | Security, QA, app store preparation | Not started |
+| 10 | Vercel deployment design (replaces AWS) | Merged (PR #23); nothing deployed |
+| 11 | Security, QA, app store preparation | Review, smoke tests and store drafts done; real devices not tested |
 | 12 | Pilot preparation (Abu Dhabi) | Not started; pilot needs approval |
 
 **Mandatory constraint (28 November 2026):** no paid software subscriptions beyond Vercel, ChatGPT and Claude. AWS and Twilio are removed. See [ADR-0024](adr/0024-cost-constraints-and-vercel-first-architecture.md), the [founder decision register](FOUNDER_DECISIONS.md), [infrastructure costs](INFRASTRUCTURE_COSTS.md), the [founder setup guide](FOUNDER_SETUP_GUIDE.md) and the [launch checklist](LAUNCH_CHECKLIST.md).
@@ -26,6 +26,14 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 - **Travel fees:** no longer carry commission ([ADR-0025](adr/0025-travel-fees-home-cancellations-pilot-promotion.md)). The booking ledger line leaves the travel fee out of the commission base, and a test checks it.
 - **Home-visit cancellations:** built in 8.8 ([ADR-0027](adr/0027-booking-policies-and-component-amounts.md)); the rule is still proposed until a consumer-protection review.
 - **Still to build:** the pilot promotion (12).
+
+## Phase 11: Security, QA and store preparation
+
+- **Security review:** [SECURITY_REVIEW.md](SECURITY_REVIEW.md) maps every control in `docs/09-security-testing.md` to code and tests, lists 10 findings (4 fixed, 2 accepted, 4 open for founder, lawyer or staging) and maps T01 to T16 to tests. No external penetration test was done.
+- **Fixed here:** guest cart tokens and webhook signatures are no longer written to request logs (with a test).
+- **Browser smoke tests:** `pnpm test:e2e` checks security headers, Arabic RTL and English, a cross-business access attempt, admin MFA, a direct 6 MB document upload, and that the customer web build does not ask for location on load. 7 of 7 passed locally. CI now also starts the API in Vercel mode (no Redis, timers off) and checks the cron route and the portal headers.
+- **Store preparation:** [APP_STORE_PREPARATION.md](APP_STORE_PREPARATION.md): fees (Apple USD 99 a year, Google USD 25 once; founder approval), build route without a paid service, privacy answers drafted from the code, bilingual listing drafts, the submission checklist. The app configuration now has a proposed bundle ID, version numbers, the encryption answer and bilingual location wording, with background location blocked.
+- **Not done:** real-device testing, load testing, icons and screenshots, account registration, and submission. Each needs the founder (and the privacy policy needs the lawyer).
 
 ## Phase 10: Vercel deployment design
 

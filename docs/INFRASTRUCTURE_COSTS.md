@@ -135,11 +135,11 @@ Every external dependency JAYS uses or may need, what it costs, its limits, and 
 
 ### Fees that are not software subscriptions
 
-| Item                                | Cost                                                         | Notes                                                                                                                                                     |
-| ----------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Apple Developer Program (App Store) | Annual membership fee, commonly USD 99. **Not verified**     | Required to publish the iOS app. Official registration fee, not an optional software subscription. Source to check: https://developer.apple.com/programs/ |
-| Google Play Console                 | One-time registration fee, commonly USD 25. **Not verified** | Required to publish the Android app. Source to check: https://support.google.com/googleplay/android-developer/answer/6112435                              |
-| Domain name                         | Registrar's annual fee (not priced here)                     | Needed for the site, email sending (Resend domain verification) and links. Any registrar, or Vercel Domains                                               |
+| Item                                | Cost                                                                    | Notes                                                                                                                                                                                  |
+| ----------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Apple Developer Program (App Store) | **USD 99 a year** (checked 28 Nov 2026; local price shown at enrolment) | Required to publish the iOS app. Recurring, so the founder must approve it explicitly. See docs/APP_STORE_PREPARATION.md. Source: https://developer.apple.com/programs/whats-included/ |
+| Google Play Console                 | **USD 25 once** (checked 28 Nov 2026)                                   | Required to publish the Android app. Source: https://support.google.com/googleplay/android-developer/answer/6112435                                                                    |
+| Domain name                         | Registrar's annual fee (not priced here)                                | Needed for the site, email sending (Resend domain verification) and links. Any registrar, or Vercel Domains                                                                            |
 
 ## 2. Scale estimates
 
