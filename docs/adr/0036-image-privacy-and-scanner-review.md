@@ -40,7 +40,7 @@ This applies to product, storefront and portfolio images, support ticket attachm
 
 ### 2. Sharp is a pinned dependency of the API only
 
-- `sharp@0.34.5` is a dependency of `@jays/api` only. It is open source (Apache-2.0) with LGPL libvips binaries, and costs nothing.
+- `sharp@0.35.5` is a dependency of `@jays/api` only. It is open source (Apache-2.0) with LGPL libvips binaries, and costs nothing.
 - It ships prebuilt binaries (`@img/sharp-linux-x64` and others), so its install script is not allowed to run (`pnpm-workspace.yaml`, `ignoredBuiltDependencies`).
 - **Vercel compatibility:** Vercel's Node.js 22 runtime is Linux x64 with glibc 2.34. Sharp's prebuilt Linux binaries need glibc 2.26 or newer, and Vercel's file tracing recognises Sharp. Locally, on Linux x64 with glibc 2.39, all tests pass. **Not yet verified on Vercel:** the first staging deployment must upload a product image and check that it comes back without metadata. This is on the STAGING.md checklist.
 
