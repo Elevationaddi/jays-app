@@ -17,6 +17,36 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 
 Founder decisions: [ADR-0018](adr/0018-founder-decisions-2026-11-28.md). Phase 8 ships as slices. Each slice is its own PR, merged once CI passes.
 
+### 8.4 Commission, VAT, invoices and weekly payouts (D2, D3, D4, D6)
+
+Decision: [ADR-0021](adr/0021-commission-vat-invoices-weekly-payouts.md). Rates, VAT treatment and document wording are proposed. Every document is marked as a draft until a UAE tax professional approves the tax rules, and no production tax rule is active.
+
+- **Commission:**
+  - Rules by business, category (including its subcategories) and transaction type; the most specific rule wins.
+  - Worked out per line on the price before VAT, never on delivery, and snapshotted on each earning.
+- **VAT:**
+  - Sellers that are not VAT registered charge no VAT, and prices stay the same.
+  - Admins record a seller's VAT registration and TRN, and the change is audited.
+  - VAT on commission is ready but off. It cannot be switched on until JAYS has a VAT number.
+- **Documents:**
+  - Each payment issues the seller's invoice to the customer and JAYS's commission invoice to the seller.
+  - Each refund or lost dispute issues credit notes, with VAT in proportion.
+  - Documents are numbered per issuer and year, and can never be edited.
+- **Where they appear:**
+  - Customers see invoices on their orders and appointments.
+  - Businesses have an Invoices tab.
+  - Admins have a "VAT and invoices" page with a VAT report for any period.
+- **Payouts:** a weekly payout run on a set weekday (Monday by default), once per week even with several servers.
+- **Tests:** the occasional integration failure was traced to the reconciliation test's clock running a day ahead and expiring other tests' holds. That test now runs after the others.
+- **Screens:** see [`docs/screenshots/phase-8/`](screenshots/phase-8/):
+  - admin: VAT and invoices, a tax invoice and commission rules (`admin-17` to `admin-19`);
+  - business portal: invoices and a commission invoice (`business-50`, `business-51`);
+  - customer app: invoices on an order and a tax invoice (`customer-15`, `customer-16`).
+
+  All are in English and Arabic, except commission rules, which is in English only.
+
+- **API:** migration 0010. 8 new paths (180 in total).
+
 ### 8.3 Operations controls (D10, D11, D12)
 
 Decision: [ADR-0020](adr/0020-operations-controls.md). Support hours and the 24-hour target follow D12. The Abu Dhabi pilot is proposed and not started.

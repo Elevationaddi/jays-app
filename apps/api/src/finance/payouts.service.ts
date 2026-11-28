@@ -110,6 +110,8 @@ export class PayoutsService {
           'e.commission_fils',
           'e.refunded_fils',
           'e.commission_refunded_fils',
+          'e.commission_vat_fils',
+          'e.commission_vat_refunded_fils',
           (eb) =>
             eb
               .exists(
@@ -157,6 +159,8 @@ export class PayoutsService {
             commissionFils: e.commission_fils,
             refundedFils: e.refunded_fils,
             commissionRefundedFils: e.commission_refunded_fils,
+            commissionVatFils: e.commission_vat_fils,
+            commissionVatRefundedFils: e.commission_vat_refunded_fils,
           }),
         0,
       );

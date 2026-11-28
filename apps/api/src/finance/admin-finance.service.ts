@@ -20,6 +20,7 @@ import type {
   RefundRequestView,
 } from '@jays/contracts';
 import {
+  PLATFORM_TRN,
   canApproveRefund,
   FINANCE_SETTING_DEFAULTS,
   FINANCE_SETTING_KEYS,
@@ -112,6 +113,7 @@ export class AdminFinanceService {
         merchantPayableFils: -net('merchant_payable'),
         payoutsInTransitFils: -net('payouts_in_transit'),
         platformCommissionFils: -net('platform_commission'),
+        platformOutputVatFils: -net('platform_output_vat'),
         unallocatedReceiptsFils: -net('unallocated_receipts'),
       },
       paymentsNeedingAttention: Number(c?.payments ?? 0),
@@ -177,10 +179,14 @@ export class AdminFinanceService {
       .selectFrom('fee_rules as f')
       .leftJoin('businesses as b', 'b.id', 'f.business_id')
       .leftJoin('storefronts as sf', 'sf.business_id', 'b.id')
+      .leftJoin('categories as c', 'c.id', 'f.category_id')
       .select([
         'f.id',
         'f.mode',
         'f.business_id',
+        'f.category_id',
+        'c.slug as category_slug',
+        'c.name as category_name',
         'f.commission_bps',
         'f.effective_at',
         'f.reason',
@@ -199,7 +205,7 @@ export class AdminFinanceService {
     const current = new Set<string>();
     const groups = new Map<string, typeof rows>();
     for (const r of rows) {
-      const k = `${r.mode}:${r.business_id ?? ''}`;
+      const k = `${r.mode}:${r.business_id ?? ''}:${r.category_id ?? ''}`;
       groups.set(k, [...(groups.get(k) ?? []), r]);
     }
     for (const group of groups.values()) {
@@ -218,6 +224,10 @@ export class AdminFinanceService {
               id: r.business_id,
               name: businessName(r.live_name as Localized | null, r.display_name as Localized),
             }
+          : null,
+      category:
+        r.category_id && r.category_slug
+          ? { id: r.category_id, slug: r.category_slug, name: r.category_name as Localized }
           : null,
       commissionBps: r.commission_bps,
       effectiveAt: r.effective_at.toISOString(),
@@ -253,12 +263,29 @@ export class AdminFinanceService {
         .executeTakeFirst();
       if (!b) throw notFound('The business');
     }
+    if (input.categoryId) {
+      const c = await this.db
+        .selectFrom('categories')
+        .select('mode')
+        .where('id', '=', input.categoryId)
+        .executeTakeFirst();
+      if (!c) throw notFound('The category');
+      if (c.mode !== input.mode) {
+        throw new ApiError(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'CATEGORY_MODE_MISMATCH',
+          'Choose a category for the same kind of sale.',
+          { categoryId: ['must be a category of the same mode'] },
+        );
+      }
+    }
     await this.db.transaction().execute(async (trx) => {
       const row = await trx
         .insertInto('fee_rules')
         .values({
           mode: input.mode,
           business_id: input.businessId,
+          category_id: input.categoryId,
           commission_bps: input.commissionBps,
           effective_at: at,
           reason: input.reason,
@@ -271,7 +298,7 @@ export class AdminFinanceService {
         throw new ApiError(
           HttpStatus.CONFLICT,
           'RULE_EXISTS',
-          'A rule for this mode and business already takes effect at that time.',
+          'A rule for this mode, business and category already takes effect at that time.',
         );
       }
       await writeAudit(trx, {
@@ -282,7 +309,12 @@ export class AdminFinanceService {
         targetId: row.id,
         businessId: input.businessId,
         reason: input.reason,
-        diff: { mode: input.mode, commissionBps: input.commissionBps, effectiveAt: at },
+        diff: {
+          mode: input.mode,
+          categoryId: input.categoryId,
+          commissionBps: input.commissionBps,
+          effectiveAt: at,
+        },
         requestId: meta.requestId,
       });
     });
@@ -299,6 +331,14 @@ export class AdminFinanceService {
         'VALIDATION_FAILED',
         `The value must be between ${limits.min} and ${limits.max}.`,
         { value: [`must be between ${limits.min} and ${limits.max}`] },
+      );
+    }
+    if (input.key === 'platform_vat_registered' && input.value === 1 && PLATFORM_TRN === null) {
+      // D4: VAT on commission needs the platform's VAT registration number on every invoice.
+      throw new ApiError(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'PLATFORM_TRN_MISSING',
+        'Add the platform’s VAT registration number before charging VAT on commission.',
       );
     }
     const before = await setting(this.db, input.key, now);

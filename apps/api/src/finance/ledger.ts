@@ -1,6 +1,7 @@
 import {
   allocateRefund,
   commissionFor,
+  commissionVatFor,
   feeRuleFor,
   type FeeRule,
   type FinanceMode,
@@ -9,8 +10,18 @@ import {
   postings,
   settingAt,
 } from '@jays/domain';
-import type { Database, Db, LedgerKind, LedgerSourceType } from '@jays/db';
+import type {
+  CommissionDetailLine,
+  Database,
+  Db,
+  LedgerKind,
+  LedgerSourceType,
+  TaxDocumentLine,
+} from '@jays/db';
 import { sql, type Transaction } from 'kysely';
+
+type Localized = { en: string; ar: string };
+import { issueCaptureDocuments, issueCreditNotes } from './tax-documents.js';
 
 /**
  * Ledger and earnings helpers shared by payments, refunds, disputes and payouts (ADR-0015).
@@ -73,22 +84,47 @@ export async function payableBalance(db: Conn, businessId: string): Promise<numb
   return Number(row.balance);
 }
 
-export async function feeRules(db: Conn, mode: FinanceMode, businessId: string, at: Date) {
+export async function feeRules(
+  db: Conn,
+  mode: FinanceMode,
+  businessId: string,
+  at: Date,
+  categoryPath: readonly string[] = [],
+) {
   const rows = await db
     .selectFrom('fee_rules')
-    .select(['id', 'mode', 'business_id', 'commission_bps', 'effective_at'])
+    .select(['id', 'mode', 'business_id', 'category_id', 'commission_bps', 'effective_at'])
     .where('mode', '=', mode)
     .where((eb) => eb.or([eb('business_id', 'is', null), eb('business_id', '=', businessId)]))
+    .where((eb) =>
+      categoryPath.length > 0
+        ? eb.or([eb('category_id', 'is', null), eb('category_id', 'in', [...categoryPath])])
+        : eb('category_id', 'is', null),
+    )
     .where('effective_at', '<=', at)
     .execute();
   const rules: FeeRule[] = rows.map((r) => ({
     id: r.id,
     mode: r.mode,
     businessId: r.business_id,
+    categoryId: r.category_id,
     commissionBps: r.commission_bps,
     effectiveAt: r.effective_at,
   }));
-  return feeRuleFor(rules, mode, businessId, at);
+  return feeRuleFor(rules, mode, businessId, at, categoryPath);
+}
+
+/** A category and its ancestors, nearest first (the tree is at most three levels deep). */
+export async function categoryPath(db: Conn, categoryId: string | null): Promise<string[]> {
+  if (!categoryId) return [];
+  const { rows } = await sql<{ id: string }>`
+    WITH RECURSIVE up AS (
+      SELECT id, parent_id, 0 AS depth FROM categories WHERE id = ${categoryId}
+      UNION ALL
+      SELECT c.id, c.parent_id, up.depth + 1 FROM categories c JOIN up ON c.id = up.parent_id
+    )
+    SELECT id FROM up ORDER BY depth`.execute(db);
+  return rows.map((r) => r.id);
 }
 
 export async function setting(db: Conn, key: FinanceSettingKey, at: Date): Promise<number> {
@@ -105,10 +141,19 @@ export async function setting(db: Conn, key: FinanceSettingKey, at: Date): Promi
   );
 }
 
+/** One commissionable line: its amount before VAT and the category it sold in. */
+interface CommissionLine {
+  ref: string;
+  categoryId: string | null;
+  baseFils: number;
+}
+
 /**
- * Records what a merchant earned from a captured payment and posts the capture. Commission uses
- * the rule in force at capture time and is copied onto the earning (T13: later rule changes
- * never touch it). Idempotent: one earning per suborder or booking.
+ * Records what a merchant earned from a captured payment, posts the capture and issues the
+ * invoices. Commission (D2) is worked out per line on the amount before VAT, never on delivery,
+ * using the most specific rule in force at capture; the result is copied onto the earning (T13:
+ * later rule changes never touch it). VAT on commission (D4) applies only once the platform is
+ * registered. Idempotent: one earning per suborder or booking.
  */
 async function recordEarning(
   trx: Trx,
@@ -117,14 +162,37 @@ async function recordEarning(
     mode: FinanceMode;
     paymentId: string;
     grossFils: number;
-    commissionBaseFils: number;
+    lines: CommissionLine[];
     source: { merchantOrderId: string } | { bookingId: string };
+    documents: {
+      customerUserId: string | null;
+      lines: TaxDocumentLine[];
+      vatFils: number;
+      reference: string;
+    };
   },
   now: Date,
 ) {
-  const rule = await feeRules(trx, input.mode, input.businessId, now);
-  const bps = rule?.commissionBps ?? 0;
-  const commission = commissionFor(input.commissionBaseFils, bps);
+  const detail: CommissionDetailLine[] = [];
+  for (const line of input.lines) {
+    const path = await categoryPath(trx, line.categoryId);
+    const rule = await feeRules(trx, input.mode, input.businessId, now, path);
+    const bps = rule?.commissionBps ?? 0;
+    detail.push({
+      ref: line.ref,
+      categoryId: line.categoryId,
+      feeRuleId: rule?.id ?? null,
+      commissionBps: bps,
+      baseFils: line.baseFils,
+      commissionFils: commissionFor(line.baseFils, bps),
+    });
+  }
+  const base = detail.reduce((t, d) => t + d.baseFils, 0);
+  const commission = detail.reduce((t, d) => t + d.commissionFils, 0);
+  const ruleIds = [...new Set(detail.map((d) => d.feeRuleId))];
+  const registered = (await setting(trx, 'platform_vat_registered', now)) === 1;
+  const vatBps = registered ? await setting(trx, 'commission_vat_bps', now) : 0;
+  const vat = commissionVatFor(commission, vatBps, registered);
   const earning = await trx
     .insertInto('merchant_earnings')
     .values({
@@ -135,10 +203,15 @@ async function recordEarning(
       payment_id: input.paymentId,
       mode: input.mode,
       gross_fils: input.grossFils,
-      commission_base_fils: input.commissionBaseFils,
-      commission_bps: bps,
-      fee_rule_id: rule?.id ?? null,
+      commission_base_fils: base,
+      // One rule: its rate. Several: the blended rate, with each line in commission_detail.
+      commission_bps:
+        ruleIds.length === 1 ? (detail[0]?.commissionBps ?? 0) : blendedBps(commission, base),
+      fee_rule_id: ruleIds.length === 1 ? (ruleIds[0] ?? null) : null,
       commission_fils: commission,
+      commission_vat_bps: vatBps,
+      commission_vat_fils: vat,
+      commission_detail: JSON.stringify(detail),
     })
     .onConflict((oc) => oc.doNothing())
     .returning('id')
@@ -153,19 +226,91 @@ async function recordEarning(
       businessId: input.businessId,
       occurredAt: now,
     },
-    postings.capture(input.businessId, input.grossFils, commission),
+    postings.capture(input.businessId, input.grossFils, commission, vat),
   );
+  await issueCaptureDocuments(trx, {
+    earningId: earning.id,
+    businessId: input.businessId,
+    customerUserId: input.documents.customerUserId,
+    lines: input.documents.lines,
+    totalFils: input.grossFils,
+    vatFils: input.documents.vatFils,
+    commissionFils: commission,
+    commissionVatFils: vat,
+    commissionVatBps: vatBps,
+    platformRegistered: registered,
+    reference: input.documents.reference,
+    at: now,
+  });
 }
 
-/** A paid order: one earning per seller. Commission is on goods only; delivery goes to the seller. */
+function blendedBps(commission: number, base: number) {
+  return base > 0 ? Math.min(10_000, Math.round((commission * 10_000) / base)) : 0;
+}
+
+/**
+ * A paid order: one earning per seller. Commission is on goods before VAT; delivery goes to the
+ * seller with no commission (D2).
+ */
 export async function recordOrderCapture(trx: Trx, orderId: string, paymentId: string, now: Date) {
+  const order = await trx
+    .selectFrom('orders')
+    .select(['user_id'])
+    .where('id', '=', orderId)
+    .executeTakeFirstOrThrow();
   const suborders = await trx
     .selectFrom('merchant_orders')
-    .select(['id', 'business_id', 'subtotal_fils', 'discount_fils', 'total_fils'])
+    .select(['id', 'business_id', 'delivery_fils', 'tax_fils', 'total_fils', 'delivery_snapshot'])
     .where('order_id', '=', orderId)
     .orderBy('id')
     .execute();
   for (const mo of suborders) {
+    const items = await trx
+      .selectFrom('order_items as i')
+      .innerJoin('products as p', 'p.id', 'i.product_id')
+      .select([
+        'i.id',
+        'i.qty',
+        'i.line_total_fils',
+        'i.discount_fils',
+        'i.tax_rate_bps',
+        'i.tax_fils',
+        'i.snapshot',
+        'p.live_category_id',
+      ])
+      .where('i.merchant_order_id', '=', mo.id)
+      .orderBy('i.id')
+      .execute();
+    const deliveryTax = Number(
+      (mo.delivery_snapshot as { deliveryTaxFils?: number }).deliveryTaxFils ?? 0,
+    );
+    const docLines: TaxDocumentLine[] = items.map((i) => {
+      const snap = i.snapshot as { title: Localized; variantName?: Localized };
+      return {
+        description: snap.variantName
+          ? {
+              en: `${snap.title.en} (${snap.variantName.en})`,
+              ar: `${snap.title.ar} (${snap.variantName.ar})`,
+            }
+          : snap.title,
+        qty: i.qty,
+        totalFils: i.line_total_fils - i.discount_fils,
+        vatRateBps: i.tax_rate_bps,
+        vatFils: i.tax_fils,
+      };
+    });
+    if (mo.delivery_fils > 0) {
+      docLines.push({
+        description: { en: 'Delivery', ar: 'التوصيل' },
+        qty: 1,
+        totalFils: mo.delivery_fils,
+        vatRateBps:
+          deliveryTax > 0
+            ? Math.round((deliveryTax * 10_000) / (mo.delivery_fils - deliveryTax))
+            : 0,
+        vatFils: deliveryTax,
+      });
+    }
     await recordEarning(
       trx,
       {
@@ -173,8 +318,18 @@ export async function recordOrderCapture(trx: Trx, orderId: string, paymentId: s
         mode: 'shop',
         paymentId,
         grossFils: mo.total_fils,
-        commissionBaseFils: Math.max(0, mo.subtotal_fils - mo.discount_fils),
+        lines: items.map((i) => ({
+          ref: i.id,
+          categoryId: i.live_category_id,
+          baseFils: Math.max(0, i.line_total_fils - i.discount_fils - i.tax_fils),
+        })),
         source: { merchantOrderId: mo.id },
+        documents: {
+          customerUserId: order.user_id,
+          lines: docLines,
+          vatFils: mo.tax_fils,
+          reference: `order ${mo.id.slice(0, 8).toUpperCase()}`,
+        },
       },
       now,
     );
@@ -187,6 +342,15 @@ export async function recordBookingCapture(
   paymentId: string,
   now: Date,
 ) {
+  const b = await trx
+    .selectFrom('bookings as b')
+    .innerJoin('services as s', 's.id', 'b.service_id')
+    .select(['b.user_id', 'b.tax_fils', 'b.snapshot', 's.category_id', 's.tax_class'])
+    .where('b.id', '=', booking.id)
+    .executeTakeFirstOrThrow();
+  const snap = b.snapshot as { service: { title: Localized } };
+  const rate =
+    b.tax_fils > 0 ? Math.round((b.tax_fils * 10_000) / (booking.priceFils - b.tax_fils)) : 0;
   await recordEarning(
     trx,
     {
@@ -194,8 +358,28 @@ export async function recordBookingCapture(
       mode: 'services',
       paymentId,
       grossFils: booking.priceFils,
-      commissionBaseFils: booking.priceFils,
+      lines: [
+        {
+          ref: booking.id,
+          categoryId: b.category_id,
+          baseFils: Math.max(0, booking.priceFils - b.tax_fils),
+        },
+      ],
       source: { bookingId: booking.id },
+      documents: {
+        customerUserId: b.user_id,
+        lines: [
+          {
+            description: snap.service.title,
+            qty: 1,
+            totalFils: booking.priceFils,
+            vatRateBps: rate,
+            vatFils: b.tax_fils,
+          },
+        ],
+        vatFils: b.tax_fils,
+        reference: `appointment ${booking.id.slice(0, 8).toUpperCase()}`,
+      },
     },
     now,
   );
@@ -215,6 +399,8 @@ export async function earningForRefund(
       'commission_fils',
       'refunded_fils',
       'commission_refunded_fils',
+      'commission_vat_fils',
+      'commission_vat_refunded_fils',
       'status',
     ])
     .forUpdate();
@@ -241,6 +427,8 @@ export async function reverseEarning(
       commissionFils: earning.commission_fils,
       refundedFils: earning.refunded_fils,
       commissionRefundedFils: earning.commission_refunded_fils,
+      commissionVatFils: earning.commission_vat_fils,
+      commissionVatRefundedFils: earning.commission_vat_refunded_fils,
     },
     amountFils,
   );
@@ -261,7 +449,17 @@ export async function reverseEarning(
     .set({
       refunded_fils: earning.refunded_fils + amountFils,
       commission_refunded_fils: earning.commission_refunded_fils + split.commissionFils,
+      commission_vat_refunded_fils: earning.commission_vat_refunded_fils + split.vatFils,
     })
     .where('id', '=', earning.id)
     .execute();
+  await issueCreditNotes(trx, {
+    earningId: earning.id,
+    businessId: earning.business_id,
+    source: { type: source.type, id: source.id },
+    amountFils,
+    commissionFils: split.commissionFils,
+    commissionVatFils: split.vatFils,
+    at: now,
+  });
 }

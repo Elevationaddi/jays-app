@@ -57,6 +57,9 @@ export async function approvedShop(
     .set({
       status: 'approved',
       legal_name: 'Fictional Trading LLC',
+      // Fictional TRN: test sellers are VAT registered, so they charge VAT (D4).
+      tax_registered: true,
+      tax_id: '100000000000003',
       trade_license_number: `TL-${Date.now() % 1e8}`,
       license_authority: 'Fictional Authority',
       license_expiry: '2030-01-01',

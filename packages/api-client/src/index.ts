@@ -157,6 +157,11 @@ import {
   disputeSchema,
   earningSchema,
   feeRuleSchema,
+  businessTaxSchema,
+  taxDocumentSchema,
+  taxDocumentSummarySchema,
+  vatReportSchema,
+  type businessTaxInputSchema,
   financeOverviewSchema,
   financeSettingSchema,
   financeSummarySchema,
@@ -387,6 +392,11 @@ export function createApiClient(options: ApiClientOptions) {
     consentHistory: (params?: { cursor?: string; limit?: number }) =>
       call('GET', `/me/consents${q(params)}`, pageSchema(consentRecordSchema)),
     exportMyData: () => call('GET', '/me/export', dataExportSchema),
+    myDocuments: (
+      params: { orderId?: string; bookingId?: string; cursor?: string; limit?: number } = {},
+    ) => call('GET', `/me/documents${query(params)}`, pageSchema(taxDocumentSummarySchema)),
+    myDocument: (id: string) =>
+      call('GET', `/me/documents/${encodeURIComponent(id)}`, taxDocumentSchema),
     requestAccountDeletion: (password: string, reason?: string) =>
       call('POST', '/me/deletion', privacySchema, { password, ...(reason ? { reason } : {}) }),
     cancelAccountDeletion: () => call('DELETE', '/me/deletion', privacySchema),
@@ -776,6 +786,18 @@ export function createApiClient(options: ApiClientOptions) {
       call('PATCH', `/admin/brands/${encodeURIComponent(id)}`, brandSchema, body),
     // Business finance (finance.view)
     financeSummary: (id: string) => call('GET', `${biz(id)}/finance/summary`, financeSummarySchema),
+    businessDocuments: (id: string, params: Page & { kind?: string } = {}) =>
+      call(
+        'GET',
+        `${biz(id)}/finance/documents${query(params)}`,
+        pageSchema(taxDocumentSummarySchema),
+      ),
+    businessDocument: (id: string, documentId: string) =>
+      call(
+        'GET',
+        `${biz(id)}/finance/documents/${encodeURIComponent(documentId)}`,
+        taxDocumentSchema,
+      ),
     financeEarnings: (id: string, params: Page & { status?: string } = {}) =>
       call('GET', `${biz(id)}/finance/earnings${query(params)}`, pageSchema(earningSchema)),
     financeLedger: (id: string, params: Page = {}) =>
@@ -789,6 +811,25 @@ export function createApiClient(options: ApiClientOptions) {
       call('POST', '/admin/finance/fee-rules', z.array(feeRuleSchema), body),
     adminCreateFinanceSetting: (body: z.input<typeof financeSettingInputSchema>) =>
       call('POST', '/admin/finance/settings', z.array(financeSettingSchema), body),
+    adminTaxDocuments: (params: Page & { businessId?: string; kind?: string } = {}) =>
+      call('GET', `/admin/finance/documents${query(params)}`, pageSchema(taxDocumentSummarySchema)),
+    adminTaxDocument: (id: string) =>
+      call('GET', `/admin/finance/documents/${encodeURIComponent(id)}`, taxDocumentSchema),
+    adminVatReport: (from: string, to: string) =>
+      call('GET', `/admin/finance/vat-report${query({ from, to })}`, vatReportSchema),
+    adminBusinessTax: (businessId: string) =>
+      call(
+        'GET',
+        `/admin/finance/businesses/${encodeURIComponent(businessId)}/tax`,
+        businessTaxSchema,
+      ),
+    adminSetBusinessTax: (businessId: string, body: z.input<typeof businessTaxInputSchema>) =>
+      call(
+        'PUT',
+        `/admin/finance/businesses/${encodeURIComponent(businessId)}/tax`,
+        businessTaxSchema,
+        body,
+      ),
     adminPayments: (params: Page & { status?: string; needsAttention?: 'true' | 'false' } = {}) =>
       call('GET', `/admin/finance/payments${query(params)}`, pageSchema(adminPaymentSchema)),
     adminPayment: (id: string) =>

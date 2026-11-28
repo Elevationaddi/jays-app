@@ -65,6 +65,8 @@ export const earningSchema = z.object({
   grossFils: fils,
   commissionBps: z.number().int(),
   commissionFils: fils,
+  /** VAT on the commission still charged after refunds (D4). Zero while the platform is not VAT registered. */
+  commissionVatFils: fils,
   refundedFils: fils,
   netFils: fils,
   status: earningStatusSchema,
@@ -126,6 +128,10 @@ export const feeRuleSchema = z.object({
   id: z.uuid(),
   mode: financeModeSchema,
   business: bizRef.nullable(),
+  /** Null applies to every category (D2). */
+  category: z
+    .object({ id: z.uuid(), slug: z.string(), name: z.object({ en: z.string(), ar: z.string() }) })
+    .nullable(),
   commissionBps: z.number().int(),
   effectiveAt: isoDateTime,
   reason: z.string(),
@@ -138,6 +144,8 @@ export type FeeRuleView = z.infer<typeof feeRuleSchema>;
 export const feeRuleInputSchema = z.strictObject({
   mode: financeModeSchema,
   businessId: z.uuid().nullable().default(null),
+  /** A category of the same mode; the rule also covers its subcategories. */
+  categoryId: z.uuid().nullable().default(null),
   commissionBps: z.number().int().min(0).max(10_000),
   /** Defaults to now. Rules take effect now or later; history is never rewritten. */
   effectiveAt: isoDateTime.optional(),
@@ -172,6 +180,8 @@ export const financeOverviewSchema = z.object({
     merchantPayableFils: fils,
     payoutsInTransitFils: fils,
     platformCommissionFils: fils,
+    /** VAT charged on commission, owed to the tax authority (D4). */
+    platformOutputVatFils: fils,
     unallocatedReceiptsFils: fils,
   }),
   paymentsNeedingAttention: z.number().int(),
@@ -413,3 +423,130 @@ export type ReconciliationListQuery = z.infer<typeof reconciliationListQuerySche
 
 export const reconciliationResolveSchema = z.strictObject({ note: reason });
 export type ReconciliationResolve = z.infer<typeof reconciliationResolveSchema>;
+
+// Tax documents and VAT (phase 8.4, D3, D4; ADR-0021) ---------------------------------------------
+
+const localized = z.object({ en: z.string(), ar: z.string() });
+export const taxDocumentKindSchema = z.enum([
+  'customer_invoice',
+  'customer_credit_note',
+  'commission_invoice',
+  'commission_credit_note',
+]);
+const taxPartySchema = z.object({
+  name: localized,
+  trn: z.string().nullable(),
+  address: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
+});
+export const taxDocumentLineSchema = z.object({
+  description: localized,
+  qty: z.number().int(),
+  /** VAT included. */
+  totalFils: fils,
+  vatRateBps: z.number().int(),
+  vatFils: fils,
+});
+export const taxDocumentSummarySchema = z.object({
+  id: z.uuid(),
+  kind: taxDocumentKindSchema,
+  number: z.string(),
+  issuer: z.enum(['business', 'platform']),
+  businessId: z.uuid(),
+  /** A tax invoice or tax credit note: the issuer was VAT registered. */
+  taxDocument: z.boolean(),
+  netFils: fils,
+  vatFils: fils,
+  totalFils: fils,
+  /** False until a UAE tax professional approves the tax rules: show the document as a draft. */
+  rulesApproved: z.boolean(),
+  issuedAt: isoDateTime,
+  orderId: z.uuid().nullable(),
+  bookingId: z.uuid().nullable(),
+});
+export type TaxDocumentSummary = z.infer<typeof taxDocumentSummarySchema>;
+export const taxDocumentSchema = taxDocumentSummarySchema.extend({
+  currency: z.literal('AED'),
+  seller: taxPartySchema,
+  buyer: taxPartySchema,
+  lines: z.array(taxDocumentLineSchema),
+  /** For a credit note: the invoice it corrects. */
+  credits: z.object({ id: z.uuid(), number: z.string() }).nullable(),
+});
+export type TaxDocument = z.infer<typeof taxDocumentSchema>;
+
+export const taxDocumentListQuerySchema = z.strictObject({
+  kind: taxDocumentKindSchema.optional(),
+  orderId: z.uuid().optional(),
+  bookingId: z.uuid().optional(),
+  ...cursorQuery,
+});
+export type TaxDocumentListQuery = z.infer<typeof taxDocumentListQuerySchema>;
+export const adminTaxDocumentListQuerySchema = taxDocumentListQuerySchema.extend({
+  businessId: z.uuid().optional(),
+});
+export type AdminTaxDocumentListQuery = z.infer<typeof adminTaxDocumentListQuerySchema>;
+
+export const businessTaxInputSchema = z
+  .strictObject({
+    taxRegistered: z.boolean(),
+    /** UAE TRN: 15 digits. Required when registered. */
+    taxId: z
+      .string()
+      .trim()
+      .regex(/^[0-9]{15}$/)
+      .nullable()
+      .default(null),
+    reason,
+  })
+  .refine((v) => !v.taxRegistered || v.taxId !== null, {
+    message: 'A VAT-registered business needs its TRN',
+    path: ['taxId'],
+  });
+export type BusinessTaxInput = z.infer<typeof businessTaxInputSchema>;
+export const businessTaxSchema = z.object({
+  businessId: z.uuid(),
+  taxRegistered: z.boolean(),
+  taxId: z.string().nullable(),
+});
+export type BusinessTax = z.infer<typeof businessTaxSchema>;
+
+const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+export const vatReportQuerySchema = z.strictObject({
+  /** UAE dates, inclusive. At most a year. */
+  from: dateOnly,
+  to: dateOnly,
+});
+export type VatReportQuery = z.infer<typeof vatReportQuerySchema>;
+const vatTotals = z.object({
+  netFils: fils,
+  vatFils: fils,
+  totalFils: fils,
+  documents: z.number().int(),
+});
+export const vatReportSchema = z.object({
+  from: dateOnly,
+  to: dateOnly,
+  currency: z.literal('AED'),
+  rulesApproved: z.boolean(),
+  /** The platform's own VAT: commission invoices less commission credit notes. */
+  platform: z.object({
+    registered: z.boolean(),
+    trn: z.string().nullable(),
+    invoiced: vatTotals,
+    credited: vatTotals,
+    netVatFils: fils,
+  }),
+  /** Each seller's sales through JAYS, for their own VAT return (the seller files it, D3). */
+  businesses: z.array(
+    z.object({
+      business: bizRef,
+      taxRegistered: z.boolean(),
+      trn: z.string().nullable(),
+      invoiced: vatTotals,
+      credited: vatTotals,
+      netVatFils: fils,
+    }),
+  ),
+});
+export type VatReport = z.infer<typeof vatReportSchema>;

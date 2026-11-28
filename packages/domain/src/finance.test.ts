@@ -4,6 +4,7 @@ import {
   balanced,
   canApproveRefund,
   commissionFor,
+  commissionVatFor,
   feeRuleFor,
   FINANCE_SETTING_DEFAULTS,
   LedgerError,
@@ -212,5 +213,79 @@ describe('payouts and approvals', () => {
     expect(paymentStatusAfterRefunds({ ...p, succeededFils: 400 })).toBe('partially_refunded');
     expect(paymentStatusAfterRefunds({ ...p, failedWithoutSuccess: true })).toBe('refund_failed');
     expect(paymentStatusAfterRefunds(p)).toBe('succeeded');
+  });
+});
+
+describe('commission by category and VAT on commission (D2, D4)', () => {
+  const t0 = at('2026-01-01T00:00:00Z');
+  const rules: FeeRule[] = [
+    { id: 'platform', mode: 'shop', businessId: null, commissionBps: 1_000, effectiveAt: t0 },
+    {
+      id: 'beauty',
+      mode: 'shop',
+      businessId: null,
+      categoryId: 'beauty',
+      commissionBps: 800,
+      effectiveAt: t0,
+    },
+    { id: 'biz', mode: 'shop', businessId: 'b1', commissionBps: 700, effectiveAt: t0 },
+    {
+      id: 'biz-skin',
+      mode: 'shop',
+      businessId: 'b1',
+      categoryId: 'skincare',
+      commissionBps: 500,
+      effectiveAt: t0,
+    },
+    { id: 'svc', mode: 'services', businessId: null, commissionBps: 1_200, effectiveAt: t0 },
+  ];
+  const now = at('2026-06-01T00:00:00Z');
+
+  it('picks the most specific rule: business and category, business, category, platform', () => {
+    expect(feeRuleFor(rules, 'shop', 'b1', now, ['skincare', 'beauty'])?.id).toBe('biz-skin');
+    expect(feeRuleFor(rules, 'shop', 'b1', now, ['makeup', 'beauty'])?.id).toBe('biz');
+    expect(feeRuleFor(rules, 'shop', 'b2', now, ['skincare', 'beauty'])?.id).toBe('beauty');
+    expect(feeRuleFor(rules, 'shop', 'b2', now, ['fashion'])?.id).toBe('platform');
+    expect(feeRuleFor(rules, 'services', 'b1', now, ['skincare'])?.id).toBe('svc');
+  });
+
+  it('charges VAT on commission only when the platform is registered', () => {
+    expect(commissionVatFor(1_001, 500, false)).toBe(0);
+    expect(commissionVatFor(1_001, 500, true)).toBe(50); // 50.05 -> 50
+    expect(commissionVatFor(1_010, 500, true)).toBe(51); // 50.5 -> 51 (half-up)
+  });
+
+  it('returns commission VAT with refunds and leaves nothing behind', () => {
+    const e = {
+      grossFils: 10_000,
+      commissionFils: 1_000,
+      commissionVatFils: 50,
+      refundedFils: 0,
+      commissionRefundedFils: 0,
+      commissionVatRefundedFils: 0,
+    };
+    expect(netOf(e)).toBe(8_950);
+    const first = allocateRefund(e, 3_333);
+    expect(first).toEqual({ merchantFils: 2_983, commissionFils: 333, vatFils: 17 });
+    const after = {
+      ...e,
+      refundedFils: 3_333,
+      commissionRefundedFils: 333,
+      commissionVatRefundedFils: 17,
+    };
+    const last = allocateRefund(after, 6_667);
+    expect(last.vatFils + first.vatFils).toBe(50);
+    expect(
+      netOf({
+        ...after,
+        refundedFils: 10_000,
+        commissionRefundedFils: 1_000,
+        commissionVatRefundedFils: 50,
+      }),
+    ).toBe(0);
+    const [d, c] = sum(postings.capture('b1', 10_000, 1_000, 50));
+    expect(d).toBe(c);
+    const [rd, rc] = sum(postings.reversal('b1', first));
+    expect(rd).toBe(rc);
   });
 });

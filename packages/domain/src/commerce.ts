@@ -240,6 +240,11 @@ export function priceOrder(
   zones: ReadonlyMap<string, DeliveryZoneRule>,
   taxRates: Readonly<Record<TaxClass, number>>,
   rounding: RoundingMode = TAX_ROUNDING,
+  /**
+   * D4: businesses registered for VAT. Prices stay VAT-inclusive; a business that is not
+   * registered charges no VAT, so its lines and delivery carry none. Omitted: every business.
+   */
+  vatRegistered?: ReadonlySet<string>,
 ): PricedOrder {
   if (lines.length === 0) throw new PricingError('EMPTY');
   for (const l of lines) {
@@ -266,9 +271,10 @@ export function priceOrder(
 
   const groups: PricedGroup[] = businessIds.map((businessId) => {
     const zone = zones.get(businessId) as DeliveryZoneRule;
+    const charges = !vatRegistered || vatRegistered.has(businessId);
     const priced: PricedLine[] = (byBusiness.get(businessId) ?? []).map((line) => {
       const lineTotal = multiplyFils(fils(line.unitPriceFils), line.qty);
-      const bps = taxRates[line.taxClass];
+      const bps = charges ? taxRates[line.taxClass] : 0;
       return {
         ...line,
         lineTotalFils: lineTotal,
@@ -279,7 +285,7 @@ export function priceOrder(
     const subtotal = addFils(...priced.map((l) => fils(l.lineTotalFils)));
     const free = zone.freeOverFils !== null && subtotal >= zone.freeOverFils;
     const delivery = fils(free ? 0 : zone.feeFils);
-    const deliveryTax = extractInclusiveTax(delivery, taxRates.standard, rounding);
+    const deliveryTax = extractInclusiveTax(delivery, charges ? taxRates.standard : 0, rounding);
     const tax = addFils(deliveryTax, ...priced.map((l) => fils(l.taxFils)));
     return {
       businessId,

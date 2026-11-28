@@ -1,11 +1,12 @@
 import type { MessageKey } from '@jays/i18n';
 import Link from 'next/link';
+import { documentTitle } from '../../../../components/TaxDocumentView';
 import { Workspace, loadBusiness, money } from '../../../../components/Workspace';
 import { serverApi } from '../../../../lib/api';
 import { translator } from '../../../../lib/i18n';
 
 type Search = Promise<Record<string, string | undefined>>;
-const VIEWS = ['earnings', 'payouts', 'ledger'] as const;
+const VIEWS = ['earnings', 'payouts', 'ledger', 'documents'] as const;
 
 /**
  * Read-only finance view (docs/03-business.md, /business/finance): what the business is owed,
@@ -36,18 +37,24 @@ export default async function FinancePage({
     : 'earnings';
   const api = await serverApi();
   const page = { limit: 50, ...(query['cursor'] ? { cursor: query['cursor'] } : {}) };
-  const [summary, earnings, payouts, ledger] = await Promise.all([
+  const [summary, earnings, payouts, ledger, documents] = await Promise.all([
     api.financeSummary(businessId),
     view === 'earnings' ? api.financeEarnings(businessId, page) : null,
     view === 'payouts' ? api.financePayouts(businessId, page) : null,
     view === 'ledger' ? api.financeLedger(businessId, page) : null,
+    view === 'documents' ? api.businessDocuments(businessId, page) : null,
   ]);
   const date = new Intl.DateTimeFormat(locale === 'ar' ? 'ar-AE' : 'en-AE', {
     dateStyle: 'medium',
     timeZone: 'Asia/Dubai',
   });
   const when = (iso: string | null) => (iso ? date.format(new Date(iso)) : '—');
-  const nextCursor = earnings?.nextCursor ?? payouts?.nextCursor ?? ledger?.nextCursor ?? null;
+  const nextCursor =
+    earnings?.nextCursor ??
+    payouts?.nextCursor ??
+    ledger?.nextCursor ??
+    documents?.nextCursor ??
+    null;
   const figures: [MessageKey, number, MessageKey][] = [
     ['finance.payable', summary.payableBalanceFils, 'finance.payableHint'],
     ['finance.eligible', summary.eligibleFils, 'finance.eligibleHint'],
@@ -134,6 +141,13 @@ export default async function FinancePage({
                       <div className="muted">
                         <bdi>{(e.commissionBps / 100).toFixed(2)}%</bdi>
                       </div>
+                      {e.commissionVatFils > 0 ? (
+                        <div className="muted">
+                          {tr('finance.commissionVat', {
+                            amount: money(e.commissionVatFils, locale),
+                          })}
+                        </div>
+                      ) : null}
                     </td>
                     <td>
                       <strong>{money(e.netFils, locale)}</strong>
@@ -152,6 +166,48 @@ export default async function FinancePage({
                           {tr('finance.eligibleFrom', { date: when(e.eligibleAt) })}
                         </div>
                       ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      ) : null}
+
+      {documents ? (
+        documents.items.length === 0 ? (
+          <p className="muted">{tr('tax.noDocuments')}</p>
+        ) : (
+          <div className="table-wrap">
+            <p className="muted">{tr('finance.documentsIntro')}</p>
+            <table>
+              <thead>
+                <tr>
+                  <th>{tr('finance.date')}</th>
+                  <th>{tr('finance.document')}</th>
+                  <th>{tr('tax.vat')}</th>
+                  <th>{tr('tax.total')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {documents.items.map((d) => (
+                  <tr key={d.id}>
+                    <td>{when(d.issuedAt)}</td>
+                    <td>
+                      <Link href={`${path}/documents/${d.id}`}>
+                        <span className="ltr">{d.number}</span>
+                      </Link>
+                      <div className="muted">
+                        {documentTitle(locale, d)} ·{' '}
+                        {tr(
+                          d.issuer === 'platform' ? 'finance.docFromJays' : 'finance.docToCustomer',
+                        )}
+                      </div>
+                    </td>
+                    <td>{money(d.vatFils, locale)}</td>
+                    <td>
+                      <strong>{money(d.totalFils, locale)}</strong>
                     </td>
                   </tr>
                 ))}

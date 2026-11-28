@@ -99,6 +99,18 @@ export class CheckoutService {
     @Inject(PAYMENT_PROVIDER) private readonly provider: PaymentProvider,
   ) {}
 
+  /** D4: the sellers that charge VAT. */
+  private async vatRegistered(conn: Conn, businessIds: string[]): Promise<Set<string>> {
+    if (businessIds.length === 0) return new Set();
+    const rows = await conn
+      .selectFrom('businesses')
+      .select('id')
+      .where('id', 'in', businessIds)
+      .where('tax_registered', '=', true)
+      .execute();
+    return new Set(rows.map((r) => r.id));
+  }
+
   private async zonesFor(conn: Conn, businessIds: string[], emirate: string) {
     if (businessIds.length === 0) return new Map<string, DeliveryZoneRule>();
     const rows = await conn
@@ -124,9 +136,10 @@ export class CheckoutService {
     lines: PricingLine[],
     zones: Map<string, DeliveryZoneRule>,
     rates: Record<TaxClass, number>,
+    vatRegistered: ReadonlySet<string>,
   ): PricedOrder {
     try {
-      return priceOrder(lines, zones, rates);
+      return priceOrder(lines, zones, rates, undefined, vatRegistered);
     } catch (error) {
       if (error instanceof PricingError && error.code === 'NO_DELIVERY_ZONE') {
         throw policy('DELIVERY_UNAVAILABLE', 'Some sellers do not deliver to this address.', {
@@ -207,7 +220,7 @@ export class CheckoutService {
       };
     });
     const businessIds = [...new Set(lines.map((l) => l.businessId))];
-    const [zones, rates, stores] = await Promise.all([
+    const [zones, rates, stores, vatRegistered] = await Promise.all([
       this.zonesFor(this.db, businessIds, address.emirate_code),
       currentTaxRates(this.db, now),
       this.db
@@ -215,8 +228,9 @@ export class CheckoutService {
         .select(['business_id', 'live_name'])
         .where('business_id', 'in', businessIds)
         .execute(),
+      this.vatRegistered(this.db, businessIds),
     ]);
-    const priced = this.price(lines, zones, rates);
+    const priced = this.price(lines, zones, rates, vatRegistered);
     const storeName = new Map(stores.map((s) => [s.business_id, s.live_name as Localized]));
     const emirate = address.emirate_code as EmirateCode;
     const groups: QuoteGroup[] = priced.groups.map((g) => ({
@@ -389,6 +403,10 @@ export class CheckoutService {
           address.emirate,
         ),
         await currentTaxRates(trx, now),
+        await this.vatRegistered(
+          trx,
+          groups.map((g) => g.businessId),
+        ),
       );
       if (stale || repriced.totalFils !== quote.total_fils || repriced.taxFils !== quote.tax_fils) {
         throw conflict('QUOTE_STALE', 'Prices or delivery fees changed. Review your order again.');
