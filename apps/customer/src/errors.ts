@@ -47,6 +47,11 @@ export function errorKey(error: unknown): { key: MessageKey; seconds: number } {
     UPLOAD_EXPIRED: 'error.uploadExpired',
     UPLOAD_MISSING: 'error.uploadExpired',
     TOO_MANY_ATTACHMENTS: 'error.tooManyAttachments',
+    HOME_SERVICES_NOT_AVAILABLE: 'error.homeUnavailable',
+    LOCATION_NOT_OFFERED: 'error.homeUnavailable',
+    ADDRESS_NOT_COVERED: 'book.notCovered',
+    BELOW_HOME_MINIMUM: 'error.belowHomeMinimum',
+    EMIRATE_NOT_AVAILABLE: 'error.emirateUnavailable',
   };
   return { key: map[error.code] ?? 'common.error', seconds };
 }

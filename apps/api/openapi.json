@@ -7533,7 +7533,8 @@
                               "trade_license",
                               "tax_certificate",
                               "owner_identity",
-                              "other"
+                              "other",
+                              "home_service_license"
                             ]
                           },
                           "fileName": {
@@ -8727,7 +8728,8 @@
                               "trade_license",
                               "tax_certificate",
                               "owner_identity",
-                              "other"
+                              "other",
+                              "home_service_license"
                             ]
                           },
                           "fileName": {
@@ -9866,7 +9868,8 @@
                               "trade_license",
                               "tax_certificate",
                               "owner_identity",
-                              "other"
+                              "other",
+                              "home_service_license"
                             ]
                           },
                           "fileName": {
@@ -10985,7 +10988,8 @@
                               "trade_license",
                               "tax_certificate",
                               "owner_identity",
-                              "other"
+                              "other",
+                              "home_service_license"
                             ]
                           },
                           "fileName": {
@@ -11883,7 +11887,8 @@
                       "trade_license",
                       "tax_certificate",
                       "owner_identity",
-                      "other"
+                      "other",
+                      "home_service_license"
                     ]
                   },
                   "fileName": {
@@ -12084,7 +12089,8 @@
                         "trade_license",
                         "tax_certificate",
                         "owner_identity",
-                        "other"
+                        "other",
+                        "home_service_license"
                       ]
                     },
                     "fileName": {
@@ -14644,7 +14650,8 @@
                               "trade_license",
                               "tax_certificate",
                               "owner_identity",
-                              "other"
+                              "other",
+                              "home_service_license"
                             ]
                           },
                           "fileName": {
@@ -16224,7 +16231,8 @@
                               "trade_license",
                               "tax_certificate",
                               "owner_identity",
-                              "other"
+                              "other",
+                              "home_service_license"
                             ]
                           },
                           "fileName": {
@@ -29113,6 +29121,14 @@
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
                           },
+                          "locationMode": {
+                            "type": "string",
+                            "enum": [
+                              "in_venue",
+                              "home",
+                              "both"
+                            ]
+                          },
                           "branchIds": {
                             "type": "array",
                             "items": {
@@ -29130,10 +29146,70 @@
                           "durationMin",
                           "cancelCutoffHours",
                           "lateCancelRefundBps",
+                          "locationMode",
                           "branchIds"
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "homeServices": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "minOrderFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "areas": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "emirate": {
+                                    "type": "string",
+                                    "enum": [
+                                      "AUH",
+                                      "DXB",
+                                      "SHJ",
+                                      "AJM",
+                                      "UAQ",
+                                      "RAK",
+                                      "FUJ"
+                                    ]
+                                  },
+                                  "area": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "travelFeeFils": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "emirate",
+                                  "area",
+                                  "travelFeeFils"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "minOrderFils",
+                            "areas"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "staff": {
                       "type": "array",
@@ -29182,6 +29258,7 @@
                     "logoUrl",
                     "branches",
                     "services",
+                    "homeServices",
                     "staff"
                   ],
                   "additionalProperties": false
@@ -29249,6 +29326,19 @@
               "type": "string",
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "location",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "venue",
+              "type": "string",
+              "enum": [
+                "venue",
+                "home"
+              ]
             }
           }
         ],
@@ -29402,6 +29492,26 @@
                       {
                         "type": "string",
                         "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "location": {
+                    "default": "venue",
+                    "type": "string",
+                    "enum": [
+                      "venue",
+                      "home"
+                    ]
+                  },
+                  "addressId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       },
                       {
                         "type": "null"
@@ -29611,6 +29721,85 @@
                       ],
                       "additionalProperties": false
                     },
+                    "location": {
+                      "type": "string",
+                      "enum": [
+                        "venue",
+                        "home"
+                      ]
+                    },
+                    "homeAddress": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "addressId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "label": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "emirate": {
+                              "type": "string",
+                              "enum": [
+                                "AUH",
+                                "DXB",
+                                "SHJ",
+                                "AJM",
+                                "UAQ",
+                                "RAK",
+                                "FUJ"
+                              ]
+                            },
+                            "area": {
+                              "type": "string"
+                            },
+                            "street": {
+                              "type": "string"
+                            },
+                            "building": {
+                              "type": "string"
+                            },
+                            "unit": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "directions": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "addressId",
+                            "label",
+                            "emirate",
+                            "area",
+                            "street",
+                            "building",
+                            "unit",
+                            "directions"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "travelFeeFils": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "priceFils": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -29747,6 +29936,9 @@
                     "branch",
                     "service",
                     "staff",
+                    "location",
+                    "homeAddress",
+                    "travelFeeFils",
                     "priceFils",
                     "taxFils",
                     "currency",
@@ -30203,6 +30395,85 @@
                             ],
                             "additionalProperties": false
                           },
+                          "location": {
+                            "type": "string",
+                            "enum": [
+                              "venue",
+                              "home"
+                            ]
+                          },
+                          "homeAddress": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "addressId": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "label": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "emirate": {
+                                    "type": "string",
+                                    "enum": [
+                                      "AUH",
+                                      "DXB",
+                                      "SHJ",
+                                      "AJM",
+                                      "UAQ",
+                                      "RAK",
+                                      "FUJ"
+                                    ]
+                                  },
+                                  "area": {
+                                    "type": "string"
+                                  },
+                                  "street": {
+                                    "type": "string"
+                                  },
+                                  "building": {
+                                    "type": "string"
+                                  },
+                                  "unit": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "directions": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "addressId",
+                                  "label",
+                                  "emirate",
+                                  "area",
+                                  "street",
+                                  "building",
+                                  "unit",
+                                  "directions"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "travelFeeFils": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
                           "priceFils": {
                             "type": "integer",
                             "minimum": -9007199254740991,
@@ -30339,6 +30610,9 @@
                           "branch",
                           "service",
                           "staff",
+                          "location",
+                          "homeAddress",
+                          "travelFeeFils",
                           "priceFils",
                           "taxFils",
                           "currency",
@@ -30609,6 +30883,85 @@
                       ],
                       "additionalProperties": false
                     },
+                    "location": {
+                      "type": "string",
+                      "enum": [
+                        "venue",
+                        "home"
+                      ]
+                    },
+                    "homeAddress": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "addressId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "label": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "emirate": {
+                              "type": "string",
+                              "enum": [
+                                "AUH",
+                                "DXB",
+                                "SHJ",
+                                "AJM",
+                                "UAQ",
+                                "RAK",
+                                "FUJ"
+                              ]
+                            },
+                            "area": {
+                              "type": "string"
+                            },
+                            "street": {
+                              "type": "string"
+                            },
+                            "building": {
+                              "type": "string"
+                            },
+                            "unit": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "directions": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "addressId",
+                            "label",
+                            "emirate",
+                            "area",
+                            "street",
+                            "building",
+                            "unit",
+                            "directions"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "travelFeeFils": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "priceFils": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -30745,6 +31098,9 @@
                     "branch",
                     "service",
                     "staff",
+                    "location",
+                    "homeAddress",
+                    "travelFeeFils",
                     "priceFils",
                     "taxFils",
                     "currency",
@@ -31026,6 +31382,85 @@
                       ],
                       "additionalProperties": false
                     },
+                    "location": {
+                      "type": "string",
+                      "enum": [
+                        "venue",
+                        "home"
+                      ]
+                    },
+                    "homeAddress": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "addressId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "label": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "emirate": {
+                              "type": "string",
+                              "enum": [
+                                "AUH",
+                                "DXB",
+                                "SHJ",
+                                "AJM",
+                                "UAQ",
+                                "RAK",
+                                "FUJ"
+                              ]
+                            },
+                            "area": {
+                              "type": "string"
+                            },
+                            "street": {
+                              "type": "string"
+                            },
+                            "building": {
+                              "type": "string"
+                            },
+                            "unit": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "directions": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "addressId",
+                            "label",
+                            "emirate",
+                            "area",
+                            "street",
+                            "building",
+                            "unit",
+                            "directions"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "travelFeeFils": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "priceFils": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -31162,6 +31597,9 @@
                     "branch",
                     "service",
                     "staff",
+                    "location",
+                    "homeAddress",
+                    "travelFeeFils",
                     "priceFils",
                     "taxFils",
                     "currency",
@@ -31482,6 +31920,85 @@
                       ],
                       "additionalProperties": false
                     },
+                    "location": {
+                      "type": "string",
+                      "enum": [
+                        "venue",
+                        "home"
+                      ]
+                    },
+                    "homeAddress": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "addressId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "label": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "emirate": {
+                              "type": "string",
+                              "enum": [
+                                "AUH",
+                                "DXB",
+                                "SHJ",
+                                "AJM",
+                                "UAQ",
+                                "RAK",
+                                "FUJ"
+                              ]
+                            },
+                            "area": {
+                              "type": "string"
+                            },
+                            "street": {
+                              "type": "string"
+                            },
+                            "building": {
+                              "type": "string"
+                            },
+                            "unit": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "directions": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "addressId",
+                            "label",
+                            "emirate",
+                            "area",
+                            "street",
+                            "building",
+                            "unit",
+                            "directions"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "travelFeeFils": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "priceFils": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -31618,6 +32135,9 @@
                     "branch",
                     "service",
                     "staff",
+                    "location",
+                    "homeAddress",
+                    "travelFeeFils",
                     "priceFils",
                     "taxFils",
                     "currency",
@@ -33137,6 +33657,14 @@
                         "minimum": -9007199254740991,
                         "maximum": 9007199254740991
                       },
+                      "locationMode": {
+                        "type": "string",
+                        "enum": [
+                          "in_venue",
+                          "home",
+                          "both"
+                        ]
+                      },
                       "status": {
                         "type": "string",
                         "enum": [
@@ -33185,6 +33713,7 @@
                       "bufferAfterMin",
                       "cancelCutoffHours",
                       "lateCancelRefundBps",
+                      "locationMode",
                       "status",
                       "suspensionReason",
                       "version",
@@ -33354,6 +33883,15 @@
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     }
+                  },
+                  "locationMode": {
+                    "default": "in_venue",
+                    "type": "string",
+                    "enum": [
+                      "in_venue",
+                      "home",
+                      "both"
+                    ]
                   }
                 },
                 "required": [
@@ -33457,6 +33995,14 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "locationMode": {
+                      "type": "string",
+                      "enum": [
+                        "in_venue",
+                        "home",
+                        "both"
+                      ]
+                    },
                     "status": {
                       "type": "string",
                       "enum": [
@@ -33505,6 +34051,7 @@
                     "bufferAfterMin",
                     "cancelCutoffHours",
                     "lateCancelRefundBps",
+                    "locationMode",
                     "status",
                     "suspensionReason",
                     "version",
@@ -33688,6 +34235,14 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "locationMode": {
+                      "type": "string",
+                      "enum": [
+                        "in_venue",
+                        "home",
+                        "both"
+                      ]
+                    },
                     "status": {
                       "type": "string",
                       "enum": [
@@ -33736,6 +34291,7 @@
                     "bufferAfterMin",
                     "cancelCutoffHours",
                     "lateCancelRefundBps",
+                    "locationMode",
                     "status",
                     "suspensionReason",
                     "version",
@@ -33909,6 +34465,14 @@
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     }
                   },
+                  "locationMode": {
+                    "type": "string",
+                    "enum": [
+                      "in_venue",
+                      "home",
+                      "both"
+                    ]
+                  },
                   "status": {
                     "type": "string",
                     "enum": [
@@ -34010,6 +34574,14 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "locationMode": {
+                      "type": "string",
+                      "enum": [
+                        "in_venue",
+                        "home",
+                        "both"
+                      ]
+                    },
                     "status": {
                       "type": "string",
                       "enum": [
@@ -34058,6 +34630,7 @@
                     "bufferAfterMin",
                     "cancelCutoffHours",
                     "lateCancelRefundBps",
+                    "locationMode",
                     "status",
                     "suspensionReason",
                     "version",
@@ -35938,6 +36511,85 @@
                             ],
                             "additionalProperties": false
                           },
+                          "location": {
+                            "type": "string",
+                            "enum": [
+                              "venue",
+                              "home"
+                            ]
+                          },
+                          "homeAddress": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "addressId": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "label": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "emirate": {
+                                    "type": "string",
+                                    "enum": [
+                                      "AUH",
+                                      "DXB",
+                                      "SHJ",
+                                      "AJM",
+                                      "UAQ",
+                                      "RAK",
+                                      "FUJ"
+                                    ]
+                                  },
+                                  "area": {
+                                    "type": "string"
+                                  },
+                                  "street": {
+                                    "type": "string"
+                                  },
+                                  "building": {
+                                    "type": "string"
+                                  },
+                                  "unit": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "directions": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "addressId",
+                                  "label",
+                                  "emirate",
+                                  "area",
+                                  "street",
+                                  "building",
+                                  "unit",
+                                  "directions"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "travelFeeFils": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
                           "priceFils": {
                             "type": "integer",
                             "minimum": -9007199254740991,
@@ -36080,6 +36732,9 @@
                           "branch",
                           "service",
                           "staff",
+                          "location",
+                          "homeAddress",
+                          "travelFeeFils",
                           "priceFils",
                           "taxFils",
                           "currency",
@@ -36438,6 +37093,85 @@
                       ],
                       "additionalProperties": false
                     },
+                    "location": {
+                      "type": "string",
+                      "enum": [
+                        "venue",
+                        "home"
+                      ]
+                    },
+                    "homeAddress": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "addressId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "label": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "emirate": {
+                              "type": "string",
+                              "enum": [
+                                "AUH",
+                                "DXB",
+                                "SHJ",
+                                "AJM",
+                                "UAQ",
+                                "RAK",
+                                "FUJ"
+                              ]
+                            },
+                            "area": {
+                              "type": "string"
+                            },
+                            "street": {
+                              "type": "string"
+                            },
+                            "building": {
+                              "type": "string"
+                            },
+                            "unit": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "directions": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "addressId",
+                            "label",
+                            "emirate",
+                            "area",
+                            "street",
+                            "building",
+                            "unit",
+                            "directions"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "travelFeeFils": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "priceFils": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -36580,6 +37314,9 @@
                     "branch",
                     "service",
                     "staff",
+                    "location",
+                    "homeAddress",
+                    "travelFeeFils",
                     "priceFils",
                     "taxFils",
                     "currency",
@@ -36887,6 +37624,85 @@
                       ],
                       "additionalProperties": false
                     },
+                    "location": {
+                      "type": "string",
+                      "enum": [
+                        "venue",
+                        "home"
+                      ]
+                    },
+                    "homeAddress": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "addressId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "label": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "emirate": {
+                              "type": "string",
+                              "enum": [
+                                "AUH",
+                                "DXB",
+                                "SHJ",
+                                "AJM",
+                                "UAQ",
+                                "RAK",
+                                "FUJ"
+                              ]
+                            },
+                            "area": {
+                              "type": "string"
+                            },
+                            "street": {
+                              "type": "string"
+                            },
+                            "building": {
+                              "type": "string"
+                            },
+                            "unit": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "directions": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "addressId",
+                            "label",
+                            "emirate",
+                            "area",
+                            "street",
+                            "building",
+                            "unit",
+                            "directions"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "travelFeeFils": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "priceFils": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -37029,6 +37845,9 @@
                     "branch",
                     "service",
                     "staff",
+                    "location",
+                    "homeAddress",
+                    "travelFeeFils",
                     "priceFils",
                     "taxFils",
                     "currency",
@@ -37349,6 +38168,85 @@
                       ],
                       "additionalProperties": false
                     },
+                    "location": {
+                      "type": "string",
+                      "enum": [
+                        "venue",
+                        "home"
+                      ]
+                    },
+                    "homeAddress": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "addressId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "label": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "emirate": {
+                              "type": "string",
+                              "enum": [
+                                "AUH",
+                                "DXB",
+                                "SHJ",
+                                "AJM",
+                                "UAQ",
+                                "RAK",
+                                "FUJ"
+                              ]
+                            },
+                            "area": {
+                              "type": "string"
+                            },
+                            "street": {
+                              "type": "string"
+                            },
+                            "building": {
+                              "type": "string"
+                            },
+                            "unit": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "directions": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "addressId",
+                            "label",
+                            "emirate",
+                            "area",
+                            "street",
+                            "building",
+                            "unit",
+                            "directions"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "travelFeeFils": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "priceFils": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -37491,6 +38389,9 @@
                     "branch",
                     "service",
                     "staff",
+                    "location",
+                    "homeAddress",
+                    "travelFeeFils",
                     "priceFils",
                     "taxFils",
                     "currency",
@@ -37834,6 +38735,85 @@
                             ],
                             "additionalProperties": false
                           },
+                          "location": {
+                            "type": "string",
+                            "enum": [
+                              "venue",
+                              "home"
+                            ]
+                          },
+                          "homeAddress": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "addressId": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "label": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "emirate": {
+                                    "type": "string",
+                                    "enum": [
+                                      "AUH",
+                                      "DXB",
+                                      "SHJ",
+                                      "AJM",
+                                      "UAQ",
+                                      "RAK",
+                                      "FUJ"
+                                    ]
+                                  },
+                                  "area": {
+                                    "type": "string"
+                                  },
+                                  "street": {
+                                    "type": "string"
+                                  },
+                                  "building": {
+                                    "type": "string"
+                                  },
+                                  "unit": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "directions": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "addressId",
+                                  "label",
+                                  "emirate",
+                                  "area",
+                                  "street",
+                                  "building",
+                                  "unit",
+                                  "directions"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "travelFeeFils": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
                           "priceFils": {
                             "type": "integer",
                             "minimum": -9007199254740991,
@@ -37979,6 +38959,9 @@
                           "branch",
                           "service",
                           "staff",
+                          "location",
+                          "homeAddress",
+                          "travelFeeFils",
                           "priceFils",
                           "taxFils",
                           "currency",
@@ -38191,6 +39174,14 @@
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
                           },
+                          "locationMode": {
+                            "type": "string",
+                            "enum": [
+                              "in_venue",
+                              "home",
+                              "both"
+                            ]
+                          },
                           "status": {
                             "type": "string",
                             "enum": [
@@ -38270,6 +39261,7 @@
                           "bufferAfterMin",
                           "cancelCutoffHours",
                           "lateCancelRefundBps",
+                          "locationMode",
                           "status",
                           "suspensionReason",
                           "version",
@@ -38476,6 +39468,14 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "locationMode": {
+                      "type": "string",
+                      "enum": [
+                        "in_venue",
+                        "home",
+                        "both"
+                      ]
+                    },
                     "status": {
                       "type": "string",
                       "enum": [
@@ -38555,6 +39555,7 @@
                     "bufferAfterMin",
                     "cancelCutoffHours",
                     "lateCancelRefundBps",
+                    "locationMode",
                     "status",
                     "suspensionReason",
                     "version",
@@ -38624,6 +39625,1861 @@
           }
         ],
         "summary": "Suspend or reinstate a service (catalog, compliance, operations)",
+        "tags": [
+          "admin-bookings"
+        ]
+      }
+    },
+    "/v1/businesses/{businessId}/home-services": {
+      "get": {
+        "operationId": "BusinessHomeServicesController_get",
+        "parameters": [
+          {
+            "name": "businessId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The profile, or a blank draft.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "businessId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "pending",
+                        "approved",
+                        "rejected",
+                        "suspended"
+                      ]
+                    },
+                    "licenseNumber": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "licenseAuthority": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "licenseExpiry": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "licenseDocument": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "fileName": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "fileName",
+                            "status"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "travelBufferMin": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "minOrderFils": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "submittedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reviewedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reviewReason": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "areas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "emirate": {
+                            "type": "string",
+                            "enum": [
+                              "AUH",
+                              "DXB",
+                              "SHJ",
+                              "AJM",
+                              "UAQ",
+                              "RAK",
+                              "FUJ"
+                            ]
+                          },
+                          "area": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "travelFeeFils": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "emirate",
+                          "area",
+                          "travelFeeFils"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "licenseEditable": {
+                      "type": "boolean"
+                    },
+                    "active": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "businessId",
+                    "status",
+                    "licenseNumber",
+                    "licenseAuthority",
+                    "licenseExpiry",
+                    "licenseDocument",
+                    "travelBufferMin",
+                    "minOrderFils",
+                    "submittedAt",
+                    "reviewedAt",
+                    "reviewReason",
+                    "version",
+                    "areas",
+                    "licenseEditable",
+                    "active"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Absent, or hidden from this caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Home-service licence, travel terms and coverage (any member)",
+        "tags": [
+          "business-services"
+        ]
+      },
+      "put": {
+        "description": "Licence details change only while a draft or rejected (409 HOME_PROFILE_LOCKED). Travel terms and areas apply to new bookings only.",
+        "operationId": "BusinessHomeServicesController_save",
+        "parameters": [
+          {
+            "name": "businessId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "licenseNumber": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9/-]{2,39}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "licenseAuthority": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "licenseExpiry": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "licenseDocumentId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "travelBufferMin": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 120
+                  },
+                  "minOrderFils": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000000
+                  },
+                  "areas": {
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "emirate": {
+                          "type": "string",
+                          "enum": [
+                            "AUH",
+                            "DXB",
+                            "SHJ",
+                            "AJM",
+                            "UAQ",
+                            "RAK",
+                            "FUJ"
+                          ]
+                        },
+                        "area": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 120
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "travelFeeFils": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 10000000
+                        }
+                      },
+                      "required": [
+                        "emirate",
+                        "travelFeeFils"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "travelBufferMin",
+                  "minOrderFils",
+                  "areas"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The saved profile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "businessId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "pending",
+                        "approved",
+                        "rejected",
+                        "suspended"
+                      ]
+                    },
+                    "licenseNumber": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "licenseAuthority": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "licenseExpiry": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "licenseDocument": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "fileName": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "fileName",
+                            "status"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "travelBufferMin": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "minOrderFils": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "submittedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reviewedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reviewReason": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "areas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "emirate": {
+                            "type": "string",
+                            "enum": [
+                              "AUH",
+                              "DXB",
+                              "SHJ",
+                              "AJM",
+                              "UAQ",
+                              "RAK",
+                              "FUJ"
+                            ]
+                          },
+                          "area": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "travelFeeFils": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "emirate",
+                          "area",
+                          "travelFeeFils"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "licenseEditable": {
+                      "type": "boolean"
+                    },
+                    "active": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "businessId",
+                    "status",
+                    "licenseNumber",
+                    "licenseAuthority",
+                    "licenseExpiry",
+                    "licenseDocument",
+                    "travelBufferMin",
+                    "minOrderFils",
+                    "submittedAt",
+                    "reviewedAt",
+                    "reviewReason",
+                    "version",
+                    "areas",
+                    "licenseEditable",
+                    "active"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed (VALIDATION_FAILED) or a code is invalid or expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Absent, or hidden from this caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Save the licence, travel buffer, minimum and coverage areas (owner)",
+        "tags": [
+          "business-services"
+        ]
+      }
+    },
+    "/v1/businesses/{businessId}/home-services/submit": {
+      "post": {
+        "description": "422 HOME_PROFILE_INCOMPLETE lists what is missing; 409 INVALID_TRANSITION.",
+        "operationId": "BusinessHomeServicesController_submit",
+        "parameters": [
+          {
+            "name": "businessId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The profile, now pending.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "businessId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "pending",
+                        "approved",
+                        "rejected",
+                        "suspended"
+                      ]
+                    },
+                    "licenseNumber": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "licenseAuthority": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "licenseExpiry": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "licenseDocument": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "fileName": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "fileName",
+                            "status"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "travelBufferMin": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "minOrderFils": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "submittedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reviewedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reviewReason": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "areas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "emirate": {
+                            "type": "string",
+                            "enum": [
+                              "AUH",
+                              "DXB",
+                              "SHJ",
+                              "AJM",
+                              "UAQ",
+                              "RAK",
+                              "FUJ"
+                            ]
+                          },
+                          "area": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "travelFeeFils": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "emirate",
+                          "area",
+                          "travelFeeFils"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "licenseEditable": {
+                      "type": "boolean"
+                    },
+                    "active": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "businessId",
+                    "status",
+                    "licenseNumber",
+                    "licenseAuthority",
+                    "licenseExpiry",
+                    "licenseDocument",
+                    "travelBufferMin",
+                    "minOrderFils",
+                    "submittedAt",
+                    "reviewedAt",
+                    "reviewReason",
+                    "version",
+                    "areas",
+                    "licenseEditable",
+                    "active"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Absent, or hidden from this caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refused by policy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ask the marketplace to approve home visits (owner)",
+        "tags": [
+          "business-services"
+        ]
+      }
+    },
+    "/v1/admin/home-services": {
+      "get": {
+        "operationId": "AdminHomeServicesController_list",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "pending",
+                "approved",
+                "rejected",
+                "suspended"
+              ]
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of profiles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "businessId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "draft",
+                              "pending",
+                              "approved",
+                              "rejected",
+                              "suspended"
+                            ]
+                          },
+                          "licenseNumber": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "licenseAuthority": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "licenseExpiry": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "licenseDocument": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "fileName": {
+                                    "type": "string"
+                                  },
+                                  "status": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "fileName",
+                                  "status"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "travelBufferMin": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "minOrderFils": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "submittedAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "reviewedAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "reviewReason": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "areas": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "emirate": {
+                                  "type": "string",
+                                  "enum": [
+                                    "AUH",
+                                    "DXB",
+                                    "SHJ",
+                                    "AJM",
+                                    "UAQ",
+                                    "RAK",
+                                    "FUJ"
+                                  ]
+                                },
+                                "area": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "travelFeeFils": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "emirate",
+                                "area",
+                                "travelFeeFils"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "licenseEditable": {
+                            "type": "boolean"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "business": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "name": {
+                                "type": "object",
+                                "properties": {
+                                  "en": {
+                                    "type": "string"
+                                  },
+                                  "ar": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "en",
+                                  "ar"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "businessId",
+                          "status",
+                          "licenseNumber",
+                          "licenseAuthority",
+                          "licenseExpiry",
+                          "licenseDocument",
+                          "travelBufferMin",
+                          "minOrderFils",
+                          "submittedAt",
+                          "reviewedAt",
+                          "reviewReason",
+                          "version",
+                          "areas",
+                          "licenseEditable",
+                          "active",
+                          "business"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed (VALIDATION_FAILED) or a code is invalid or expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Home-service applications and approvals, latest first",
+        "tags": [
+          "admin-bookings"
+        ]
+      }
+    },
+    "/v1/admin/home-services/{businessId}": {
+      "get": {
+        "operationId": "AdminHomeServicesController_get",
+        "parameters": [
+          {
+            "name": "businessId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The profile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "businessId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "pending",
+                        "approved",
+                        "rejected",
+                        "suspended"
+                      ]
+                    },
+                    "licenseNumber": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "licenseAuthority": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "licenseExpiry": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "licenseDocument": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "fileName": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "fileName",
+                            "status"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "travelBufferMin": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "minOrderFils": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "submittedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reviewedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reviewReason": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "areas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "emirate": {
+                            "type": "string",
+                            "enum": [
+                              "AUH",
+                              "DXB",
+                              "SHJ",
+                              "AJM",
+                              "UAQ",
+                              "RAK",
+                              "FUJ"
+                            ]
+                          },
+                          "area": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "travelFeeFils": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "emirate",
+                          "area",
+                          "travelFeeFils"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "licenseEditable": {
+                      "type": "boolean"
+                    },
+                    "active": {
+                      "type": "boolean"
+                    },
+                    "business": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "type": "object",
+                          "properties": {
+                            "en": {
+                              "type": "string"
+                            },
+                            "ar": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "en",
+                            "ar"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "businessId",
+                    "status",
+                    "licenseNumber",
+                    "licenseAuthority",
+                    "licenseExpiry",
+                    "licenseDocument",
+                    "travelBufferMin",
+                    "minOrderFils",
+                    "submittedAt",
+                    "reviewedAt",
+                    "reviewReason",
+                    "version",
+                    "areas",
+                    "licenseEditable",
+                    "active",
+                    "business"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Absent, or hidden from this caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "A business's home-service profile",
+        "tags": [
+          "admin-bookings"
+        ]
+      }
+    },
+    "/v1/admin/home-services/{businessId}/decision": {
+      "post": {
+        "description": "A reason is required to reject or suspend. 409 VERSION_CONFLICT, INVALID_TRANSITION or LICENSE_EXPIRED.",
+        "operationId": "AdminHomeServicesController_decide",
+        "parameters": [
+          {
+            "name": "businessId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "approve",
+                      "reject",
+                      "suspend",
+                      "reinstate"
+                    ]
+                  },
+                  "reason": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 1000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "decision",
+                  "expectedVersion"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The profile after the decision.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "businessId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "pending",
+                        "approved",
+                        "rejected",
+                        "suspended"
+                      ]
+                    },
+                    "licenseNumber": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "licenseAuthority": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "licenseExpiry": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "licenseDocument": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "fileName": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "fileName",
+                            "status"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "travelBufferMin": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "minOrderFils": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "submittedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reviewedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reviewReason": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "areas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "emirate": {
+                            "type": "string",
+                            "enum": [
+                              "AUH",
+                              "DXB",
+                              "SHJ",
+                              "AJM",
+                              "UAQ",
+                              "RAK",
+                              "FUJ"
+                            ]
+                          },
+                          "area": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "travelFeeFils": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "emirate",
+                          "area",
+                          "travelFeeFils"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "licenseEditable": {
+                      "type": "boolean"
+                    },
+                    "active": {
+                      "type": "boolean"
+                    },
+                    "business": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "type": "object",
+                          "properties": {
+                            "en": {
+                              "type": "string"
+                            },
+                            "ar": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "en",
+                            "ar"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "businessId",
+                    "status",
+                    "licenseNumber",
+                    "licenseAuthority",
+                    "licenseExpiry",
+                    "licenseDocument",
+                    "travelBufferMin",
+                    "minOrderFils",
+                    "submittedAt",
+                    "reviewedAt",
+                    "reviewReason",
+                    "version",
+                    "areas",
+                    "licenseEditable",
+                    "active",
+                    "business"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed (VALIDATION_FAILED) or a code is invalid or expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Absent, or hidden from this caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Approve, reject, suspend or reinstate home visits (compliance)",
         "tags": [
           "admin-bookings"
         ]

@@ -172,6 +172,12 @@ import {
   reconciliationRunSchema,
   refundRequestSchema,
 } from '@jays/contracts';
+import {
+  adminHomeServiceSchema,
+  homeServiceProfileSchema,
+  type homeServiceDecisionRequestSchema,
+  type homeServiceProfileInputSchema,
+} from '@jays/contracts';
 import { z } from 'zod';
 
 /** A failed API call, carrying the error envelope from docs/07-api.md. */
@@ -517,6 +523,7 @@ export function createApiClient(options: ApiClientOptions) {
       serviceId: string;
       date: string;
       staffId?: string;
+      location?: 'venue' | 'home';
     }) => call('GET', `/availability${query(params)}`, availabilitySchema),
     /** Send the same idempotency key when retrying, so a lost response never holds twice. */
     holdBooking: (body: z.input<typeof holdRequestSchema>, idempotencyKey: string) =>
@@ -817,6 +824,40 @@ export function createApiClient(options: ApiClientOptions) {
       call('GET', `/admin/finance/documents/${encodeURIComponent(id)}`, taxDocumentSchema),
     adminVatReport: (from: string, to: string) =>
       call('GET', `/admin/finance/vat-report${query({ from, to })}`, vatReportSchema),
+    // Home services (phase 8.5)
+    homeServices: (businessId: string) =>
+      call(
+        'GET',
+        `/businesses/${encodeURIComponent(businessId)}/home-services`,
+        homeServiceProfileSchema,
+      ),
+    saveHomeServices: (businessId: string, body: z.input<typeof homeServiceProfileInputSchema>) =>
+      call(
+        'PUT',
+        `/businesses/${encodeURIComponent(businessId)}/home-services`,
+        homeServiceProfileSchema,
+        body,
+      ),
+    submitHomeServices: (businessId: string) =>
+      call(
+        'POST',
+        `/businesses/${encodeURIComponent(businessId)}/home-services/submit`,
+        homeServiceProfileSchema,
+      ),
+    adminHomeServices: (params: Page & { status?: string } = {}) =>
+      call('GET', `/admin/home-services${query(params)}`, pageSchema(adminHomeServiceSchema)),
+    adminHomeService: (businessId: string) =>
+      call('GET', `/admin/home-services/${encodeURIComponent(businessId)}`, adminHomeServiceSchema),
+    adminDecideHomeServices: (
+      businessId: string,
+      body: z.input<typeof homeServiceDecisionRequestSchema>,
+    ) =>
+      call(
+        'POST',
+        `/admin/home-services/${encodeURIComponent(businessId)}/decision`,
+        adminHomeServiceSchema,
+        body,
+      ),
     adminBusinessTax: (businessId: string) =>
       call(
         'GET',

@@ -25,6 +25,9 @@ export function VenueServices({ venue }: { venue: PublicVenue }) {
                   price: money(s.priceFils, state.locale),
                 })}
               </Text>
+              {s.locationMode !== 'in_venue' ? (
+                <Text style={cardStyles.muted}>{tr(`venue.location.${s.locationMode}`)}</Text>
+              ) : null}
             </View>
             <Button
               label={tr('venue.book')}

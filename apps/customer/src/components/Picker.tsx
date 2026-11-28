@@ -52,6 +52,8 @@ const styles = StyleSheet.create({
   chip: {
     minHeight: Math.max(40, minTouchTarget - 4),
     paddingHorizontal: 14,
+    paddingVertical: 6,
+    maxWidth: '100%',
     justifyContent: 'center',
     borderRadius: 999,
     borderWidth: 1,

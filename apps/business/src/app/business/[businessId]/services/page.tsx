@@ -29,11 +29,12 @@ export default async function ServicesPage({
     );
   }
   const api = await serverApi();
-  const [branches, services, emirates, categories] = await Promise.all([
+  const [branches, services, emirates, categories, home] = await Promise.all([
     api.branches(businessId),
     api.services(businessId),
     api.emirates(),
     api.categories('services'),
+    api.homeServices(businessId),
   ]);
   const active = branches.filter((b) => b.status === 'active');
   const emirateName = (code: string) =>
@@ -66,7 +67,8 @@ export default async function ServicesPage({
                           price: money(s.priceFils, locale),
                         })}{' '}
                         · {s.branchIds.map(branchName).join(', ')} ·{' '}
-                        {tr('service.staffCount', { count: s.staffIds.length })}
+                        {tr('service.staffCount', { count: s.staffIds.length })} ·{' '}
+                        {tr(`service.location.${s.locationMode}`)}
                       </div>
                     </div>
                     <span className={`badge ${s.status}`}>{tr(`service.status.${s.status}`)}</span>
@@ -74,6 +76,19 @@ export default async function ServicesPage({
                 ))}
               </ul>
             )}
+          </section>
+          <section className="card">
+            <h2>{tr('home.title')}</h2>
+            <p>
+              <span className={`badge ${home.status}`}>{tr(`home.status.${home.status}`)}</span>{' '}
+              {home.active ? tr('home.activeNote') : null}
+            </p>
+            <p className="muted">{tr('home.intro')}</p>
+            <p>
+              <Link className="btn secondary" href={`${path}/home`}>
+                {tr('home.manage')}
+              </Link>
+            </p>
           </section>
           <section>
             <h2>{tr('services.branches')}</h2>
@@ -120,6 +135,7 @@ export default async function ServicesPage({
                   service={null}
                   categories={categories.items.filter((c) => c.status === 'active')}
                   branches={active}
+                  homeApproved={home.status === 'approved'}
                 />
                 <p>
                   <button className="btn" type="submit">

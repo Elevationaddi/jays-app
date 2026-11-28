@@ -156,6 +156,22 @@ export default async function CalendarPage({
                           ? ` · ${tr('booking.refunded', { amount: money(b.refundFils, locale) })}`
                           : ''}
                       </div>
+                      {b.homeAddress ? (
+                        <div style={{ fontSize: 14 }}>
+                          <span className="badge">{tr('booking.homeVisit')}</span>{' '}
+                          {[
+                            b.homeAddress.unit,
+                            b.homeAddress.building,
+                            b.homeAddress.street,
+                            b.homeAddress.area,
+                            b.homeAddress.emirate,
+                          ]
+                            .filter(Boolean)
+                            .join(', ')}
+                          {b.homeAddress.directions ? ` · ${b.homeAddress.directions}` : ''} ·{' '}
+                          {tr('booking.travelFee', { amount: money(b.travelFeeFils, locale) })}
+                        </div>
+                      ) : null}
                       {b.note ? (
                         <div className="muted" style={{ fontSize: 14 }}>
                           {b.note}

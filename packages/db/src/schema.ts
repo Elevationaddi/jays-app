@@ -234,7 +234,8 @@ export interface OutboxTable {
   updated_at: UpdatedAt;
 }
 
-export type DocumentKind = 'trade_license' | 'tax_certificate' | 'owner_identity' | 'other';
+export type DocumentKind =
+  'trade_license' | 'tax_certificate' | 'owner_identity' | 'other' | 'home_service_license';
 export type DocumentStatus = 'pending_upload' | 'clean' | 'infected' | 'rejected' | 'archived';
 export type UploadRejection = 'type_mismatch' | 'too_large' | 'empty' | 'malware' | 'dimensions';
 
@@ -649,6 +650,7 @@ export interface BranchClosuresTable {
 }
 
 export type ServiceStatus = 'active' | 'suspended' | 'archived';
+export type ServiceLocationMode = 'in_venue' | 'home' | 'both';
 
 export interface ServicesTable {
   id: Id;
@@ -670,6 +672,7 @@ export interface ServicesTable {
   created_by: string;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+  location_mode: Generated<ServiceLocationMode>;
 }
 
 export interface BranchServicesTable {
@@ -765,6 +768,51 @@ export interface BookingsTable {
   version: Generated<number>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+  location_type: Generated<'venue' | 'home'>;
+  home_address: ColumnType<HomeAddress | null, string | null | undefined, string | null>;
+  travel_fee_fils: Generated<number>;
+  travel_buffer_min: Generated<number>;
+}
+
+/** The customer's address as booked for a home visit (T13). */
+export interface HomeAddress {
+  addressId: string;
+  label: string | null;
+  emirate: string;
+  area: string;
+  street: string;
+  building: string;
+  unit: string | null;
+  directions: string | null;
+}
+
+export type HomeServiceStatus = 'draft' | 'pending' | 'approved' | 'rejected' | 'suspended';
+
+export interface HomeServiceProfilesTable {
+  business_id: string;
+  status: Generated<HomeServiceStatus>;
+  license_number: string | null;
+  license_authority: string | null;
+  license_expiry: ColumnType<Date | null, string | null | undefined, string | null>;
+  license_document_id: string | null;
+  travel_buffer_min: Generated<number>;
+  min_order_fils: Generated<number>;
+  submitted_at: Timestamp | null;
+  reviewed_at: Timestamp | null;
+  reviewed_by: string | null;
+  review_reason: string | null;
+  version: Generated<number>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface HomeServiceAreasTable {
+  id: Id;
+  business_id: string;
+  emirate_code: string;
+  area: string | null;
+  travel_fee_fils: number;
+  created_at: CreatedAt;
 }
 
 // Phase 5: finance (ADR-0015) -------------------------------------------------------------------
@@ -1326,6 +1374,8 @@ export interface Database {
   document_sequences: DocumentSequencesTable;
   tax_documents: TaxDocumentsTable;
   payout_runs: PayoutRunsTable;
+  home_service_profiles: HomeServiceProfilesTable;
+  home_service_areas: HomeServiceAreasTable;
 }
 
 /** Every column of every table, used by the drift test. Keep in the same order as above. */
@@ -1842,6 +1892,7 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'created_by',
     'created_at',
     'updated_at',
+    'location_mode',
   ],
   branch_services: ['branch_id', 'service_id', 'business_id'],
   staff: [
@@ -1913,6 +1964,10 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'version',
     'created_at',
     'updated_at',
+    'location_type',
+    'home_address',
+    'travel_fee_fils',
+    'travel_buffer_min',
   ],
   fee_rules: [
     'id',
@@ -2226,6 +2281,31 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'currency',
     'rules_approved',
     'issued_at',
+    'created_at',
+  ],
+  home_service_profiles: [
+    'business_id',
+    'status',
+    'license_number',
+    'license_authority',
+    'license_expiry',
+    'license_document_id',
+    'travel_buffer_min',
+    'min_order_fils',
+    'submitted_at',
+    'reviewed_at',
+    'reviewed_by',
+    'review_reason',
+    'version',
+    'created_at',
+    'updated_at',
+  ],
+  home_service_areas: [
+    'id',
+    'business_id',
+    'emirate_code',
+    'area',
+    'travel_fee_fils',
     'created_at',
   ],
   payout_runs: [

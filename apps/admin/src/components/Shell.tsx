@@ -18,6 +18,7 @@ export function Shell({
     | 'businesses'
     | 'products'
     | 'services'
+    | 'homeServices'
     | 'bookings'
     | 'finance'
     | 'orders'
@@ -53,6 +54,12 @@ export function Shell({
       href: '/admin/services',
       label: t(locale, 'admin.nav.services'),
       show: admin.capabilities.includes('services.takedown'),
+    },
+    {
+      key: 'homeServices',
+      href: '/admin/home-services',
+      label: t(locale, 'admin.nav.homeServices'),
+      show: admin.capabilities.includes('businesses.view'),
     },
     {
       key: 'bookings',

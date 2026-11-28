@@ -6,6 +6,7 @@ import {
   BUSINESS_BOOKING_TRANSITIONS,
   DEFAULT_TIMEZONE,
   EMIRATE_CODES,
+  SERVICE_LOCATION_MODES,
   TAX_CLASSES,
   localToUtc,
 } from '@jays/domain';
@@ -132,6 +133,7 @@ export async function removeClosure(f: FormData) {
 function serviceBody(f: FormData) {
   const tax = text(f, 'taxClass');
   const percent = Number(text(f, 'lateRefundPercent') || '0');
+  const location = text(f, 'locationMode');
   return {
     categoryId: text(f, 'categoryId'),
     title: { en: text(f, 'titleEn'), ar: text(f, 'titleAr') },
@@ -146,6 +148,9 @@ function serviceBody(f: FormData) {
     cancelCutoffHours: int(f, 'cancelCutoffHours', 24),
     lateCancelRefundBps: Number.isFinite(percent) ? Math.round(percent * 100) : -1,
     branchIds: ids(f, 'branchIds'),
+    locationMode: ((SERVICE_LOCATION_MODES as readonly string[]).includes(location)
+      ? location
+      : 'in_venue') as (typeof SERVICE_LOCATION_MODES)[number],
   };
 }
 
