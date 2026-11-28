@@ -8,6 +8,9 @@ import type { ColumnType, Generated, Insertable, Selectable, Updateable } from '
  */
 
 type Timestamp = ColumnType<Date, Date | string | undefined, Date | string>;
+
+/** Payment providers with an adapter (ADR-0030). */
+export type PaymentProviderName = 'mock' | 'stripe';
 type CreatedAt = ColumnType<Date, Date | string | undefined, never>;
 type UpdatedAt = ColumnType<Date, never, never>;
 type Id = Generated<string>;
@@ -151,6 +154,11 @@ export interface BusinessesTable {
   /** Migration 0016 (ADR-0029). */
   return_window_days: Generated<number>;
   return_policy_note: LocalizedOrNull;
+  psp_account_id: string | null;
+  psp_account_provider: PaymentProviderName | null;
+  psp_details_submitted: Generated<boolean>;
+  psp_payouts_enabled: Generated<boolean>;
+  psp_account_updated_at: Timestamp | null;
 }
 
 export type MembershipStatus = 'invited' | 'active' | 'removed';
@@ -566,7 +574,7 @@ export interface PaymentsTable {
   id: Id;
   target_type: 'order' | 'booking';
   order_id: string | null;
-  provider: 'mock';
+  provider: PaymentProviderName;
   provider_intent_id: string | null;
   idempotency_key: string;
   amount_fils: number;
@@ -608,7 +616,7 @@ export interface RefundsTable {
 
 export interface WebhookEventsTable {
   id: Id;
-  provider: 'mock';
+  provider: PaymentProviderName;
   event_id: string;
   event_type: string;
   payload_hash: string;
@@ -947,7 +955,7 @@ export interface PayoutsTable {
   amount_fils: number;
   currency: Generated<'AED'>;
   status: Generated<PayoutStatus>;
-  provider: 'mock';
+  provider: PaymentProviderName;
   provider_ref: string | null;
   failure_code: string | null;
   needs_attention: Generated<boolean>;
@@ -1141,7 +1149,7 @@ export interface PayoutHoldsTable {
 
 export interface ReconciliationRunsTable {
   id: Id;
-  provider: 'mock';
+  provider: PaymentProviderName;
   period_start: Timestamp;
   period_end: Timestamp;
   status: Generated<'running' | 'completed' | 'failed'>;
@@ -1637,6 +1645,11 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'version',
     'return_window_days',
     'return_policy_note',
+    'psp_account_id',
+    'psp_account_provider',
+    'psp_details_submitted',
+    'psp_payouts_enabled',
+    'psp_account_updated_at',
   ],
   memberships: [
     'id',

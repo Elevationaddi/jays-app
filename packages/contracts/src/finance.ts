@@ -364,7 +364,14 @@ export const payoutRunResultSchema = z.object({
   skipped: z.array(
     z.object({
       business: bizRef,
-      reason: z.enum(['on_hold', 'suspended', 'nothing_owed', 'below_minimum', 'pending_refund']),
+      reason: z.enum([
+        'on_hold',
+        'suspended',
+        'nothing_owed',
+        'below_minimum',
+        'pending_refund',
+        'no_payout_account',
+      ]),
     }),
   ),
 });
@@ -550,3 +557,21 @@ export const vatReportSchema = z.object({
   ),
 });
 export type VatReport = z.infer<typeof vatReportSchema>;
+
+/**
+ * A business's connected payout account at the payment provider (ADR-0030). Bank details and
+ * identity documents stay with the provider; JAYS keeps only the account id and these flags.
+ */
+export const payoutAccountSchema = z.object({
+  provider: z.enum(['mock', 'stripe']),
+  /** True when payouts need an onboarded account (Stripe). The mock pays any business. */
+  required: z.boolean(),
+  status: z.enum(['none', 'pending', 'enabled']),
+  detailsSubmitted: z.boolean(),
+  payoutsEnabled: z.boolean(),
+  updatedAt: isoDateTime.nullable(),
+});
+export type PayoutAccountView = z.infer<typeof payoutAccountSchema>;
+
+/** A short-lived link to the provider's hosted onboarding. Open it in the browser at once. */
+export const payoutOnboardingLinkSchema = z.object({ url: z.url() });

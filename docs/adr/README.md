@@ -35,3 +35,4 @@ Status values: **Accepted** (engineering decision, in force), **Proposed** (need
 | [0027](0027-booking-policies-and-component-amounts.md)            | No-show refunds, home-visit travel status, travel-fee refunds without commission, per-component amounts      | Accepted (home-visit rule proposed)     |
 | [0028](0028-legal-documents-and-acceptance-records.md)            | Legal documents: drafts, versions, frozen published text, acceptance records; no approval recorded           | Accepted (all texts are drafts)         |
 | [0029](0029-delivery-methods-return-policies-delivery-partner.md) | Delivery methods, return policies per business and category, optional delivery-partner interface             | Accepted (return rules proposed)        |
+| [0030](0030-stripe-connect-test-mode.md)                          | Stripe Connect in test mode: adapter, connected payout accounts, transfers, live keys refused                | Accepted (funds flow proposed)          |

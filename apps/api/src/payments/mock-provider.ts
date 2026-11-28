@@ -4,6 +4,7 @@ import type { Clock } from '../common/clock.js';
 import {
   type PaymentIntent,
   type PaymentProvider,
+  type PayoutAccountStatus,
   type ProviderEvent,
   type ProviderRecord,
   ProviderUnavailableError,
@@ -75,6 +76,9 @@ export function verifySignature(
  */
 export class MockPaymentProvider implements PaymentProvider {
   readonly name = 'mock' as const;
+  readonly signatureHeader = WEBHOOK_SIGNATURE_HEADER;
+  readonly requiresPayoutAccount = false;
+  private readonly accountKeys = new Map<string, string>();
   private readonly intents = new Map<string, MockIntent>();
   private readonly intentKeys = new Map<string, string>();
   private readonly refundKeys = new Map<string, string>();
@@ -158,6 +162,7 @@ export class MockPaymentProvider implements PaymentProvider {
     intentId: string;
     amountFils: number;
     idempotencyKey: string;
+    reference: string;
   }): Promise<{ refundId: string }> {
     if (this.unavailable) throw new ProviderUnavailableError();
     const done = this.refundKeys.get(input.idempotencyKey);
@@ -184,13 +189,18 @@ export class MockPaymentProvider implements PaymentProvider {
       status: 'succeeded',
       at: this.clock.now(),
     });
-    this.emit('refund.succeeded', intent, { refundId, amountFils: input.amountFils });
+    this.emit('refund.succeeded', intent, {
+      refundId,
+      amountFils: input.amountFils,
+      reference: input.reference,
+    });
     return { refundId };
   }
 
   async createPayout(input: {
     reference: string;
     businessId: string;
+    destinationAccount: string | null;
     amountFils: number;
     currency: 'AED';
     idempotencyKey: string;
@@ -218,6 +228,35 @@ export class MockPaymentProvider implements PaymentProvider {
       ...(failed ? { failureCode: 'account_closed' } : {}),
     });
     return { payoutId };
+  }
+
+  /**
+   * Local stand-in for hosted onboarding: the account is ready at once, and the onboarding link
+   * goes straight back to the business portal. Production refuses the mock (ADR-0006).
+   */
+  async createPayoutAccount(input: {
+    businessId: string;
+    idempotencyKey: string;
+  }): Promise<PayoutAccountStatus> {
+    if (this.unavailable) throw new ProviderUnavailableError();
+    const existing = this.accountKeys.get(input.idempotencyKey);
+    const accountId = existing ?? `acct_mock_${randomBytes(8).toString('hex')}`;
+    this.accountKeys.set(input.idempotencyKey, accountId);
+    return { accountId, detailsSubmitted: true, payoutsEnabled: true };
+  }
+
+  async createOnboardingLink(input: {
+    accountId: string;
+    returnUrl: string;
+    refreshUrl: string;
+  }): Promise<{ url: string }> {
+    if (this.unavailable) throw new ProviderUnavailableError();
+    return { url: input.returnUrl };
+  }
+
+  async getPayoutAccount(accountId: string): Promise<PayoutAccountStatus> {
+    if (this.unavailable) throw new ProviderUnavailableError();
+    return { accountId, detailsSubmitted: true, payoutsEnabled: true };
   }
 
   async listRecords(input: { from: Date; to: Date }): Promise<ProviderRecord[]> {
@@ -282,7 +321,12 @@ export class MockPaymentProvider implements PaymentProvider {
   private emit(
     type: string,
     intent: MockIntent,
-    extra: { failureCode?: string; refundId?: string; amountFils?: number } = {},
+    extra: {
+      failureCode?: string;
+      refundId?: string;
+      amountFils?: number;
+      reference?: string;
+    } = {},
   ): WebhookDelivery {
     return this.emitRaw(type, {
       intentId: intent.intentId,
@@ -290,6 +334,7 @@ export class MockPaymentProvider implements PaymentProvider {
       currency: intent.currency,
       ...(extra.failureCode ? { failureCode: extra.failureCode } : {}),
       ...(extra.refundId ? { refundId: extra.refundId } : {}),
+      ...(extra.reference ? { reference: extra.reference } : {}),
     });
   }
 

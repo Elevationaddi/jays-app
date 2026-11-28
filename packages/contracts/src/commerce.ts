@@ -696,6 +696,18 @@ export const mockConfirmResponseSchema = z.object({
 });
 export const webhookAckSchema = z.object({ received: z.literal(true), duplicate: z.boolean() });
 
+/**
+ * The payment step's configuration (ADR-0030). `testMode` is always true: live payments are not
+ * approved. With Stripe, the client confirms the PaymentIntent with Stripe directly, so card
+ * details never reach JAYS.
+ */
+export const paymentConfigSchema = z.object({
+  provider: z.enum(['mock', 'stripe']),
+  testMode: z.literal(true),
+  publishableKey: z.string().nullable(),
+});
+export type PaymentConfig = z.infer<typeof paymentConfigSchema>;
+
 // ---------------------------------------------------------------------------------------------
 // Admin listing review
 

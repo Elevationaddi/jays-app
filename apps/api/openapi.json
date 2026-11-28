@@ -51865,6 +51865,340 @@
         ]
       }
     },
+    "/v1/businesses/{businessId}/finance/payout-account": {
+      "get": {
+        "operationId": "BusinessFinanceController_payoutAccount",
+        "parameters": [
+          {
+            "name": "businessId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payout account status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "provider": {
+                      "type": "string",
+                      "enum": [
+                        "mock",
+                        "stripe"
+                      ]
+                    },
+                    "required": {
+                      "type": "boolean"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "none",
+                        "pending",
+                        "enabled"
+                      ]
+                    },
+                    "detailsSubmitted": {
+                      "type": "boolean"
+                    },
+                    "payoutsEnabled": {
+                      "type": "boolean"
+                    },
+                    "updatedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "provider",
+                    "required",
+                    "status",
+                    "detailsSubmitted",
+                    "payoutsEnabled",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Absent, or hidden from this caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The connected payout account at the payment provider (ADR-0030)",
+        "tags": [
+          "business-finance"
+        ]
+      }
+    },
+    "/v1/businesses/{businessId}/finance/payout-account/onboarding-link": {
+      "post": {
+        "description": "Creates the connected account on first use. The provider collects identity and bank details; JAYS never sees them. 409 BUSINESS_NOT_APPROVED, 503 PAYMENT_PROVIDER_UNAVAILABLE.",
+        "operationId": "BusinessFinanceController_onboardingLink",
+        "parameters": [
+          {
+            "name": "businessId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A short-lived onboarding link.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "required": [
+                    "url"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Absent, or hidden from this caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A dependency is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Owner: open the provider’s hosted onboarding for payouts",
+        "tags": [
+          "business-finance"
+        ]
+      }
+    },
+    "/v1/businesses/{businessId}/finance/payout-account/refresh": {
+      "post": {
+        "description": "503 PAYMENT_PROVIDER_UNAVAILABLE.",
+        "operationId": "BusinessFinanceController_refreshPayoutAccount",
+        "parameters": [
+          {
+            "name": "businessId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payout account status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "provider": {
+                      "type": "string",
+                      "enum": [
+                        "mock",
+                        "stripe"
+                      ]
+                    },
+                    "required": {
+                      "type": "boolean"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "none",
+                        "pending",
+                        "enabled"
+                      ]
+                    },
+                    "detailsSubmitted": {
+                      "type": "boolean"
+                    },
+                    "payoutsEnabled": {
+                      "type": "boolean"
+                    },
+                    "updatedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "provider",
+                    "required",
+                    "status",
+                    "detailsSubmitted",
+                    "payoutsEnabled",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Absent, or hidden from this caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A dependency is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read the payout account’s status from the provider again",
+        "tags": [
+          "business-finance"
+        ]
+      }
+    },
     "/v1/businesses/{businessId}/finance/summary": {
       "get": {
         "operationId": "BusinessFinanceController_summary",
@@ -57307,7 +57641,8 @@
                               "suspended",
                               "nothing_owed",
                               "below_minimum",
-                              "pending_refund"
+                              "pending_refund",
+                              "no_payout_account"
                             ]
                           }
                         },
@@ -70579,10 +70914,19 @@
         "operationId": "WebhooksController_receive",
         "parameters": [
           {
+            "name": "stripe-signature",
+            "in": "header",
+            "description": "Stripe (test mode): the Stripe-Signature header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "x-psp-signature",
             "in": "header",
-            "description": "t=<unix>,v1=<hex HMAC-SHA256 of \"t.body\">",
-            "required": true,
+            "description": "Mock provider: t=<unix>,v1=<hex HMAC-SHA256 of \"t.body\">",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -70625,6 +70969,53 @@
           }
         },
         "summary": "Payment provider webhook (signature over the raw body; replays are no-ops)",
+        "tags": [
+          "payments"
+        ]
+      }
+    },
+    "/v1/payments/config": {
+      "get": {
+        "operationId": "PaymentConfigController_config",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Payment configuration.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "provider": {
+                      "type": "string",
+                      "enum": [
+                        "mock",
+                        "stripe"
+                      ]
+                    },
+                    "testMode": {
+                      "type": "boolean",
+                      "const": true
+                    },
+                    "publishableKey": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "provider",
+                    "testMode",
+                    "publishableKey"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "summary": "Payment provider and publishable key for the client payment step",
         "tags": [
           "payments"
         ]

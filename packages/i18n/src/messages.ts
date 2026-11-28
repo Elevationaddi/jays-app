@@ -1818,6 +1818,24 @@ const en = {
   'admin.content.nonReturnable': 'Not returnable',
   'admin.content.markNonReturnable': 'Mark not returnable',
   'admin.content.markReturnable': 'Allow returns',
+  'admin.finance.skip.no_payout_account': 'Skipped, payout account not set up',
+  'finance.payoutAccount.title': 'Payout account',
+  'finance.payoutAccount.mock':
+    'This test setup uses the mock payment provider, so payouts need no account. With Stripe you set one up here.',
+  'finance.payoutAccount.status.none': 'Not set up',
+  'finance.payoutAccount.status.pending': 'Waiting for Stripe',
+  'finance.payoutAccount.status.enabled': 'Ready for payouts',
+  'finance.payoutAccount.hint.none':
+    'Set up your payout account with Stripe to receive weekly payouts. Your earnings are kept until it is ready.',
+  'finance.payoutAccount.hint.pending':
+    'Stripe needs more details or is checking them. Your earnings are kept until the account is ready.',
+  'finance.payoutAccount.hint.enabled': 'Weekly payouts go to the bank account you gave Stripe.',
+  'finance.payoutAccount.start': 'Set up payouts with Stripe',
+  'finance.payoutAccount.continue': 'Continue with Stripe',
+  'finance.payoutAccount.expired': 'The Stripe link expired. Open a new one to continue.',
+  'finance.payoutAccount.privacy':
+    'Stripe collects your identity and bank details on its own site. JAYS never sees or stores them. Test mode only: no real money moves.',
+  'error.businessNotApproved': 'Payouts can be set up once your business is approved.',
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -3593,6 +3611,25 @@ const ar: Record<MessageKey, string> = {
   'admin.content.nonReturnable': 'غير قابل للإرجاع',
   'admin.content.markNonReturnable': 'تحديد كغير قابل للإرجاع',
   'admin.content.markReturnable': 'السماح بالإرجاع',
+  'admin.finance.skip.no_payout_account': 'تم التخطي، حساب الدفعات غير مُعدّ',
+  'finance.payoutAccount.title': 'حساب الدفعات',
+  'finance.payoutAccount.mock':
+    'تستخدم هذه البيئة التجريبية مزود دفع تجريبيًا، فلا تحتاج الدفعات إلى حساب. مع Stripe تُعدّ الحساب من هنا.',
+  'finance.payoutAccount.status.none': 'غير مُعدّ',
+  'finance.payoutAccount.status.pending': 'بانتظار Stripe',
+  'finance.payoutAccount.status.enabled': 'جاهز للدفعات',
+  'finance.payoutAccount.hint.none':
+    'أعدّ حساب الدفعات مع Stripe لتستلم دفعاتك الأسبوعية. تبقى أرباحك محفوظة حتى يصبح جاهزًا.',
+  'finance.payoutAccount.hint.pending':
+    'يحتاج Stripe إلى بيانات إضافية أو يراجعها. تبقى أرباحك محفوظة حتى يصبح الحساب جاهزًا.',
+  'finance.payoutAccount.hint.enabled':
+    'تُحوَّل الدفعات الأسبوعية إلى الحساب البنكي الذي أدخلته في Stripe.',
+  'finance.payoutAccount.start': 'إعداد الدفعات مع Stripe',
+  'finance.payoutAccount.continue': 'المتابعة مع Stripe',
+  'finance.payoutAccount.expired': 'انتهت صلاحية رابط Stripe. افتح رابطًا جديدًا للمتابعة.',
+  'finance.payoutAccount.privacy':
+    'يجمع Stripe بيانات هويتك وحسابك البنكي على موقعه. لا تطّلع JAYS عليها ولا تحفظها. وضع تجريبي فقط: لا تتحرك أموال حقيقية.',
+  'error.businessNotApproved': 'يمكن إعداد الدفعات بعد اعتماد نشاطك التجاري.',
 };
 
 export const catalogs: Record<Locale, Record<MessageKey, string>> = { en, ar };

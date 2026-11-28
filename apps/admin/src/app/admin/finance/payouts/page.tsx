@@ -17,7 +17,14 @@ import {
 } from '../shared';
 
 const FILTERS = ['all', 'pending', 'paid', 'failed'] as const;
-const SKIPS = ['on_hold', 'suspended', 'pending_refund', 'below_minimum', 'nothing_owed'] as const;
+const SKIPS = [
+  'on_hold',
+  'suspended',
+  'pending_refund',
+  'below_minimum',
+  'nothing_owed',
+  'no_payout_account',
+] as const;
 
 export default async function PayoutsPage({ searchParams }: { searchParams: Search }) {
   const params = await searchParams;

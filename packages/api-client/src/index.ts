@@ -196,6 +196,9 @@ import {
   financeOverviewSchema,
   financeSettingSchema,
   financeSummarySchema,
+  payoutAccountSchema,
+  payoutOnboardingLinkSchema,
+  paymentConfigSchema,
   ledgerLineSchema,
   payoutHoldSchema,
   payoutRunResultSchema,
@@ -947,6 +950,13 @@ export function createApiClient(options: ApiClientOptions) {
       call('PATCH', `/admin/brands/${encodeURIComponent(id)}`, brandSchema, body),
     // Business finance (finance.view)
     financeSummary: (id: string) => call('GET', `${biz(id)}/finance/summary`, financeSummarySchema),
+    payoutAccount: (id: string) =>
+      call('GET', `${biz(id)}/finance/payout-account`, payoutAccountSchema),
+    payoutOnboardingLink: (id: string) =>
+      call('POST', `${biz(id)}/finance/payout-account/onboarding-link`, payoutOnboardingLinkSchema),
+    refreshPayoutAccount: (id: string) =>
+      call('POST', `${biz(id)}/finance/payout-account/refresh`, payoutAccountSchema),
+    paymentConfig: () => call('GET', '/payments/config', paymentConfigSchema),
     businessDocuments: (id: string, params: Page & { kind?: string } = {}) =>
       call(
         'GET',

@@ -4,6 +4,7 @@ import { documentTitle } from '../../../../components/TaxDocumentView';
 import { Workspace, loadBusiness, money } from '../../../../components/Workspace';
 import { serverApi } from '../../../../lib/api';
 import { translator } from '../../../../lib/i18n';
+import { startPayoutOnboarding } from '../finance-actions';
 
 type Search = Promise<Record<string, string | undefined>>;
 const VIEWS = ['earnings', 'payouts', 'ledger', 'documents'] as const;
@@ -37,8 +38,13 @@ export default async function FinancePage({
     : 'earnings';
   const api = await serverApi();
   const page = { limit: 50, ...(query['cursor'] ? { cursor: query['cursor'] } : {}) };
-  const [summary, earnings, payouts, ledger, documents] = await Promise.all([
+  // Back from the provider's onboarding: read the account's status from the provider again.
+  const returning = query['payoutAccount'] === 'return';
+  const [summary, account, earnings, payouts, ledger, documents] = await Promise.all([
     api.financeSummary(businessId),
+    (returning ? api.refreshPayoutAccount(businessId) : api.payoutAccount(businessId)).catch(
+      () => null,
+    ),
     view === 'earnings' ? api.financeEarnings(businessId, page) : null,
     view === 'payouts' ? api.financePayouts(businessId, page) : null,
     view === 'ledger' ? api.financeLedger(businessId, page) : null,
@@ -69,6 +75,46 @@ export default async function FinancePage({
       intro={tr('finance.intro', { days: summary.disputeWindowDays })}
       error={query['error']}
     >
+      {account ? (
+        <section className="card" aria-labelledby="payout-account" style={{ marginBottom: 16 }}>
+          <h2 id="payout-account">{tr('finance.payoutAccount.title')}</h2>
+          {!account.required ? (
+            <p className="muted">{tr('finance.payoutAccount.mock')}</p>
+          ) : (
+            <>
+              <p>
+                <span
+                  className={`badge ${{ enabled: 'active', pending: 'onboarding', none: 'not_activated' }[account.status]}`}
+                >
+                  {tr(`finance.payoutAccount.status.${account.status}`)}
+                </span>
+              </p>
+              <p className="muted">{tr(`finance.payoutAccount.hint.${account.status}`)}</p>
+              {query['payoutAccount'] === 'refresh' ? (
+                <div className="alert info" role="status">
+                  {tr('finance.payoutAccount.expired')}
+                </div>
+              ) : null}
+              {account.status !== 'enabled' &&
+              business.myCapabilities.includes('onboarding.manage') ? (
+                <form action={startPayoutOnboarding}>
+                  <input type="hidden" name="businessId" value={businessId} />
+                  <button type="submit" className="primary">
+                    {tr(
+                      account.status === 'none'
+                        ? 'finance.payoutAccount.start'
+                        : 'finance.payoutAccount.continue',
+                    )}
+                  </button>
+                </form>
+              ) : null}
+              <p className="muted" style={{ fontSize: 13 }}>
+                {tr('finance.payoutAccount.privacy')}
+              </p>
+            </>
+          )}
+        </section>
+      ) : null}
       {summary.onHold ? (
         <div className="alert error" role="status">
           {tr('finance.onHold')}

@@ -1,4 +1,13 @@
-import { Controller, Get, Inject, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Inject,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import {
   earningListQuerySchema,
@@ -7,21 +16,26 @@ import {
   ledgerLineSchema,
   ledgerListQuerySchema,
   pageSchema,
+  payoutAccountSchema,
+  payoutOnboardingLinkSchema,
   payoutListQuerySchema,
   payoutSchema,
   type EarningListQuery,
   type LedgerListQuery,
   type PayoutListQuery,
 } from '@jays/contracts';
-import { UserAuthGuard } from '../auth/guards.js';
+import type { Request } from 'express';
+import { CurrentUser, UserAuthGuard, type UserPrincipal } from '../auth/guards.js';
 import {
   BusinessAccessGuard,
   type BusinessContext,
   CurrentBusiness,
   RequireBusinessCapability,
 } from '../businesses/business-access.guard.js';
+import { requestMeta } from '../common/request-context.js';
 import { ApiErrors, ApiZodQuery, ApiZodResponse, ZodQuery } from '../common/zod.js';
 import { FinanceService } from './finance.service.js';
+import { PayoutAccountsService } from './payout-accounts.js';
 import { PayoutsService } from './payouts.service.js';
 
 const businessParam = ApiParam({ name: 'businessId', format: 'uuid' });
@@ -38,7 +52,51 @@ export class BusinessFinanceController {
   constructor(
     @Inject(FinanceService) private readonly finance: FinanceService,
     @Inject(PayoutsService) private readonly payouts: PayoutsService,
+    @Inject(PayoutAccountsService) private readonly accounts: PayoutAccountsService,
   ) {}
+
+  @Get('payout-account')
+  @RequireBusinessCapability('finance.view')
+  @businessParam
+  @ApiOperation({ summary: 'The connected payout account at the payment provider (ADR-0030)' })
+  @ApiZodResponse(200, payoutAccountSchema, 'Payout account status.')
+  @ApiErrors(401, 403, 404)
+  payoutAccount(@CurrentBusiness() ctx: BusinessContext) {
+    return this.accounts.status(ctx.businessId);
+  }
+
+  @Post('payout-account/onboarding-link')
+  @HttpCode(HttpStatus.OK)
+  @RequireBusinessCapability('onboarding.manage')
+  @businessParam
+  @ApiOperation({
+    summary: 'Owner: open the provider’s hosted onboarding for payouts',
+    description:
+      'Creates the connected account on first use. The provider collects identity and bank details; JAYS never sees them. 409 BUSINESS_NOT_APPROVED, 503 PAYMENT_PROVIDER_UNAVAILABLE.',
+  })
+  @ApiZodResponse(200, payoutOnboardingLinkSchema, 'A short-lived onboarding link.')
+  @ApiErrors(401, 403, 404, 409, 503)
+  onboardingLink(
+    @CurrentBusiness() ctx: BusinessContext,
+    @CurrentUser() user: UserPrincipal,
+    @Req() req: Request,
+  ) {
+    return this.accounts.onboardingLink(user.userId, ctx.businessId, requestMeta(req));
+  }
+
+  @Post('payout-account/refresh')
+  @HttpCode(HttpStatus.OK)
+  @RequireBusinessCapability('finance.view')
+  @businessParam
+  @ApiOperation({
+    summary: 'Read the payout account’s status from the provider again',
+    description: '503 PAYMENT_PROVIDER_UNAVAILABLE.',
+  })
+  @ApiZodResponse(200, payoutAccountSchema, 'Payout account status.')
+  @ApiErrors(401, 403, 404, 503)
+  refreshPayoutAccount(@CurrentBusiness() ctx: BusinessContext) {
+    return this.accounts.refresh(ctx.businessId);
+  }
 
   @Get('summary')
   @RequireBusinessCapability('finance.view')

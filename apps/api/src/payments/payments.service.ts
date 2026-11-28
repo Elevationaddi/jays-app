@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import type { Database, Db } from '@jays/db';
-import { sql, type Transaction } from 'kysely';
+import { type Selectable, sql, type Transaction } from 'kysely';
 import { writeAudit } from '../common/audit.js';
 import { CLOCK, type Clock } from '../common/clock.js';
 import { ApiError } from '../common/error.filter.js';
@@ -14,8 +14,11 @@ import {
   recordOrderCapture,
   reverseEarning,
 } from '../finance/ledger.js';
+import { applyAccountEvent } from '../finance/payout-accounts.js';
 import { applyPayoutEvent } from '../finance/payout-events.js';
 import { PAYMENT_PROVIDER, type PaymentProvider, type ProviderEvent } from './provider.js';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type Trx = Transaction<Database>;
 
@@ -120,6 +123,9 @@ export class PaymentsService {
     }
     if (event.type === 'payout.paid' || event.type === 'payout.failed') {
       return applyPayoutEvent(trx, event, now);
+    }
+    if (event.type === 'account.updated') {
+      return applyAccountEvent(trx, this.provider.name, event, now);
     }
     if (
       event.type !== 'payment_intent.succeeded' &&
@@ -343,7 +349,54 @@ export class PaymentsService {
       .where('provider_ref', '=', event.refundId)
       .forUpdate()
       .executeTakeFirst();
-    if (!refund) return { result: 'unknown_refund' };
+    // The webhook can arrive before we stored the provider's id; match on our reference then.
+    const byReference =
+      refund ??
+      (event.reference && UUID.test(event.reference)
+        ? await trx
+            .selectFrom('refunds')
+            .select([
+              'id',
+              'payment_id',
+              'status',
+              'amount_fils',
+              'reason',
+              'merchant_order_id',
+              'return_request_id',
+              'non_commissionable_fils',
+            ])
+            .where('id', '=', event.reference)
+            .where('provider_ref', 'is', null)
+            .forUpdate()
+            .executeTakeFirst()
+        : undefined);
+    if (!byReference) return { result: 'unknown_refund' };
+    if (!refund) {
+      await trx
+        .updateTable('refunds')
+        .set({ provider_ref: event.refundId })
+        .where('id', '=', byReference.id)
+        .execute();
+    }
+    return this.settleRefund(trx, byReference, event, now);
+  }
+
+  private async settleRefund(
+    trx: Trx,
+    refund: Pick<
+      Selectable<Database['refunds']>,
+      | 'id'
+      | 'payment_id'
+      | 'status'
+      | 'amount_fils'
+      | 'reason'
+      | 'merchant_order_id'
+      | 'return_request_id'
+      | 'non_commissionable_fils'
+    >,
+    event: ProviderEvent,
+    now: Date,
+  ): Promise<{ result: string }> {
     if (refund.status !== 'pending') return { result: 'already_settled' };
     const payment = await trx
       .selectFrom('payments')
@@ -658,6 +711,7 @@ export class PaymentsService {
         intentId: r.intentId,
         amountFils: r.amountFils,
         idempotencyKey: `refund-${r.refundId}`,
+        reference: r.refundId,
       });
       await this.db
         .updateTable('refunds')
