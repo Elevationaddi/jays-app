@@ -392,7 +392,9 @@ export async function recordBookingCapture(
         {
           ref: booking.id,
           categoryId: b.category_id,
-          baseFils: Math.max(0, booking.priceFils - b.tax_fils),
+          // Commission applies to the service only: a separately itemised travel fee is the
+          // merchant's in full (founder decision, 2026-11-28; ADR-0024).
+          baseFils: Math.max(0, booking.priceFils - travel - (b.tax_fils - travelVat)),
         },
       ],
       source: { bookingId: booking.id },

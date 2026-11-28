@@ -29,7 +29,8 @@ Phase 4 (ADR-0014) assumed in-venue services only. A booking's `occupied_*` inte
    - The travel buffer widens the occupied interval on both sides. The existing exclusion constraint therefore keeps a professional's visits, and any venue bookings, from overlapping, travel included. Availability for `location=home` uses the same widened interval, so the first home slot of a shift leaves room for travel.
    - Rescheduling keeps the travel buffer the booking was made with.
    - Cancellation refunds follow the service's policy on the whole price, travel fee included.
-   - Commission applies to the whole booking price, travel fee included (proposed; D2 says nothing about travel fees).
+   - ~~Commission applies to the whole booking price, travel fee included.~~ Superseded by [ADR-0025](0025-travel-fees-home-cancellations-pilot-promotion.md): commission applies to the service amount only, never to the travel fee.
+   - Home-visit cancellations will follow the travel-status policy in ADR-0025 (phase 8.8).
 6. **Privacy.** Account deletion (ADR-0019) now also clears the address, name and phone kept on the customer's bookings. A trigger on `users.deleted_at` does this; the booking stays for the business's and tax records.
 
 ## Consequences

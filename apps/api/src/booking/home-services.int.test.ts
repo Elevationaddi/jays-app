@@ -424,6 +424,15 @@ describe('home visits', () => {
       [1_500, 71],
     ]);
     expect(invoice.lines[1]!.description.en).toBe('Travel fee');
+    // Commission is worked out on the service before VAT (100.00), never on the travel fee.
+    const earning = await h.db
+      .selectFrom('merchant_earnings')
+      .select(['gross_fils', 'commission_base_fils', 'commission_bps', 'commission_fils'])
+      .where('booking_id', '=', booking.id)
+      .executeTakeFirstOrThrow();
+    expect(earning.gross_fils).toBe(12_000);
+    expect(earning.commission_base_fils).toBe(10_000);
+    expect(earning.commission_fils).toBe(Math.round((10_000 * earning.commission_bps) / 10_000));
 
     // Rescheduling keeps the travel time it was booked with.
     await h

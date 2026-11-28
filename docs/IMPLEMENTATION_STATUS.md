@@ -13,6 +13,19 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 | 6     | Fulfillment, reviews, support, notifications, dashboards     | Merged (PR #7); D7, D12, D14 assumed  |
 | 7     | RTL/accessibility, hardening, backups, observability, pilot  | Merged (PR #8); pilot not started     |
 
+| 8 | Complete application functionality | 8.1 to 8.6 merged (PRs #9 to #14) |
+| 9 | Provider integrations in test mode (Stripe, Resend, FCM, Supabase) | Not started |
+| 10 | Vercel deployment architecture (replaces AWS) | Not started; nothing deployed |
+| 11 | Security, QA, app store preparation | Not started |
+| 12 | Pilot preparation (Abu Dhabi) | Not started; pilot needs approval |
+
+**Mandatory constraint (28 November 2026):** no paid software subscriptions beyond Vercel, ChatGPT and Claude. AWS and Twilio are removed. See [ADR-0024](adr/0024-cost-constraints-and-vercel-first-architecture.md), the [founder decision register](FOUNDER_DECISIONS.md), [infrastructure costs](INFRASTRUCTURE_COSTS.md), the [founder setup guide](FOUNDER_SETUP_GUIDE.md) and the [launch checklist](LAUNCH_CHECKLIST.md).
+
+### Revised decisions applied
+
+- **Travel fees:** no longer carry commission ([ADR-0025](adr/0025-travel-fees-home-cancellations-pilot-promotion.md)). The booking ledger line leaves the travel fee out of the commission base, and a test checks it.
+- **Still to build:** the home-visit cancellation policy (8.8) and the pilot promotion (12).
+
 ## Phase 8: Complete application functionality
 
 Founder decisions: [ADR-0018](adr/0018-founder-decisions-2026-11-28.md). Phase 8 ships as slices. Each slice is its own PR, merged once CI passes.
