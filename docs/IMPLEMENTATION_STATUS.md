@@ -16,8 +16,8 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 | 8 | Complete application functionality | 8.1 to 8.8 merged (PRs #9 to #14, #16 to #19) |
 | 9 | Provider integrations in test mode (Stripe, Resend, FCM, Supabase) | Merged (PRs #20, #21, #22) |
 | 10 | Vercel deployment design (replaces AWS) | Merged (PR #23); nothing deployed |
-| 11 | Security, QA, app store preparation | Review, smoke tests and store drafts done; real devices not tested |
-| 12 | Pilot preparation (Abu Dhabi) | Not started; pilot needs approval |
+| 11 | Security, QA, app store preparation | Merged (PR #24); real devices not tested |
+| 12 | Pilot preparation (Abu Dhabi) | Built (PR #25); pilot not launched, needs founder approval |
 
 **Mandatory constraint (28 November 2026):** no paid software subscriptions beyond Vercel, ChatGPT and Claude. AWS and Twilio are removed. See [ADR-0024](adr/0024-cost-constraints-and-vercel-first-architecture.md), the [founder decision register](FOUNDER_DECISIONS.md), [infrastructure costs](INFRASTRUCTURE_COSTS.md), the [founder setup guide](FOUNDER_SETUP_GUIDE.md) and the [launch checklist](LAUNCH_CHECKLIST.md).
 
@@ -25,7 +25,18 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 
 - **Travel fees:** no longer carry commission ([ADR-0025](adr/0025-travel-fees-home-cancellations-pilot-promotion.md)). The booking ledger line leaves the travel fee out of the commission base, and a test checks it.
 - **Home-visit cancellations:** built in 8.8 ([ADR-0027](adr/0027-booking-policies-and-component-amounts.md)); the rule is still proposed until a consumer-protection review.
-- **Still to build:** the pilot promotion (12).
+- **Pilot promotion:** built in phase 12 ([ADR-0034](adr/0034-pilot-promotion.md)).
+
+## Phase 12: Pilot preparation (Abu Dhabi)
+
+Decision: [ADR-0034](adr/0034-pilot-promotion.md). Plan: [PILOT_PLAN.md](PILOT_PLAN.md). **The pilot has not been launched** and no business was enrolled outside local demo data.
+
+- **Pilot promotion:** a finance admin records each founder-approved business with the approval reference. The commission engine applies 0% at capture for 30 days, then the normal fee rules (category rates included) apply again on their own. Once per business, never retroactive, can be ended early with a reason, audited.
+- **Admin Pilot page:** enrolled businesses against the 30 product and 20 service targets, windows, state, sales during the offer, approval reference, a flag for businesses outside Abu Dhabi.
+- **Business portal:** finance banner with the end date, days left and the following rate.
+- **Notices:** 7 days and 1 day before the end, in the app and by email, English and Arabic, sent once each from the hourly finance job.
+- **Tests:** domain unit tests for the window and 3 integration tests. Integration total: 212 passing on a fresh database. Checked in a local browser: recording an offer on the Pilot page and the banner on the business finance page.
+- **Not done:** the daily backup schedule (needs the founder to choose where backups are stored), and everything in the plan's go / no-go gates.
 
 ## Phase 11: Security, QA and store preparation
 

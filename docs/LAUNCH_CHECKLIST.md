@@ -19,7 +19,9 @@ Last updated: 28 November 2026. Related: [founder decisions](FOUNDER_DECISIONS.m
 
 - [ ] Phases 8 to 12 merged with passing CI
 - [ ] Founder approves the list of 30 product and 20 service businesses
-- [ ] Pilot promotion (0% commission for each approved merchant's first 30 days) recorded and audited
+- [x] Pilot promotion mechanism built: 0% at capture for 30 days, notices, dashboard, audit (PR #25, ADR-0034)
+- [ ] Pilot promotion recorded for each founder-approved business
+- [ ] Founder reviews the [pilot plan](PILOT_PLAN.md), its success measures, and gives the launch go-ahead
 - [ ] Merchants verified and onboarded; training guide sent
 - [ ] Draft legal documents shown as drafts, with acceptance recorded. The founder decides whether the pilot may run on drafts
 - [ ] Support rota for 9 AM–9 PM staffed

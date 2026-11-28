@@ -21,6 +21,7 @@ export function Shell({
     | 'homeServices'
     | 'bookings'
     | 'finance'
+    | 'pilot'
     | 'orders'
     | 'reviews'
     | 'support'
@@ -96,6 +97,12 @@ export function Shell({
       key: 'finance',
       href: '/admin/finance',
       label: t(locale, 'admin.nav.finance'),
+      show: admin.capabilities.includes('finance.view'),
+    },
+    {
+      key: 'pilot',
+      href: '/admin/pilot',
+      label: t(locale, 'admin.nav.pilot'),
       show: admin.capabilities.includes('finance.view'),
     },
     {

@@ -151,6 +151,8 @@ import { PrivacyService } from './privacy/privacy.service.js';
 import { AdminOperationsController } from './operations/operations.controller.js';
 import { OperationsService } from './operations/operations.service.js';
 import { UsageService } from './operations/usage.service.js';
+import { AdminPilotController, BusinessPromotionController } from './finance/pilot.controller.js';
+import { PilotService } from './finance/pilot.service.js';
 import { HttpMetrics } from './observability/http-metrics.js';
 import { MetricsController } from './observability/metrics.controller.js';
 import { CronController } from './cron/cron.controller.js';
@@ -241,6 +243,8 @@ export class AppModule {
         HealthController,
         MetricsController,
         CronController,
+        AdminPilotController,
+        BusinessPromotionController,
         ReferenceController,
         AuthController,
         MeController,
@@ -384,6 +388,7 @@ export class AppModule {
         PrivacyService,
         OperationsService,
         UsageService,
+        PilotService,
         BusinessesService,
         AdminService,
         OnboardingService,

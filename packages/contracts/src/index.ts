@@ -15,3 +15,4 @@ export * from './operations.js';
 export * from './home.js';
 export * from './services.js';
 export * from './legal.js';
+export * from './pilot.js';

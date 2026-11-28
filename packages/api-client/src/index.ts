@@ -23,6 +23,10 @@ import {
   waitlistListSchema,
   adminEmirateListSchema,
   platformUsageSchema,
+  pilotDashboardSchema,
+  adminPilotPromotionSchema,
+  businessPromotionSchema,
+  type CreatePilotPromotionRequest,
   supportInfoSchema,
   consentRecordSchema,
   dataExportSchema,
@@ -953,6 +957,8 @@ export function createApiClient(options: ApiClientOptions) {
     financeSummary: (id: string) => call('GET', `${biz(id)}/finance/summary`, financeSummarySchema),
     payoutAccount: (id: string) =>
       call('GET', `${biz(id)}/finance/payout-account`, payoutAccountSchema),
+    pilotPromotion: (id: string) =>
+      call('GET', `${biz(id)}/finance/promotion`, businessPromotionSchema),
     payoutOnboardingLink: (id: string) =>
       call('POST', `${biz(id)}/finance/payout-account/onboarding-link`, payoutOnboardingLinkSchema),
     refreshPayoutAccount: (id: string) =>
@@ -1253,6 +1259,16 @@ export function createApiClient(options: ApiClientOptions) {
       ),
     adminEmirates: () => call('GET', '/admin/operations/emirates', adminEmirateListSchema),
     adminUsage: () => call('GET', '/admin/operations/usage', platformUsageSchema),
+    adminPilot: () => call('GET', '/admin/pilot', pilotDashboardSchema),
+    createPilotPromotion: (body: CreatePilotPromotionRequest) =>
+      call('POST', '/admin/pilot/promotions', adminPilotPromotionSchema, body),
+    cancelPilotPromotion: (id: string, reason: string) =>
+      call(
+        'POST',
+        `/admin/pilot/promotions/${encodeURIComponent(id)}/cancel`,
+        adminPilotPromotionSchema,
+        { reason },
+      ),
     adminLegal: () => call('GET', '/admin/legal', adminLegalListSchema),
     adminLegalDocument: (id: string) =>
       call('GET', `/admin/legal/${encodeURIComponent(id)}`, adminLegalDocumentSchema),

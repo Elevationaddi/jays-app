@@ -31,7 +31,10 @@ export const CRON_SCHEDULES = {
   minute: ['notifications', 'expire-unpaid-orders', 'expire-booking-holds'],
   /** Every 5 minutes: booking reminders and old rate-limit windows. */
   'five-minutes': ['booking-reminders', 'rate-limit-cleanup'],
-  /** Hourly: payout eligibility, account deletions, daily reconciliation and weekly payouts. */
+  /**
+   * Hourly: payout eligibility, account deletions, daily reconciliation, weekly payouts and the
+   * pilot "commission changes soon" notices.
+   */
   hourly: ['mark-earnings-eligible', 'complete-account-deletions', 'finance'],
 } as const satisfies Record<string, readonly string[]>;
 export type CronSchedule = keyof typeof CRON_SCHEDULES;

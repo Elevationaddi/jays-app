@@ -12,6 +12,7 @@ import { DB } from '../common/tokens.js';
 import type { Db } from '@jays/db';
 import { setting } from './ledger.js';
 import { PayoutsService } from './payouts.service.js';
+import { PilotService } from './pilot.service.js';
 import { ReconciliationService } from './reconciliation.service.js';
 
 const HOUR_MS = 3_600_000;
@@ -33,6 +34,7 @@ export class FinanceScheduler implements OnApplicationBootstrap, OnApplicationSh
     @Inject(PayoutsService) private readonly payouts: PayoutsService,
     @Inject(DB) private readonly db: Db,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(PilotService) private readonly pilot: PilotService,
   ) {}
 
   onApplicationBootstrap() {
@@ -50,6 +52,10 @@ export class FinanceScheduler implements OnApplicationBootstrap, OnApplicationSh
   async tick() {
     await this.reconcile();
     await this.weeklyPayouts();
+    // Pilot merchants hear 7 days and 1 day before their 0% commission ends (ADR-0034).
+    await this.pilot.queueEndingNotices().catch((error: unknown) => {
+      this.log.error({ err: error }, 'pilot notices failed');
+    });
   }
 
   /**

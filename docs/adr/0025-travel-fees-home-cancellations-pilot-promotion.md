@@ -40,7 +40,7 @@ The founder's revised decisions of 28 November 2026 change three things set by D
 - **Earlier transactions:** the rate in force at capture is snapshotted on each earning (ADR-0021). The promotion never applies retroactively to completed transactions.
 - **Notice:** merchants get an in-app notification and an email 7 days and 1 day before the commission changes.
 - **Records and reporting:** commission history per business is shown in the business portal and the admin console. Pilot performance is shown on a pilot dashboard (phase 12).
-- **Built in:** phase 12 (pilot preparation). The promotion uses the existing fee-rule tables plus an approval record.
+- **Built in:** phase 12 (pilot preparation). The mechanism changed: see [ADR-0034](0034-pilot-promotion.md). Two fee rules would have replaced category rates after the pilot, so the promotion is its own record checked at capture.
 
 ## Consequences
 
