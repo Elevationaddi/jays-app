@@ -9,6 +9,7 @@ import type {
   HoldRequest,
   ManualBookingRequest,
   MerchantBooking,
+  TravelUpdateRequest,
   MerchantBookingListQuery,
   PayBookingResponse,
   PublicVenue,
@@ -28,6 +29,8 @@ import {
   businessTransition,
   canCustomerReschedule,
   cancellationRefund,
+  noShowRefund,
+  travelTransition,
   DEFAULT_TIMEZONE,
   extractInclusiveTax,
   fils,
@@ -68,6 +71,7 @@ import {
   dailyLoads,
   expireHolds,
   loadDay,
+  bookingAmounts,
   merchantBookingView,
   notFound,
   type PolicySnapshot,
@@ -91,6 +95,7 @@ interface ServiceRow {
   buffer_after_min: number;
   cancel_cutoff_hours: number;
   late_cancel_refund_bps: number;
+  no_show_refund_bps: number;
   location_mode: ServiceLocationMode;
 }
 
@@ -266,6 +271,7 @@ export class BookingsService {
           durationMin: s.duration_min,
           cancelCutoffHours: s.cancel_cutoff_hours,
           lateCancelRefundBps: s.late_cancel_refund_bps,
+          noShowRefundBps: s.no_show_refund_bps,
           locationMode: effectiveMode(s.location_mode)!,
           branchIds: branchServices.filter((x) => x.service_id === s.id).map((x) => x.branch_id),
           addons: addons
@@ -387,6 +393,7 @@ export class BookingsService {
         's.buffer_after_min',
         's.cancel_cutoff_hours',
         's.late_cancel_refund_bps',
+        's.no_show_refund_bps',
         's.location_mode',
       ])
       .where('s.id', '=', serviceId)
@@ -716,6 +723,7 @@ export class BookingsService {
           const policy: PolicySnapshot = {
             cutoffHours: service.cancel_cutoff_hours,
             lateRefundBps: service.late_cancel_refund_bps,
+            noShowRefundBps: service.no_show_refund_bps,
           };
           const booking = await this.allocate(
             trx,
@@ -957,22 +965,34 @@ export class BookingsService {
       const now = this.clock.now();
       const b = await trx
         .selectFrom('bookings')
-        .select(['id', 'status', 'start_at', 'price_fils', 'policy_snapshot', 'business_id'])
+        .select([
+          'id',
+          'status',
+          'start_at',
+          'price_fils',
+          'policy_snapshot',
+          'business_id',
+          'travel_fee_fils',
+          'travel_status',
+        ])
         .where('id', '=', bookingId)
         .where('user_id', '=', userId)
         .forUpdate()
         .executeTakeFirst();
       if (!b) throw notFound();
       let refundFils = 0;
+      let travelFils = 0;
       if (b.status === 'confirmed') {
         try {
-          refundFils = cancellationRefund({
+          ({ refundFils, travelFils } = cancellationRefund({
             priceFils: b.price_fils,
             startAt: b.start_at,
             now,
             policy: b.policy_snapshot as PolicySnapshot,
             by: 'customer',
-          }).refundFils;
+            travelFeeFils: b.travel_fee_fils,
+            travelStarted: (b.travel_status ?? 'not_started') !== 'not_started',
+          }));
         } catch (error) {
           if (error instanceof BookingRuleError) throw ruleError(error);
           throw error;
@@ -996,7 +1016,13 @@ export class BookingsService {
         })
         .where('id', '=', b.id)
         .execute();
-      refund = await this.refundFor(trx, b.id, refundFils, 'customer_cancellation', now);
+      refund = await this.refundFor(
+        trx,
+        b.id,
+        { amountFils: refundFils, travelFils },
+        'customer_cancellation',
+        now,
+      );
       await this.outbox(trx, 'booking.canceled', { bookingId: b.id, by: 'customer' }, now);
       await writeAudit(trx, {
         actorType: 'user',
@@ -1005,7 +1031,7 @@ export class BookingsService {
         targetType: 'booking',
         targetId: b.id,
         businessId: b.business_id,
-        diff: { by: 'customer', refundFils },
+        diff: { by: 'customer', refundFils, travelRefundFils: travelFils },
         requestId: meta.requestId,
       });
     });
@@ -1228,7 +1254,109 @@ export class BookingsService {
     }
     const row = await q.executeTakeFirst();
     if (!row) throw notFound();
-    return merchantBookingView(row as BookingRow, row.payment_status);
+    const travel = await this.db
+      .selectFrom('booking_travel_events')
+      .select(['status', 'occurred_at'])
+      .where('booking_id', '=', bookingId)
+      .orderBy('occurred_at')
+      .execute();
+    return {
+      ...merchantBookingView(row as BookingRow, row.payment_status),
+      amounts: await bookingAmounts(this.db, row as BookingRow),
+      travelEvents: travel.map((t) => ({ status: t.status, at: t.occurred_at.toISOString() })),
+    };
+  }
+
+  /**
+   * Records a home visit's travel status (ADR-0025): "on the way", then "arrived". A scheduler
+   * may record it for any professional; a professional only for their own visits. Each step is
+   * kept in an append-only log with the time and who recorded it; the customer is told when the
+   * professional sets off. Once travel has started, a late customer cancellation no longer gets
+   * the travel fee back automatically.
+   */
+  async updateTravel(
+    ctx: BusinessContext,
+    userId: string,
+    bookingId: string,
+    body: TravelUpdateRequest,
+    meta: RequestMeta,
+  ): Promise<MerchantBooking> {
+    const caps = businessCapabilities(ctx.permissions);
+    const own = caps.has('bookings.schedule') ? 'all' : await this.visibleStaff(ctx);
+    await this.db.transaction().execute(async (trx) => {
+      const now = this.clock.now();
+      const b = await trx
+        .selectFrom('bookings')
+        .select([
+          'id',
+          'status',
+          'start_at',
+          'version',
+          'staff_id',
+          'location_type',
+          'travel_status',
+        ])
+        .where('id', '=', bookingId)
+        .where('business_id', '=', ctx.businessId)
+        .forUpdate()
+        .executeTakeFirst();
+      if (!b || (own !== 'all' && !own.includes(b.staff_id))) throw notFound();
+      if (b.version !== body.expectedVersion) {
+        throw new ApiError(
+          HttpStatus.CONFLICT,
+          'VERSION_CONFLICT',
+          'This booking changed in the meantime. Reload and try again.',
+        );
+      }
+      if (b.location_type !== 'home' || !b.travel_status) {
+        throw new ApiError(
+          HttpStatus.CONFLICT,
+          'NOT_A_HOME_VISIT',
+          'Travel status applies to home visits only.',
+        );
+      }
+      try {
+        travelTransition({
+          bookingStatus: b.status,
+          current: b.travel_status,
+          next: body.status,
+          now,
+          startAt: b.start_at,
+        });
+      } catch (error) {
+        if (error instanceof BookingRuleError) throw ruleError(error);
+        throw error;
+      }
+      await trx
+        .updateTable('bookings')
+        .set({ travel_status: body.status, version: (eb) => eb('version', '+', 1) })
+        .where('id', '=', b.id)
+        .execute();
+      await trx
+        .insertInto('booking_travel_events')
+        .values({
+          booking_id: b.id,
+          business_id: ctx.businessId,
+          status: body.status,
+          actor_user_id: userId,
+          occurred_at: now,
+        })
+        .execute();
+      if (body.status === 'on_the_way') {
+        await this.outbox(trx, 'booking.travel_started', { bookingId: b.id }, now);
+      }
+      await writeAudit(trx, {
+        actorType: 'user',
+        actorId: userId,
+        action: 'booking.travel',
+        targetType: 'booking',
+        targetId: b.id,
+        businessId: ctx.businessId,
+        diff: { from: b.travel_status, to: body.status },
+        requestId: meta.requestId,
+      });
+    });
+    return this.getForBusiness(ctx, bookingId);
   }
 
   /** Check-in, completion, no-show and business cancellation (full refund when prepaid). */
@@ -1244,7 +1372,16 @@ export class BookingsService {
       const now = this.clock.now();
       const b = await trx
         .selectFrom('bookings')
-        .select(['id', 'status', 'start_at', 'price_fils', 'version', 'payment_mode'])
+        .select([
+          'id',
+          'status',
+          'start_at',
+          'price_fils',
+          'version',
+          'payment_mode',
+          'travel_fee_fils',
+          'policy_snapshot',
+        ])
         .where('id', '=', bookingId)
         .where('business_id', '=', ctx.businessId)
         .forUpdate()
@@ -1274,19 +1411,29 @@ export class BookingsService {
           cancel_reason: body.reason ?? null,
         },
       }[next as 'checked_in' | 'completed' | 'no_show' | 'canceled'];
-      let refundFils: number | null = null;
-      if (next === 'canceled') {
-        refundFils =
-          b.payment_mode === 'prepaid'
-            ? cancellationRefund({
-                priceFils: b.price_fils,
-                startAt: b.start_at,
-                now,
-                policy: { cutoffHours: 0, lateRefundBps: 10_000 },
-                by: 'business',
-              }).refundFils
-            : 0;
+      // A business cancellation refunds a prepaid booking in full; a no-show refunds the share
+      // the policy shown at booking promised (D7, phase 8.8). Pay-at-venue bookings hold no money.
+      let split: { refundFils: number; travelFils: number } | null = null;
+      if (next === 'canceled' || next === 'no_show') {
+        split =
+          b.payment_mode !== 'prepaid'
+            ? { refundFils: 0, travelFils: 0 }
+            : next === 'canceled'
+              ? cancellationRefund({
+                  priceFils: b.price_fils,
+                  startAt: b.start_at,
+                  now,
+                  policy: { cutoffHours: 0, lateRefundBps: 10_000 },
+                  by: 'business',
+                  travelFeeFils: b.travel_fee_fils,
+                })
+              : noShowRefund({
+                  priceFils: b.price_fils,
+                  travelFeeFils: b.travel_fee_fils,
+                  policy: b.policy_snapshot as PolicySnapshot,
+                });
       }
+      const refundFils = split ? split.refundFils : null;
       await trx
         .updateTable('bookings')
         .set({
@@ -1297,8 +1444,14 @@ export class BookingsService {
         })
         .where('id', '=', b.id)
         .execute();
-      if (next === 'canceled' && refundFils) {
-        refund = await this.refundFor(trx, b.id, refundFils, 'business_cancellation', now);
+      if (split && split.refundFils > 0) {
+        refund = await this.refundFor(
+          trx,
+          b.id,
+          { amountFils: split.refundFils, travelFils: split.travelFils },
+          next === 'canceled' ? 'business_cancellation' : 'no_show',
+          now,
+        );
       }
       await this.outbox(trx, `booking.${next}`, { bookingId: b.id, by: 'business' }, now);
       await writeAudit(trx, {
@@ -1362,7 +1515,8 @@ export class BookingsService {
               policy_snapshot: JSON.stringify({
                 cutoffHours: service.cancel_cutoff_hours,
                 lateRefundBps: service.late_cancel_refund_bps,
-              }),
+                noShowRefundBps: service.no_show_refund_bps,
+              } satisfies PolicySnapshot),
               customer_name: body.customerName,
               customer_phone: body.customerPhone ?? null,
               note: body.note ?? null,
@@ -1391,8 +1545,8 @@ export class BookingsService {
   private async refundFor(
     trx: Trx,
     bookingId: string,
-    amountFils: number,
-    reason: 'customer_cancellation' | 'business_cancellation',
+    { amountFils, travelFils }: { amountFils: number; travelFils: number },
+    reason: 'customer_cancellation' | 'business_cancellation' | 'no_show',
     now: Date,
   ): Promise<RefundJob | null> {
     if (amountFils <= 0) return null;
@@ -1405,7 +1559,13 @@ export class BookingsService {
     if (!payment) return null;
     return this.payments.requestRefund(
       trx,
-      { paymentId: payment.id, amountFils, reason, target: { type: 'booking', id: bookingId } },
+      {
+        paymentId: payment.id,
+        amountFils,
+        nonCommissionableFils: travelFils,
+        reason,
+        target: { type: 'booking', id: bookingId },
+      },
       now,
     );
   }

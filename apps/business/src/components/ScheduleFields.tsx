@@ -295,6 +295,12 @@ export function ServiceFields({
           (service?.lateCancelRefundBps ?? 0) / 100,
           { min: 0, max: 100, step: 1 },
         )}
+        {number(
+          'noShowRefundPercent',
+          'service.noShowRefund',
+          (service?.noShowRefundBps ?? 0) / 100,
+          { min: 0, max: 100, step: 1 },
+        )}
       </div>
       <div className="field">
         <label htmlFor="locationMode">{tr('service.location')}</label>

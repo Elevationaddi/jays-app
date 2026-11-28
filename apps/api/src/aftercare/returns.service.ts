@@ -231,6 +231,8 @@ export class ReturnsService {
           {
             paymentId: payment.id,
             amountFils: rr.amount_fils,
+            // A return refunds the items only: no delivery charge in it (ADR-0027).
+            nonCommissionableFils: 0,
             reason: 'return',
             target: { type: 'order', id: rr.order_id },
             merchantOrderId: rr.merchant_order_id,

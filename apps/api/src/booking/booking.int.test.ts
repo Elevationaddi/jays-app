@@ -461,7 +461,7 @@ describe('T13: service edits do not change existing bookings', () => {
     expect(after.priceFils).toBe(10_500);
     expect(after.endAt).toBe(booking.endAt);
     expect(after.service.title.en).toBe('Fictional haircut');
-    expect(after.policy).toEqual({ cutoffHours: 24, lateRefundBps: 5_000 });
+    expect(after.policy).toEqual({ cutoffHours: 24, lateRefundBps: 5_000, noShowRefundBps: 0 });
   });
 });
 

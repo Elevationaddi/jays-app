@@ -78,6 +78,7 @@ import type {
 import type {
   blockInputSchema,
   bookingActionRequestSchema,
+  travelUpdateRequestSchema,
   branchInputSchema,
   closureInputSchema,
   holdRequestSchema,
@@ -824,6 +825,17 @@ export function createApiClient(options: ApiClientOptions) {
       call(
         'POST',
         `${biz(id)}/bookings/${encodeURIComponent(bookingId)}/actions`,
+        merchantBookingSchema,
+        body,
+      ),
+    updateTravel: (
+      id: string,
+      bookingId: string,
+      body: z.input<typeof travelUpdateRequestSchema>,
+    ) =>
+      call(
+        'POST',
+        `${biz(id)}/bookings/${encodeURIComponent(bookingId)}/travel`,
         merchantBookingSchema,
         body,
       ),

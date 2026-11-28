@@ -31059,6 +31059,11 @@
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
                           },
+                          "noShowRefundBps": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
                           "locationMode": {
                             "type": "string",
                             "enum": [
@@ -31157,6 +31162,7 @@
                           "durationMin",
                           "cancelCutoffHours",
                           "lateCancelRefundBps",
+                          "noShowRefundBps",
                           "locationMode",
                           "branchIds",
                           "addons",
@@ -31984,6 +31990,21 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "travelStatus": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "not_started",
+                            "on_the_way",
+                            "arrived"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "addons": {
                       "type": "array",
                       "items": {
@@ -32061,11 +32082,17 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
+                        },
+                        "noShowRefundBps": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         }
                       },
                       "required": [
                         "cutoffHours",
-                        "lateRefundBps"
+                        "lateRefundBps",
+                        "noShowRefundBps"
                       ],
                       "additionalProperties": false
                     },
@@ -32174,6 +32201,7 @@
                     "location",
                     "homeAddress",
                     "travelFeeFils",
+                    "travelStatus",
                     "addons",
                     "addonsFils",
                     "priceFils",
@@ -32711,6 +32739,21 @@
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
                           },
+                          "travelStatus": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "not_started",
+                                  "on_the_way",
+                                  "arrived"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "addons": {
                             "type": "array",
                             "items": {
@@ -32788,11 +32831,17 @@
                                 "type": "integer",
                                 "minimum": -9007199254740991,
                                 "maximum": 9007199254740991
+                              },
+                              "noShowRefundBps": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
                               }
                             },
                             "required": [
                               "cutoffHours",
-                              "lateRefundBps"
+                              "lateRefundBps",
+                              "noShowRefundBps"
                             ],
                             "additionalProperties": false
                           },
@@ -32901,6 +32950,7 @@
                           "location",
                           "homeAddress",
                           "travelFeeFils",
+                          "travelStatus",
                           "addons",
                           "addonsFils",
                           "priceFils",
@@ -33252,6 +33302,21 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "travelStatus": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "not_started",
+                            "on_the_way",
+                            "arrived"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "addons": {
                       "type": "array",
                       "items": {
@@ -33329,11 +33394,17 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
+                        },
+                        "noShowRefundBps": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         }
                       },
                       "required": [
                         "cutoffHours",
-                        "lateRefundBps"
+                        "lateRefundBps",
+                        "noShowRefundBps"
                       ],
                       "additionalProperties": false
                     },
@@ -33442,6 +33513,7 @@
                     "location",
                     "homeAddress",
                     "travelFeeFils",
+                    "travelStatus",
                     "addons",
                     "addonsFils",
                     "priceFils",
@@ -33804,6 +33876,21 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "travelStatus": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "not_started",
+                            "on_the_way",
+                            "arrived"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "addons": {
                       "type": "array",
                       "items": {
@@ -33881,11 +33968,17 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
+                        },
+                        "noShowRefundBps": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         }
                       },
                       "required": [
                         "cutoffHours",
-                        "lateRefundBps"
+                        "lateRefundBps",
+                        "noShowRefundBps"
                       ],
                       "additionalProperties": false
                     },
@@ -33994,6 +34087,7 @@
                     "location",
                     "homeAddress",
                     "travelFeeFils",
+                    "travelStatus",
                     "addons",
                     "addonsFils",
                     "priceFils",
@@ -34395,6 +34489,21 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "travelStatus": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "not_started",
+                            "on_the_way",
+                            "arrived"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "addons": {
                       "type": "array",
                       "items": {
@@ -34472,11 +34581,17 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
+                        },
+                        "noShowRefundBps": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         }
                       },
                       "required": [
                         "cutoffHours",
-                        "lateRefundBps"
+                        "lateRefundBps",
+                        "noShowRefundBps"
                       ],
                       "additionalProperties": false
                     },
@@ -34585,6 +34700,7 @@
                     "location",
                     "homeAddress",
                     "travelFeeFils",
+                    "travelStatus",
                     "addons",
                     "addonsFils",
                     "priceFils",
@@ -38994,6 +39110,11 @@
                         "minimum": -9007199254740991,
                         "maximum": 9007199254740991
                       },
+                      "noShowRefundBps": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
                       "locationMode": {
                         "type": "string",
                         "enum": [
@@ -39050,6 +39171,7 @@
                       "bufferAfterMin",
                       "cancelCutoffHours",
                       "lateCancelRefundBps",
+                      "noShowRefundBps",
                       "locationMode",
                       "status",
                       "suspensionReason",
@@ -39212,6 +39334,12 @@
                     "minimum": 0,
                     "maximum": 10000
                   },
+                  "noShowRefundBps": {
+                    "default": 0,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10000
+                  },
                   "branchIds": {
                     "maxItems": 50,
                     "type": "array",
@@ -39332,6 +39460,11 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "noShowRefundBps": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "locationMode": {
                       "type": "string",
                       "enum": [
@@ -39388,6 +39521,7 @@
                     "bufferAfterMin",
                     "cancelCutoffHours",
                     "lateCancelRefundBps",
+                    "noShowRefundBps",
                     "locationMode",
                     "status",
                     "suspensionReason",
@@ -39572,6 +39706,11 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "noShowRefundBps": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "locationMode": {
                       "type": "string",
                       "enum": [
@@ -39628,6 +39767,7 @@
                     "bufferAfterMin",
                     "cancelCutoffHours",
                     "lateCancelRefundBps",
+                    "noShowRefundBps",
                     "locationMode",
                     "status",
                     "suspensionReason",
@@ -39793,6 +39933,11 @@
                     "minimum": 0,
                     "maximum": 10000
                   },
+                  "noShowRefundBps": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10000
+                  },
                   "branchIds": {
                     "maxItems": 50,
                     "type": "array",
@@ -39911,6 +40056,11 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "noShowRefundBps": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "locationMode": {
                       "type": "string",
                       "enum": [
@@ -39967,6 +40117,7 @@
                     "bufferAfterMin",
                     "cancelCutoffHours",
                     "lateCancelRefundBps",
+                    "noShowRefundBps",
                     "locationMode",
                     "status",
                     "suspensionReason",
@@ -42101,6 +42252,21 @@
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
                           },
+                          "travelStatus": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "not_started",
+                                  "on_the_way",
+                                  "arrived"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "addons": {
                             "type": "array",
                             "items": {
@@ -42178,11 +42344,17 @@
                                 "type": "integer",
                                 "minimum": -9007199254740991,
                                 "maximum": 9007199254740991
+                              },
+                              "noShowRefundBps": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
                               }
                             },
                             "required": [
                               "cutoffHours",
-                              "lateRefundBps"
+                              "lateRefundBps",
+                              "noShowRefundBps"
                             ],
                             "additionalProperties": false
                           },
@@ -42281,6 +42453,134 @@
                               "string",
                               "null"
                             ]
+                          },
+                          "amounts": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "serviceFils": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "addonsFils": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "travelFeeFils": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "vatFils": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "discountFils": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "commissionFils": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "commissionVatFils": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "processingFeeFils": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "refundedFils": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "merchantNetFils": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "serviceFils",
+                                  "addonsFils",
+                                  "travelFeeFils",
+                                  "vatFils",
+                                  "discountFils",
+                                  "commissionFils",
+                                  "commissionVatFils",
+                                  "processingFeeFils",
+                                  "refundedFils",
+                                  "merchantNetFils"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "travelEvents": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "on_the_way",
+                                    "arrived"
+                                  ]
+                                },
+                                "at": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                }
+                              },
+                              "required": [
+                                "status",
+                                "at"
+                              ],
+                              "additionalProperties": false
+                            }
                           }
                         },
                         "required": [
@@ -42297,6 +42597,7 @@
                           "location",
                           "homeAddress",
                           "travelFeeFils",
+                          "travelStatus",
                           "addons",
                           "addonsFils",
                           "priceFils",
@@ -42313,7 +42614,9 @@
                           "paymentStatus",
                           "customer",
                           "note",
-                          "cancelReason"
+                          "cancelReason",
+                          "amounts",
+                          "travelEvents"
                         ],
                         "additionalProperties": false
                       }
@@ -42736,6 +43039,21 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "travelStatus": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "not_started",
+                            "on_the_way",
+                            "arrived"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "addons": {
                       "type": "array",
                       "items": {
@@ -42813,11 +43131,17 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
+                        },
+                        "noShowRefundBps": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         }
                       },
                       "required": [
                         "cutoffHours",
-                        "lateRefundBps"
+                        "lateRefundBps",
+                        "noShowRefundBps"
                       ],
                       "additionalProperties": false
                     },
@@ -42916,6 +43240,134 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "amounts": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "serviceFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "addonsFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "travelFeeFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "vatFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "discountFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "commissionFils": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "commissionVatFils": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "processingFeeFils": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "refundedFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "merchantNetFils": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "serviceFils",
+                            "addonsFils",
+                            "travelFeeFils",
+                            "vatFils",
+                            "discountFils",
+                            "commissionFils",
+                            "commissionVatFils",
+                            "processingFeeFils",
+                            "refundedFils",
+                            "merchantNetFils"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "travelEvents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "on_the_way",
+                              "arrived"
+                            ]
+                          },
+                          "at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "status",
+                          "at"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -42932,6 +43384,7 @@
                     "location",
                     "homeAddress",
                     "travelFeeFils",
+                    "travelStatus",
                     "addons",
                     "addonsFils",
                     "priceFils",
@@ -42948,7 +43401,9 @@
                     "paymentStatus",
                     "customer",
                     "note",
-                    "cancelReason"
+                    "cancelReason",
+                    "amounts",
+                    "travelEvents"
                   ],
                   "additionalProperties": false
                 }
@@ -43320,6 +43775,21 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "travelStatus": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "not_started",
+                            "on_the_way",
+                            "arrived"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "addons": {
                       "type": "array",
                       "items": {
@@ -43397,11 +43867,17 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
+                        },
+                        "noShowRefundBps": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         }
                       },
                       "required": [
                         "cutoffHours",
-                        "lateRefundBps"
+                        "lateRefundBps",
+                        "noShowRefundBps"
                       ],
                       "additionalProperties": false
                     },
@@ -43500,6 +43976,134 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "amounts": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "serviceFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "addonsFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "travelFeeFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "vatFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "discountFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "commissionFils": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "commissionVatFils": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "processingFeeFils": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "refundedFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "merchantNetFils": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "serviceFils",
+                            "addonsFils",
+                            "travelFeeFils",
+                            "vatFils",
+                            "discountFils",
+                            "commissionFils",
+                            "commissionVatFils",
+                            "processingFeeFils",
+                            "refundedFils",
+                            "merchantNetFils"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "travelEvents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "on_the_way",
+                              "arrived"
+                            ]
+                          },
+                          "at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "status",
+                          "at"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -43516,6 +44120,7 @@
                     "location",
                     "homeAddress",
                     "travelFeeFils",
+                    "travelStatus",
                     "addons",
                     "addonsFils",
                     "priceFils",
@@ -43532,7 +44137,9 @@
                     "paymentStatus",
                     "customer",
                     "note",
-                    "cancelReason"
+                    "cancelReason",
+                    "amounts",
+                    "travelEvents"
                   ],
                   "additionalProperties": false
                 }
@@ -43917,6 +44524,21 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "travelStatus": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "not_started",
+                            "on_the_way",
+                            "arrived"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "addons": {
                       "type": "array",
                       "items": {
@@ -43994,11 +44616,17 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
+                        },
+                        "noShowRefundBps": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         }
                       },
                       "required": [
                         "cutoffHours",
-                        "lateRefundBps"
+                        "lateRefundBps",
+                        "noShowRefundBps"
                       ],
                       "additionalProperties": false
                     },
@@ -44097,6 +44725,134 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "amounts": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "serviceFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "addonsFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "travelFeeFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "vatFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "discountFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "commissionFils": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "commissionVatFils": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "processingFeeFils": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "refundedFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "merchantNetFils": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "serviceFils",
+                            "addonsFils",
+                            "travelFeeFils",
+                            "vatFils",
+                            "discountFils",
+                            "commissionFils",
+                            "commissionVatFils",
+                            "processingFeeFils",
+                            "refundedFils",
+                            "merchantNetFils"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "travelEvents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "on_the_way",
+                              "arrived"
+                            ]
+                          },
+                          "at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "status",
+                          "at"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -44113,6 +44869,7 @@
                     "location",
                     "homeAddress",
                     "travelFeeFils",
+                    "travelStatus",
                     "addons",
                     "addonsFils",
                     "priceFils",
@@ -44129,7 +44886,9 @@
                     "paymentStatus",
                     "customer",
                     "note",
-                    "cancelReason"
+                    "cancelReason",
+                    "amounts",
+                    "travelEvents"
                   ],
                   "additionalProperties": false
                 }
@@ -44203,6 +44962,772 @@
           }
         ],
         "summary": "Check in, complete, mark no-show or cancel (owner, manager, scheduler)",
+        "tags": [
+          "business-services"
+        ]
+      }
+    },
+    "/v1/businesses/{businessId}/bookings/{bookingId}/travel": {
+      "post": {
+        "description": "on_the_way from 3 hours before the start, then arrived. Each step is logged and cannot be undone; the customer is told when the professional sets off. Once travel has started, a late customer cancellation follows the policy for the travel fee too. 409 VERSION_CONFLICT, NOT_A_HOME_VISIT or INVALID_TRANSITION, 422 TOO_EARLY.",
+        "operationId": "BusinessScheduleController_travel",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "businessId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "on_the_way",
+                      "arrived"
+                    ]
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "status",
+                  "expectedVersion"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The appointment after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "held",
+                        "confirmed",
+                        "checked_in",
+                        "completed",
+                        "canceled",
+                        "no_show",
+                        "expired"
+                      ]
+                    },
+                    "startAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "endAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "timeZone": {
+                      "type": "string"
+                    },
+                    "holdExpiresAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "business": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "type": "object",
+                          "properties": {
+                            "en": {
+                              "type": "string"
+                            },
+                            "ar": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "en",
+                            "ar"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "branch": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "type": "object",
+                          "properties": {
+                            "en": {
+                              "type": "string"
+                            },
+                            "ar": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "en",
+                            "ar"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "emirate": {
+                          "type": "string",
+                          "enum": [
+                            "AUH",
+                            "DXB",
+                            "SHJ",
+                            "AJM",
+                            "UAQ",
+                            "RAK",
+                            "FUJ"
+                          ]
+                        },
+                        "area": {
+                          "type": "string"
+                        },
+                        "street": {
+                          "type": "string"
+                        },
+                        "building": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "emirate",
+                        "area",
+                        "street",
+                        "building"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "service": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "title": {
+                          "type": "object",
+                          "properties": {
+                            "en": {
+                              "type": "string"
+                            },
+                            "ar": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "en",
+                            "ar"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "durationMin": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "title",
+                        "durationMin"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "staff": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "displayName": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "displayName"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "location": {
+                      "type": "string",
+                      "enum": [
+                        "venue",
+                        "home"
+                      ]
+                    },
+                    "homeAddress": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "addressId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "label": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "emirate": {
+                              "type": "string",
+                              "enum": [
+                                "AUH",
+                                "DXB",
+                                "SHJ",
+                                "AJM",
+                                "UAQ",
+                                "RAK",
+                                "FUJ"
+                              ]
+                            },
+                            "area": {
+                              "type": "string"
+                            },
+                            "street": {
+                              "type": "string"
+                            },
+                            "building": {
+                              "type": "string"
+                            },
+                            "unit": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "directions": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "addressId",
+                            "label",
+                            "emirate",
+                            "area",
+                            "street",
+                            "building",
+                            "unit",
+                            "directions"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "travelFeeFils": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "travelStatus": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "not_started",
+                            "on_the_way",
+                            "arrived"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "addons": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "title": {
+                            "type": "object",
+                            "properties": {
+                              "en": {
+                                "type": "string"
+                              },
+                              "ar": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "en",
+                              "ar"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "priceFils": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "durationMin": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "priceFils",
+                          "durationMin"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "addonsFils": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "priceFils": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "taxFils": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "currency": {
+                      "type": "string",
+                      "const": "AED"
+                    },
+                    "policy": {
+                      "type": "object",
+                      "properties": {
+                        "cutoffHours": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "lateRefundBps": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "noShowRefundBps": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "cutoffHours",
+                        "lateRefundBps",
+                        "noShowRefundBps"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "refundFils": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "canceledBy": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "customer",
+                            "business",
+                            "system"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "rescheduledCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "customer",
+                        "manual"
+                      ]
+                    },
+                    "paymentMode": {
+                      "type": "string",
+                      "enum": [
+                        "prepaid",
+                        "pay_at_venue"
+                      ]
+                    },
+                    "paymentStatus": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "customer": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "phone": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "phone"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "note": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "cancelReason": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "amounts": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "serviceFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "addonsFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "travelFeeFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "vatFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "discountFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "commissionFils": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "commissionVatFils": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "processingFeeFils": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "refundedFils": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "merchantNetFils": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "serviceFils",
+                            "addonsFils",
+                            "travelFeeFils",
+                            "vatFils",
+                            "discountFils",
+                            "commissionFils",
+                            "commissionVatFils",
+                            "processingFeeFils",
+                            "refundedFils",
+                            "merchantNetFils"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "travelEvents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "on_the_way",
+                              "arrived"
+                            ]
+                          },
+                          "at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "status",
+                          "at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "startAt",
+                    "endAt",
+                    "timeZone",
+                    "holdExpiresAt",
+                    "business",
+                    "branch",
+                    "service",
+                    "staff",
+                    "location",
+                    "homeAddress",
+                    "travelFeeFils",
+                    "travelStatus",
+                    "addons",
+                    "addonsFils",
+                    "priceFils",
+                    "taxFils",
+                    "currency",
+                    "policy",
+                    "refundFils",
+                    "canceledBy",
+                    "rescheduledCount",
+                    "version",
+                    "createdAt",
+                    "source",
+                    "paymentMode",
+                    "paymentStatus",
+                    "customer",
+                    "note",
+                    "cancelReason",
+                    "amounts",
+                    "travelEvents"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed (VALIDATION_FAILED) or a code is invalid or expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Absent, or hidden from this caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refused by policy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record a home visit's travel status (scheduler, or the professional on the visit)",
         "tags": [
           "business-services"
         ]
@@ -44537,6 +46062,21 @@
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
                           },
+                          "travelStatus": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "not_started",
+                                  "on_the_way",
+                                  "arrived"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "addons": {
                             "type": "array",
                             "items": {
@@ -44614,11 +46154,17 @@
                                 "type": "integer",
                                 "minimum": -9007199254740991,
                                 "maximum": 9007199254740991
+                              },
+                              "noShowRefundBps": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
                               }
                             },
                             "required": [
                               "cutoffHours",
-                              "lateRefundBps"
+                              "lateRefundBps",
+                              "noShowRefundBps"
                             ],
                             "additionalProperties": false
                           },
@@ -44718,6 +46264,134 @@
                               "null"
                             ]
                           },
+                          "amounts": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "serviceFils": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "addonsFils": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "travelFeeFils": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "vatFils": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "discountFils": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "commissionFils": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "commissionVatFils": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "processingFeeFils": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "refundedFils": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "merchantNetFils": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "serviceFils",
+                                  "addonsFils",
+                                  "travelFeeFils",
+                                  "vatFils",
+                                  "discountFils",
+                                  "commissionFils",
+                                  "commissionVatFils",
+                                  "processingFeeFils",
+                                  "refundedFils",
+                                  "merchantNetFils"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "travelEvents": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "on_the_way",
+                                    "arrived"
+                                  ]
+                                },
+                                "at": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                }
+                              },
+                              "required": [
+                                "status",
+                                "at"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
                           "paymentNeedsAttention": {
                             "type": "boolean"
                           }
@@ -44736,6 +46410,7 @@
                           "location",
                           "homeAddress",
                           "travelFeeFils",
+                          "travelStatus",
                           "addons",
                           "addonsFils",
                           "priceFils",
@@ -44753,6 +46428,8 @@
                           "customer",
                           "note",
                           "cancelReason",
+                          "amounts",
+                          "travelEvents",
                           "paymentNeedsAttention"
                         ],
                         "additionalProperties": false
@@ -44950,6 +46627,11 @@
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
                           },
+                          "noShowRefundBps": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
                           "locationMode": {
                             "type": "string",
                             "enum": [
@@ -45037,6 +46719,7 @@
                           "bufferAfterMin",
                           "cancelCutoffHours",
                           "lateCancelRefundBps",
+                          "noShowRefundBps",
                           "locationMode",
                           "status",
                           "suspensionReason",
@@ -45244,6 +46927,11 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "noShowRefundBps": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "locationMode": {
                       "type": "string",
                       "enum": [
@@ -45331,6 +47019,7 @@
                     "bufferAfterMin",
                     "cancelCutoffHours",
                     "lateCancelRefundBps",
+                    "noShowRefundBps",
                     "locationMode",
                     "status",
                     "suspensionReason",

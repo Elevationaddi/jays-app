@@ -29,7 +29,12 @@ export interface RefundJob {
 }
 
 export type RefundReason =
-  'late_payment' | 'customer_cancellation' | 'business_cancellation' | 'admin' | 'return';
+  | 'late_payment'
+  | 'customer_cancellation'
+  | 'business_cancellation'
+  | 'no_show'
+  | 'admin'
+  | 'return';
 
 type LateRefund = RefundJob;
 
@@ -333,6 +338,7 @@ export class PaymentsService {
         'reason',
         'merchant_order_id',
         'return_request_id',
+        'non_commissionable_fils',
       ])
       .where('provider_ref', '=', event.refundId)
       .forUpdate()
@@ -380,6 +386,7 @@ export class PaymentsService {
             refund.amount_fils,
             { kind: 'refund', type: 'refund', id: refund.id },
             now,
+            refund.non_commissionable_fils,
           );
         } else {
           // A refund we cannot attribute to a seller must not vanish from the books.
@@ -456,6 +463,8 @@ export class PaymentsService {
     input: {
       paymentId: string;
       amountFils: number;
+      /** The travel or delivery part of the refund (ADR-0027). */
+      nonCommissionableFils?: number;
       reason: RefundReason;
       target: RefundJob['target'];
       merchantOrderId?: string | null;
@@ -480,6 +489,10 @@ export class PaymentsService {
         .values({
           payment_id: payment.id,
           amount_fils: input.amountFils,
+          non_commissionable_fils:
+            input.nonCommissionableFils === undefined
+              ? null
+              : Math.min(input.nonCommissionableFils, input.amountFils),
           reason: input.reason,
           merchant_order_id: input.merchantOrderId ?? null,
           refund_request_id: input.refundRequestId ?? null,

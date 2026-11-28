@@ -13,7 +13,7 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 | 6     | Fulfillment, reviews, support, notifications, dashboards     | Merged (PR #7); D7, D12, D14 assumed  |
 | 7     | RTL/accessibility, hardening, backups, observability, pilot  | Merged (PR #8); pilot not started     |
 
-| 8 | Complete application functionality | 8.1 to 8.7 merged (PRs #9 to #14, #16) |
+| 8 | Complete application functionality | 8.1 to 8.7 merged (PRs #9 to #14, #16); 8.8 in progress |
 | 9 | Provider integrations in test mode (Stripe, Resend, FCM, Supabase) | Not started |
 | 10 | Vercel deployment architecture (replaces AWS) | Not started; nothing deployed |
 | 11 | Security, QA, app store preparation | Not started |
@@ -24,11 +24,24 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 ### Revised decisions applied
 
 - **Travel fees:** no longer carry commission ([ADR-0025](adr/0025-travel-fees-home-cancellations-pilot-promotion.md)). The booking ledger line leaves the travel fee out of the commission base, and a test checks it.
-- **Still to build:** the home-visit cancellation policy (8.8) and the pilot promotion (12).
+- **Home-visit cancellations:** built in 8.8 ([ADR-0027](adr/0027-booking-policies-and-component-amounts.md)); the rule is still proposed until a consumer-protection review.
+- **Still to build:** the pilot promotion (12).
 
 ## Phase 8: Complete application functionality
 
 Founder decisions: [ADR-0018](adr/0018-founder-decisions-2026-11-28.md). Phase 8 ships as slices. Each slice is its own PR, merged once CI passes.
+
+### 8.8 Policies, refunds and legal drafts (part 1: booking policies)
+
+Decision: [ADR-0027](adr/0027-booking-policies-and-component-amounts.md). The home-visit cancellation rule stays proposed until reviewed for UAE consumer protection.
+
+- **Business portal:** each service sets a no-show refund share. Each appointment has a details page with every part of the price (service, add-ons, travel fee, VAT, refunds, commission, what the business receives) and the policy the customer accepted. Home visits get "Mark on the way" and "Mark arrived", in the calendar and on the details page.
+- **Customer app:** the policy shown before payment and on the appointment now includes the no-show share and the travel-fee rule. The appointment says when the professional is on the way.
+- **Rules:** travel steps move forward only, "on the way" from 3 hours before the start, and are kept in an append-only log. A late cancellation refunds the travel fee in full until travel starts. Travel-fee and delivery refunds return no commission. The processing fee shows as pending until phase 9.
+- **Screens:** `business-59` (amounts and travel), `business-60` (no-show policy), `customer-28` (on the way), in English and Arabic.
+- **Tests:** 4 new API integration tests (182 in total), domain tests for refunds, travel and allocation.
+- **API:** migration 0014. 1 new path.
+- **Still to do in 8.8:** delivery methods and tracking, return policies, draft legal documents, the legal review checklist and the tax review document.
 
 ### 8.7 Service discovery
 

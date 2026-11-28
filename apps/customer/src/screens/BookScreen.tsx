@@ -302,10 +302,17 @@ export function BookScreen() {
   const photos = venue.portfolio.filter(
     (p) => p.serviceId === service.id || (pro !== undefined && p.staffId === pro.id),
   );
-  const policy = tr('book.policy', {
-    hours: service.cancelCutoffHours,
-    percent: service.lateCancelRefundBps / 100,
-  });
+  // Shown before payment (D7, ADR-0025): cancellation, no-show and, for a home visit, travel fee.
+  const policy = [
+    tr('book.policy', {
+      hours: service.cancelCutoffHours,
+      percent: service.lateCancelRefundBps / 100,
+    }),
+    tr('policy.noShow', { percent: service.noShowRefundBps / 100 }),
+    location === 'home' ? tr('policy.travelFee') : null,
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <Screen footer={<Tabs />}>

@@ -164,6 +164,12 @@ export interface Earning {
   /** VAT on the commission, charged to the merchant (D4). */
   commissionVatFils?: number;
   commissionVatRefundedFils?: number;
+  /**
+   * The part of the gross that carries no commission: a booking's travel fee or an order's
+   * delivery charge, VAT included (ADR-0025, ADR-0027). Defaults to none.
+   */
+  nonCommissionableFils?: number;
+  nonCommissionableRefundedFils?: number;
 }
 
 /** What the merchant is owed from one earning after refunds. Can be zero, never negative. */
@@ -184,11 +190,22 @@ function proportional(total: number, amount: number, gross: number, left: number
 
 /**
  * Splits a refund of `amountFils` against an earning into the merchant's share and the
- * platform's commission share. Commission is returned in proportion to the gross refunded
- * (ADR-0015); the last refund returns whatever commission is left, so rounding never strands
- * a fils.
+ * platform's commission share.
+ *
+ * The refund first takes the travel or delivery part the caller names (`nonCommissionableFils`,
+ * capped at what is left of it), which returns no commission. A caller that cannot say (an
+ * admin refund of an amount, a chargeback) gets the earning's own mix: the non-commissionable
+ * share in proportion to the gross, rounded down. The rest is commissionable and
+ * returns commission in proportion to the commissionable gross (ADR-0015, ADR-0027); if it is
+ * more than the commissionable amount left, the excess comes from the non-commissionable part.
+ * The refund that empties the commissionable part returns whatever commission is left, so
+ * rounding never strands a fils.
  */
-export function allocateRefund(e: Earning, amountFils: number) {
+export function allocateRefund(
+  e: Earning,
+  amountFils: number,
+  options: { nonCommissionableFils?: number | null } = {},
+) {
   if (!Number.isSafeInteger(amountFils) || amountFils <= 0) {
     throw new MoneyError(`Refund must be a positive whole number of fils, got ${amountFils}`);
   }
@@ -196,23 +213,49 @@ export function allocateRefund(e: Earning, amountFils: number) {
   if (amountFils > remaining) {
     throw new MoneyError(`Refund of ${amountFils} exceeds the ${remaining} fils left to refund`);
   }
-  const last = amountFils === remaining;
-  const commission = proportional(
-    e.commissionFils,
-    amountFils,
-    e.grossFils,
-    e.commissionFils - e.commissionRefundedFils,
-    last,
-  );
+  const ncGross = e.nonCommissionableFils ?? 0;
+  const ncLeft = ncGross - (e.nonCommissionableRefundedFils ?? 0);
+  const commissionableGross = e.grossFils - ncGross;
+  const commissionableLeft = remaining - ncLeft;
+  const named = options.nonCommissionableFils;
+  const requested =
+    named === undefined || named === null
+      ? Number((BigInt(amountFils) * BigInt(ncGross)) / BigInt(e.grossFils))
+      : Math.max(0, Math.min(named, amountFils));
+  let nonCommissionable = Math.min(requested, ncLeft);
+  let commissionable = amountFils - nonCommissionable;
+  if (commissionable > commissionableLeft) {
+    nonCommissionable += commissionable - commissionableLeft;
+    commissionable = commissionableLeft;
+  }
+  const last = commissionable > 0 && commissionable === commissionableLeft;
+  const commission =
+    commissionable === 0
+      ? 0
+      : proportional(
+          e.commissionFils,
+          commissionable,
+          commissionableGross,
+          e.commissionFils - e.commissionRefundedFils,
+          last,
+        );
   const vatTotal = e.commissionVatFils ?? 0;
-  const vat = proportional(
-    vatTotal,
-    amountFils,
-    e.grossFils,
-    vatTotal - (e.commissionVatRefundedFils ?? 0),
-    last,
-  );
-  return { merchantFils: amountFils - commission - vat, commissionFils: commission, vatFils: vat };
+  const vat =
+    commissionable === 0
+      ? 0
+      : proportional(
+          vatTotal,
+          commissionable,
+          commissionableGross,
+          vatTotal - (e.commissionVatRefundedFils ?? 0),
+          last,
+        );
+  return {
+    merchantFils: amountFils - commission - vat,
+    commissionFils: commission,
+    vatFils: vat,
+    nonCommissionableFils: nonCommissionable,
+  };
 }
 
 export interface LedgerLine {

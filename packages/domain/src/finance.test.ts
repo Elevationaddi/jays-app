@@ -110,6 +110,39 @@ describe('refund allocation', () => {
     expect(netOf({ ...after, refundedFils: 10_001, commissionRefundedFils: 1_000 })).toBe(0);
   });
 
+  it('returns no commission on the travel or delivery part (ADR-0027)', () => {
+    // 105.00 service (100.00 + VAT, 10.00 commission) + 21.00 travel fee.
+    const home = {
+      grossFils: 12_600,
+      commissionFils: 1_000,
+      refundedFils: 0,
+      commissionRefundedFils: 0,
+      nonCommissionableFils: 2_100,
+    };
+    const travelOnly = allocateRefund(home, 2_100, { nonCommissionableFils: 2_100 });
+    expect(travelOnly).toEqual({
+      merchantFils: 2_100,
+      commissionFils: 0,
+      vatFils: 0,
+      nonCommissionableFils: 2_100,
+    });
+    // Half the service back: half the commission, measured on the service part only.
+    expect(allocateRefund(home, 5_250, { nonCommissionableFils: 0 }).commissionFils).toBe(500);
+    // Not named: the earning's own mix (1/6 travel), so 1,050 travel and 5,250 service.
+    expect(allocateRefund(home, 6_300)).toMatchObject({
+      commissionFils: 500,
+      nonCommissionableFils: 1_050,
+    });
+    // A full refund with no named travel part still returns all commission and empties both parts.
+    const all = allocateRefund(home, 12_600);
+    expect(all.commissionFils).toBe(1_000);
+    expect(all.nonCommissionableFils).toBe(2_100);
+    // Asking for more travel than is left moves the rest to the commissionable part.
+    const after = { ...home, refundedFils: 2_100, nonCommissionableRefundedFils: 2_100 };
+    const rest = allocateRefund(after, 10_500, { nonCommissionableFils: 2_100 });
+    expect(rest).toMatchObject({ commissionFils: 1_000, nonCommissionableFils: 0 });
+  });
+
   it('refuses refunds above what is left (T09)', () => {
     expect(() => allocateRefund(e, 10_002)).toThrow(/exceeds/);
     expect(() => allocateRefund({ ...e, refundedFils: 10_000 }, 2)).toThrow(/exceeds/);
@@ -266,7 +299,12 @@ describe('commission by category and VAT on commission (D2, D4)', () => {
     };
     expect(netOf(e)).toBe(8_950);
     const first = allocateRefund(e, 3_333);
-    expect(first).toEqual({ merchantFils: 2_983, commissionFils: 333, vatFils: 17 });
+    expect(first).toEqual({
+      merchantFils: 2_983,
+      commissionFils: 333,
+      vatFils: 17,
+      nonCommissionableFils: 0,
+    });
     const after = {
       ...e,
       refundedFils: 3_333,

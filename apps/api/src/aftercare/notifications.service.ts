@@ -240,12 +240,20 @@ export class NotificationsService {
       case 'booking.confirmed':
       case 'booking.canceled':
       case 'booking.rescheduled':
-      case 'booking.reminder': {
+      case 'booking.reminder':
+      case 'booking.travel_started': {
         const b = await this.db
           .selectFrom('bookings as bk')
           .innerJoin('businesses as b', 'b.id', 'bk.business_id')
           .leftJoin('storefronts as sf', 'sf.business_id', 'b.id')
-          .select(['bk.id', 'bk.user_id', 'bk.start_at', 'b.display_name', 'sf.live_name'])
+          .select([
+            'bk.id',
+            'bk.user_id',
+            'bk.start_at',
+            'bk.snapshot',
+            'b.display_name',
+            'sf.live_name',
+          ])
           .where('bk.id', '=', str('bookingId') ?? '')
           .executeTakeFirst();
         if (!b?.user_id) return null;
@@ -257,6 +265,7 @@ export class NotificationsService {
             business: name.en,
             ref: ref(b.id),
             when: dubaiTime(b.start_at, recipients[0]?.locale ?? 'en'),
+            staff: (b.snapshot as { staff?: { displayName?: string } }).staff?.displayName ?? '',
           },
         };
       }

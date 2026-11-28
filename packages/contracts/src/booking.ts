@@ -150,6 +150,8 @@ const serviceFields = {
   cancelCutoffHours: z.number().int().min(0).max(168),
   /** Share refunded for a customer cancellation after the cutoff, in basis points. */
   lateCancelRefundBps: z.number().int().min(0).max(10_000),
+  /** Share refunded when the customer does not come, in basis points (D7, phase 8.8). */
+  noShowRefundBps: z.number().int().min(0).max(10_000),
   branchIds: z.array(z.uuid()).max(50),
   /** At the venue, at the customer's address, or both (D9). Home needs approved home services. */
   locationMode: z.enum(SERVICE_LOCATION_MODES),
@@ -162,6 +164,7 @@ export const serviceInputSchema = z.strictObject({
   bufferAfterMin: serviceFields.bufferAfterMin.default(0),
   cancelCutoffHours: serviceFields.cancelCutoffHours.default(24),
   lateCancelRefundBps: serviceFields.lateCancelRefundBps.default(0),
+  noShowRefundBps: serviceFields.noShowRefundBps.default(0),
   locationMode: serviceFields.locationMode.default('in_venue'),
 });
 export type ServiceInput = z.infer<typeof serviceInputSchema>;
@@ -178,6 +181,7 @@ export const updateServiceRequestSchema = z
     bufferAfterMin: serviceFields.bufferAfterMin.optional(),
     cancelCutoffHours: serviceFields.cancelCutoffHours.optional(),
     lateCancelRefundBps: serviceFields.lateCancelRefundBps.optional(),
+    noShowRefundBps: serviceFields.noShowRefundBps.optional(),
     branchIds: serviceFields.branchIds.optional(),
     locationMode: serviceFields.locationMode.optional(),
     status: z.enum(['active', 'archived']).optional(),
@@ -199,6 +203,7 @@ export const serviceSchema = z.object({
   bufferAfterMin: z.number().int(),
   cancelCutoffHours: z.number().int(),
   lateCancelRefundBps: z.number().int(),
+  noShowRefundBps: z.number().int(),
   locationMode: z.enum(SERVICE_LOCATION_MODES),
   status: serviceStatusSchema,
   suspensionReason: z.string().nullable(),
@@ -348,6 +353,7 @@ export const publicVenueSchema = z.object({
       durationMin: z.number().int(),
       cancelCutoffHours: z.number().int(),
       lateCancelRefundBps: z.number().int(),
+      noShowRefundBps: z.number().int(),
       locationMode: z.enum(SERVICE_LOCATION_MODES),
       branchIds: z.array(z.uuid()),
       addons: z.array(publicAddonSchema),
@@ -453,7 +459,17 @@ export type CancelBookingRequest = z.infer<typeof cancelBookingRequestSchema>;
 const policySchema = z.object({
   cutoffHours: z.number().int(),
   lateRefundBps: z.number().int(),
+  noShowRefundBps: z.number().int(),
 });
+
+export const TRAVEL_STATUS_VALUES = ['not_started', 'on_the_way', 'arrived'] as const;
+export const travelStatusSchema = z.enum(TRAVEL_STATUS_VALUES);
+
+export const travelUpdateRequestSchema = z.strictObject({
+  status: z.enum(['on_the_way', 'arrived']),
+  expectedVersion: z.number().int().min(1),
+});
+export type TravelUpdateRequest = z.infer<typeof travelUpdateRequestSchema>;
 
 export const homeAddressSchema = z.object({
   addressId: z.uuid(),
@@ -490,6 +506,8 @@ const bookingCore = {
   homeAddress: homeAddressSchema.nullable(),
   /** Included in priceFils. */
   travelFeeFils: z.number().int(),
+  /** A home visit's travel status (ADR-0025); null for venue bookings. */
+  travelStatus: travelStatusSchema.nullable(),
   /** Add-ons as booked; their total is addonsFils, included in priceFils. */
   addons: z.array(publicAddonSchema),
   addonsFils: z.number().int(),
@@ -547,6 +565,27 @@ export const merchantBookingSchema = z.object({
   customer: z.object({ name: z.string().nullable(), phone: z.string().nullable() }),
   note: z.string().nullable(),
   cancelReason: z.string().nullable(),
+  /**
+   * Each part of the price (ADR-0025, ADR-0027). Shown on a single appointment; null in lists.
+   * Commission fields are null until the payment is captured (and stay null when paid at the
+   * venue). The provider's processing fee is not known until phase 9.
+   */
+  amounts: z
+    .object({
+      serviceFils: z.number().int(),
+      addonsFils: z.number().int(),
+      travelFeeFils: z.number().int(),
+      vatFils: z.number().int(),
+      discountFils: z.number().int(),
+      commissionFils: z.number().int().nullable(),
+      commissionVatFils: z.number().int().nullable(),
+      processingFeeFils: z.number().int().nullable(),
+      refundedFils: z.number().int(),
+      merchantNetFils: z.number().int().nullable(),
+    })
+    .nullable(),
+  /** Travel steps recorded for a home visit, oldest first. Empty in lists. */
+  travelEvents: z.array(z.object({ status: z.enum(['on_the_way', 'arrived']), at: isoDateTime })),
 });
 export type MerchantBooking = z.infer<typeof merchantBookingSchema>;
 

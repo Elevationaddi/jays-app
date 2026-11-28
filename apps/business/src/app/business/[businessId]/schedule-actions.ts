@@ -134,6 +134,7 @@ export async function removeClosure(f: FormData) {
 function serviceBody(f: FormData) {
   const tax = text(f, 'taxClass');
   const percent = Number(text(f, 'lateRefundPercent') || '0');
+  const noShow = Number(text(f, 'noShowRefundPercent') || '0');
   const location = text(f, 'locationMode');
   return {
     categoryId: text(f, 'categoryId'),
@@ -148,6 +149,7 @@ function serviceBody(f: FormData) {
     bufferAfterMin: int(f, 'bufferAfterMin', 0),
     cancelCutoffHours: int(f, 'cancelCutoffHours', 24),
     lateCancelRefundBps: Number.isFinite(percent) ? Math.round(percent * 100) : -1,
+    noShowRefundBps: Number.isFinite(noShow) ? Math.round(noShow * 100) : -1,
     branchIds: ids(f, 'branchIds'),
     locationMode: ((SERVICE_LOCATION_MODES as readonly string[]).includes(location)
       ? location
@@ -322,6 +324,27 @@ export async function bookingAction(f: FormData) {
     fail(path, error);
   }
   redirect(`${path}${path.includes('?') ? '&' : '?'}saved=1`);
+}
+
+/** Records "on the way" or "arrived" for a home visit (ADR-0025); back to where it came from. */
+export async function updateTravel(f: FormData) {
+  const id = uuid(f, 'businessId');
+  const bookingId = uuid(f, 'bookingId');
+  const back =
+    text(f, 'back') === 'detail' ? `/business/${id}/calendar/${bookingId}` : calendarPath(id, f);
+  const status = text(f, 'status');
+  if (status !== 'on_the_way' && status !== 'arrived') redirect(back);
+  try {
+    await (
+      await serverApi()
+    ).updateTravel(id, bookingId, {
+      status,
+      expectedVersion: int(f, 'version', 1),
+    });
+  } catch (error) {
+    fail(back, error);
+  }
+  redirect(`${back}${back.includes('?') ? '&' : '?'}saved=1`);
 }
 
 export async function createManualBooking(f: FormData) {
