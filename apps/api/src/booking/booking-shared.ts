@@ -6,6 +6,8 @@ type Localized = { en: string; ar: string };
 import {
   ACTIVE_BOOKING_STATUSES,
   addDays,
+  bookingPriceParts,
+  netOf,
   type AvailabilityInput,
   BookingRuleError,
   canCustomerReschedule,
@@ -48,6 +50,8 @@ export interface BookingSnapshot {
 export interface PolicySnapshot {
   cutoffHours: number;
   lateRefundBps: number;
+  /** Absent on bookings made before phase 8.8: no refund for a no-show. */
+  noShowRefundBps?: number;
 }
 
 /**
@@ -426,6 +430,7 @@ export const BOOKING_COLUMNS = [
   'b.travel_fee_fils',
   'b.addons',
   'b.addons_fils',
+  'b.travel_status',
 ] as const;
 
 export interface BookingRow {
@@ -456,6 +461,7 @@ export interface BookingRow {
   travel_fee_fils: number;
   addons: BookedAddon[];
   addons_fils: number;
+  travel_status: 'not_started' | 'on_the_way' | 'arrived' | null;
 }
 
 function core(row: BookingRow) {
@@ -491,12 +497,13 @@ function core(row: BookingRow) {
         }
       : null,
     travelFeeFils: row.travel_fee_fils,
+    travelStatus: row.travel_status,
     addons: row.addons,
     addonsFils: row.addons_fils,
     priceFils: row.price_fils,
     taxFils: row.tax_fils,
     currency: 'AED' as const,
-    policy,
+    policy: { ...policy, noShowRefundBps: policy.noShowRefundBps ?? 0 },
     refundFils: row.refund_fils,
     canceledBy: row.canceled_by,
     rescheduledCount: row.rescheduled_count,
@@ -525,6 +532,8 @@ export function customerBookingView(
         now,
         policy,
         by: 'customer',
+        travelFeeFils: row.travel_fee_fils,
+        travelStarted: (row.travel_status ?? 'not_started') !== 'not_started',
       }).refundFils;
     } catch (error) {
       if (!(error instanceof BookingRuleError)) throw error;
@@ -562,6 +571,54 @@ export function merchantBookingView(
     customer: { name: row.customer_name, phone: row.customer_phone },
     note: row.note,
     cancelReason: row.cancel_reason,
+    amounts: null,
+    travelEvents: [],
+  };
+}
+
+/** The per-component amounts of one booking, with its earning once the payment is captured. */
+export async function bookingAmounts(
+  conn: Conn,
+  row: BookingRow,
+): Promise<NonNullable<MerchantBooking['amounts']>> {
+  const parts = bookingPriceParts({
+    priceFils: row.price_fils,
+    taxFils: row.tax_fils,
+    addonsFils: row.addons_fils,
+    travelFeeFils: row.travel_fee_fils,
+  });
+  const e = await conn
+    .selectFrom('merchant_earnings')
+    .select([
+      'gross_fils',
+      'commission_fils',
+      'commission_vat_fils',
+      'refunded_fils',
+      'commission_refunded_fils',
+      'commission_vat_refunded_fils',
+    ])
+    .where('booking_id', '=', row.id)
+    .executeTakeFirst();
+  return {
+    serviceFils: parts.serviceFils,
+    addonsFils: parts.addonsFils,
+    travelFeeFils: parts.travelFeeFils,
+    vatFils: row.tax_fils,
+    discountFils: 0,
+    commissionFils: e ? e.commission_fils - e.commission_refunded_fils : null,
+    commissionVatFils: e ? e.commission_vat_fils - e.commission_vat_refunded_fils : null,
+    processingFeeFils: null,
+    refundedFils: e ? e.refunded_fils : (row.refund_fils ?? 0),
+    merchantNetFils: e
+      ? netOf({
+          grossFils: e.gross_fils,
+          commissionFils: e.commission_fils,
+          refundedFils: e.refunded_fils,
+          commissionRefundedFils: e.commission_refunded_fils,
+          commissionVatFils: e.commission_vat_fils,
+          commissionVatRefundedFils: e.commission_vat_refunded_fils,
+        })
+      : null,
   };
 }
 

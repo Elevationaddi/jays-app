@@ -308,6 +308,7 @@ export class ScheduleService {
           buffer_after_min: body.bufferAfterMin,
           cancel_cutoff_hours: body.cancelCutoffHours,
           late_cancel_refund_bps: body.lateCancelRefundBps,
+          no_show_refund_bps: body.noShowRefundBps,
           location_mode: body.locationMode,
           created_by: a.userId,
         })
@@ -358,6 +359,9 @@ export class ScheduleService {
       if (body.cancelCutoffHours !== undefined) set.cancel_cutoff_hours = body.cancelCutoffHours;
       if (body.lateCancelRefundBps !== undefined) {
         set.late_cancel_refund_bps = body.lateCancelRefundBps;
+      }
+      if (body.noShowRefundBps !== undefined) {
+        set.no_show_refund_bps = body.noShowRefundBps;
       }
       if (body.locationMode && body.locationMode !== current.location_mode) {
         await this.assertHomeAllowed(trx, a.businessId, body.locationMode);
@@ -470,6 +474,7 @@ export class ScheduleService {
       buffer_after_min: number;
       cancel_cutoff_hours: number;
       late_cancel_refund_bps: number;
+      no_show_refund_bps: number;
       location_mode: Service['locationMode'];
       status: Service['status'];
       suspension_reason: string | null;
@@ -506,6 +511,7 @@ export class ScheduleService {
       bufferAfterMin: r.buffer_after_min,
       cancelCutoffHours: r.cancel_cutoff_hours,
       lateCancelRefundBps: r.late_cancel_refund_bps,
+      noShowRefundBps: r.no_show_refund_bps,
       locationMode: r.location_mode,
       status: r.status,
       suspensionReason: r.suspension_reason,

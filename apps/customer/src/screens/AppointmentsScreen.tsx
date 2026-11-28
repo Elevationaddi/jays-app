@@ -331,6 +331,11 @@ export function AppointmentScreen() {
             <Text style={s.muted}>
               {tr('booking.travelFee', { amount: money(b.travelFeeFils, state.locale) })}
             </Text>
+            {b.travelStatus && b.travelStatus !== 'not_started' ? (
+              <Text style={s.text} accessibilityLiveRegion="polite">
+                {tr(`appointments.travel.${b.travelStatus}`)}
+              </Text>
+            ) : null}
           </>
         ) : (
           <>
@@ -354,7 +359,9 @@ export function AppointmentScreen() {
           {tr('book.policy', {
             hours: b.policy.cutoffHours,
             percent: b.policy.lateRefundBps / 100,
-          })}
+          })}{' '}
+          {tr('policy.noShow', { percent: b.policy.noShowRefundBps / 100 })}
+          {b.location === 'home' ? ` ${tr('policy.travelFee')}` : ''}
         </Text>
         {b.refundFils ? (
           <Text style={s.text}>

@@ -8,6 +8,8 @@ import {
   canCustomerReschedule,
   fitsSchedule,
   cancellationRefund,
+  noShowRefund,
+  travelTransition,
   isLocalDate,
   localDateOf,
   localToUtc,
@@ -179,16 +181,85 @@ describe('cancellationRefund (T09)', () => {
     cancellationRefund({ priceFils: 10_001, startAt, now: new Date(now), policy, by });
 
   it('refunds in full up to and including the cutoff instant', () => {
-    expect(cancel('2026-12-09T10:00:00Z')).toEqual({ refundFils: 10_001, late: false });
+    expect(cancel('2026-12-09T10:00:00Z')).toEqual({
+      refundFils: 10_001,
+      travelFils: 0,
+      late: false,
+    });
   });
 
   it('refunds the late share rounded down after the cutoff', () => {
-    expect(cancel('2026-12-09T10:00:00.001Z')).toEqual({ refundFils: 5_000, late: true });
+    expect(cancel('2026-12-09T10:00:00.001Z')).toEqual({
+      refundFils: 5_000,
+      travelFils: 0,
+      late: true,
+    });
   });
 
   it('refuses after the start, unless the business cancels', () => {
     expect(() => cancel('2026-12-10T10:00:00Z')).toThrow(BookingRuleError);
-    expect(cancel('2026-12-10T11:00:00Z', 'business')).toEqual({ refundFils: 10_001, late: false });
+    expect(cancel('2026-12-10T11:00:00Z', 'business')).toEqual({
+      refundFils: 10_001,
+      travelFils: 0,
+      late: false,
+    });
+  });
+
+  it('refunds the travel fee in full until travel starts (ADR-0025)', () => {
+    const home = (travelStarted: boolean, by: 'customer' | 'business' = 'customer') =>
+      cancellationRefund({
+        priceFils: 12_000,
+        travelFeeFils: 2_000,
+        travelStarted,
+        startAt,
+        now: new Date('2026-12-10T08:00:00Z'),
+        policy,
+        by,
+      });
+    expect(home(false)).toEqual({ refundFils: 7_000, travelFils: 2_000, late: true });
+    expect(home(true)).toEqual({ refundFils: 6_000, travelFils: 1_000, late: true });
+    expect(home(true, 'business')).toEqual({ refundFils: 12_000, travelFils: 2_000, late: false });
+  });
+
+  it('refunds the no-show share, nothing for older policies', () => {
+    expect(noShowRefund({ priceFils: 10_001, policy })).toEqual({
+      refundFils: 0,
+      travelFils: 0,
+      late: true,
+    });
+    expect(
+      noShowRefund({
+        priceFils: 12_000,
+        travelFeeFils: 2_000,
+        policy: { ...policy, noShowRefundBps: 2_500 },
+      }),
+    ).toEqual({ refundFils: 3_000, travelFils: 500, late: true });
+  });
+
+  it('moves travel forward one step, "on the way" from 3 hours before', () => {
+    const at = (minutes: number) => new Date(startAt.getTime() - minutes * 60_000);
+    const base = { bookingStatus: 'confirmed' as const, startAt };
+    expect(() =>
+      travelTransition({ ...base, current: 'not_started', next: 'on_the_way', now: at(180) }),
+    ).not.toThrow();
+    expect(() =>
+      travelTransition({ ...base, current: 'not_started', next: 'on_the_way', now: at(181) }),
+    ).toThrow(/3 hours/);
+    expect(() =>
+      travelTransition({ ...base, current: 'not_started', next: 'arrived', now: at(10) }),
+    ).toThrow(BookingRuleError);
+    expect(() =>
+      travelTransition({ ...base, current: 'arrived', next: 'on_the_way', now: at(10) }),
+    ).toThrow(BookingRuleError);
+    expect(() =>
+      travelTransition({
+        ...base,
+        bookingStatus: 'canceled',
+        current: 'not_started',
+        next: 'on_the_way',
+        now: at(10),
+      }),
+    ).toThrow(BookingRuleError);
   });
 
   it('allows customer rescheduling only before the cutoff', () => {

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Workspace, loadBusiness, money } from '../../../../components/Workspace';
 import { serverApi } from '../../../../lib/api';
 import { translator } from '../../../../lib/i18n';
-import { bookingAction, createManualBooking } from '../schedule-actions';
+import { bookingAction, createManualBooking, updateTravel } from '../schedule-actions';
 
 type Search = Promise<Record<string, string | undefined>>;
 const UUID = /^[0-9a-f-]{36}$/i;
@@ -84,6 +84,25 @@ export default async function CalendarPage({
       </button>
     </form>
   );
+  // A scheduler records travel for anyone; a professional sees (and records) only their own visits.
+  const travelStep = (b: MerchantBooking) => {
+    const next =
+      b.travelStatus === 'not_started' && b.status === 'confirmed'
+        ? 'on_the_way'
+        : b.travelStatus === 'on_the_way' && ['confirmed', 'checked_in'].includes(b.status)
+          ? 'arrived'
+          : null;
+    if (!next) return null;
+    return (
+      <form action={updateTravel}>
+        {hidden(b)}
+        <input type="hidden" name="status" value={next} />
+        <button className="btn secondary" type="submit">
+          {tr(`travel.mark.${next}`)}
+        </button>
+      </form>
+    );
+  };
   return (
     <Workspace
       {...frame}
@@ -169,9 +188,15 @@ export default async function CalendarPage({
                             .filter(Boolean)
                             .join(', ')}
                           {b.homeAddress.directions ? ` · ${b.homeAddress.directions}` : ''} ·{' '}
-                          {tr('booking.travelFee', { amount: money(b.travelFeeFils, locale) })}
+                          {tr('booking.travelFee', { amount: money(b.travelFeeFils, locale) })} ·{' '}
+                          <span className="badge">
+                            {tr(`travel.status.${b.travelStatus ?? 'not_started'}`)}
+                          </span>
                         </div>
                       ) : null}
+                      <div style={{ fontSize: 14 }}>
+                        <Link href={`${base}/${b.id}`}>{tr('calendar.details')}</Link>
+                      </div>
                       {b.note ? (
                         <div className="muted" style={{ fontSize: 14 }}>
                           {b.note}
@@ -179,6 +204,7 @@ export default async function CalendarPage({
                       ) : null}
                     </div>
                     <span className={`badge ${b.status}`}>{tr(`bookingStatus.${b.status}`)}</span>
+                    {b.location === 'home' ? travelStep(b) : null}
                     {canSchedule && b.status === 'confirmed' ? (
                       <div className="inline-form">
                         {act(b, 'check_in')}

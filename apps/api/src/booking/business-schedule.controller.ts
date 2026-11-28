@@ -17,6 +17,8 @@ import {
   blockListQuerySchema,
   blockSchema,
   bookingActionRequestSchema,
+  travelUpdateRequestSchema,
+  type TravelUpdateRequest,
   branchInputSchema,
   branchSchema,
   closureInputSchema,
@@ -476,5 +478,28 @@ export class BusinessScheduleController {
     @Req() req: Request,
   ) {
     return this.bookings.act(ctx, user.userId, bookingId, body, requestMeta(req));
+  }
+
+  @Post('bookings/:bookingId/travel')
+  @HttpCode(HttpStatus.OK)
+  @RequireBusinessCapability('business.view')
+  @businessParam
+  @idParam('bookingId')
+  @ApiOperation({
+    summary: "Record a home visit's travel status (scheduler, or the professional on the visit)",
+    description:
+      'on_the_way from 3 hours before the start, then arrived. Each step is logged and cannot be undone; the customer is told when the professional sets off. Once travel has started, a late customer cancellation follows the policy for the travel fee too. 409 VERSION_CONFLICT, NOT_A_HOME_VISIT or INVALID_TRANSITION, 422 TOO_EARLY.',
+  })
+  @ApiZodBody(travelUpdateRequestSchema)
+  @ApiZodResponse(200, merchantBookingSchema, 'The appointment after the change.')
+  @ApiErrors(400, 401, 403, 404, 409, 422)
+  travel(
+    @CurrentBusiness() ctx: BusinessContext,
+    @CurrentUser() user: UserPrincipal,
+    @UuidParam('bookingId') bookingId: string,
+    @ZodBody(travelUpdateRequestSchema) body: TravelUpdateRequest,
+    @Req() req: Request,
+  ) {
+    return this.bookings.updateTravel(ctx, user.userId, bookingId, body, requestMeta(req));
   }
 }

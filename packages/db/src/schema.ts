@@ -575,7 +575,12 @@ export interface PaymentsTable {
 }
 
 export type RefundReason =
-  'late_payment' | 'customer_cancellation' | 'business_cancellation' | 'admin' | 'return';
+  | 'late_payment'
+  | 'customer_cancellation'
+  | 'business_cancellation'
+  | 'no_show'
+  | 'admin'
+  | 'return';
 
 export interface RefundsTable {
   id: Id;
@@ -590,6 +595,7 @@ export interface RefundsTable {
   merchant_order_id: string | null;
   refund_request_id: string | null;
   return_request_id: string | null;
+  non_commissionable_fils: number | null;
 }
 
 export interface WebhookEventsTable {
@@ -675,6 +681,7 @@ export interface ServicesTable {
   created_at: CreatedAt;
   updated_at: UpdatedAt;
   location_mode: Generated<ServiceLocationMode>;
+  no_show_refund_bps: Generated<number>;
 }
 
 export interface BranchServicesTable {
@@ -778,6 +785,7 @@ export interface BookingsTable {
   addons: ColumnType<BookedAddon[], string | undefined, string>;
   addons_fils: Generated<number>;
   reminder_sent_at: Timestamp | null;
+  travel_status: 'not_started' | 'on_the_way' | 'arrived' | null;
 }
 
 /** An add-on as booked (T13): later edits never change a booking. */
@@ -968,6 +976,8 @@ export interface MerchantEarningsTable {
   commission_vat_fils: Generated<number>;
   commission_vat_refunded_fils: Generated<number>;
   commission_detail: ColumnType<CommissionDetailLine[], string | undefined, string>;
+  non_commissionable_fils: Generated<number>;
+  non_commissionable_refunded_fils: Generated<number>;
 }
 
 /** How one line's commission was worked out, copied onto the earning at capture. */
@@ -1373,6 +1383,15 @@ export interface AccountDeletionRequestsTable {
   updated_at: UpdatedAt;
 }
 
+export interface BookingTravelEventsTable {
+  id: Id;
+  booking_id: string;
+  business_id: string;
+  status: 'on_the_way' | 'arrived';
+  actor_user_id: string;
+  occurred_at: CreatedAt;
+}
+
 export interface Database {
   emirates: EmiratesTable;
   users: UsersTable;
@@ -1455,6 +1474,7 @@ export interface Database {
   service_addons: ServiceAddonsTable;
   portfolio_items: PortfolioItemsTable;
   booking_waitlist: BookingWaitlistTable;
+  booking_travel_events: BookingTravelEventsTable;
 }
 
 /** Every column of every table, used by the drift test. Keep in the same order as above. */
@@ -1905,6 +1925,7 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'merchant_order_id',
     'refund_request_id',
     'return_request_id',
+    'non_commissionable_fils',
   ],
   webhook_events: [
     'id',
@@ -1974,6 +1995,7 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'created_at',
     'updated_at',
     'location_mode',
+    'no_show_refund_bps',
   ],
   branch_services: ['branch_id', 'service_id', 'business_id'],
   staff: [
@@ -2053,6 +2075,7 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'addons',
     'addons_fils',
     'reminder_sent_at',
+    'travel_status',
   ],
   fee_rules: [
     'id',
@@ -2106,6 +2129,8 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'commission_vat_fils',
     'commission_vat_refunded_fils',
     'commission_detail',
+    'non_commissionable_fils',
+    'non_commissionable_refunded_fils',
   ],
   ledger_transactions: [
     'id',
@@ -2434,6 +2459,14 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'notified_at',
     'created_at',
     'updated_at',
+  ],
+  booking_travel_events: [
+    'id',
+    'booking_id',
+    'business_id',
+    'status',
+    'actor_user_id',
+    'occurred_at',
   ],
   payout_runs: [
     'id',

@@ -30,6 +30,8 @@ export function errorMessageKey(code: string | undefined): MessageKey | null {
       return 'error.mediaInUse';
     case 'MEDIA_NOT_READY':
       return 'error.mediaNotReady';
+    case 'NOT_A_HOME_VISIT':
+      return 'error.notAHomeVisit';
     case 'IN_REVIEW':
       return 'error.inReview';
     case 'PROFILE_LOCKED':

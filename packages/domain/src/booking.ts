@@ -248,6 +248,11 @@ export interface CancellationPolicy {
   cutoffHours: number;
   /** Share refunded for a customer cancellation inside the cutoff, in basis points. */
   lateRefundBps: number;
+  /**
+   * Share refunded when the customer does not come, in basis points (phase 8.8). Older snapshots
+   * have none, which means nothing is refunded, as before.
+   */
+  noShowRefundBps?: number;
 }
 
 export class BookingRuleError extends Error {
@@ -260,10 +265,59 @@ export class BookingRuleError extends Error {
   }
 }
 
+/** The travel states of a home visit (ADR-0025). */
+export const TRAVEL_STATUSES = ['not_started', 'on_the_way', 'arrived'] as const;
+export type TravelStatus = (typeof TRAVEL_STATUSES)[number];
+
+/** "On the way" can be recorded from this many minutes before the start (ADR-0027). */
+export const TRAVEL_START_WINDOW_MIN = 180;
+
+/**
+ * Whether a home visit's travel status may move to `next`: forward only, one step at a time, on
+ * a confirmed booking, and "on the way" no earlier than the travel window before the start.
+ */
+export function travelTransition(input: {
+  bookingStatus: BookingStatus;
+  current: TravelStatus;
+  next: TravelStatus;
+  now: Date;
+  startAt: Date;
+}): void {
+  const order = TRAVEL_STATUSES.indexOf(input.current);
+  if (
+    !['confirmed', 'checked_in'].includes(input.bookingStatus) ||
+    TRAVEL_STATUSES.indexOf(input.next) !== order + 1 ||
+    (input.next === 'on_the_way' && input.bookingStatus !== 'confirmed')
+  ) {
+    throw new BookingRuleError(
+      'INVALID_TRANSITION',
+      `Cannot move travel from ${input.current} to ${input.next}.`,
+    );
+  }
+  const minutesToStart = (input.startAt.getTime() - input.now.getTime()) / 60_000;
+  if (input.next === 'on_the_way' && minutesToStart > TRAVEL_START_WINDOW_MIN) {
+    throw new BookingRuleError(
+      'TOO_EARLY',
+      `"On the way" can be recorded from ${TRAVEL_START_WINDOW_MIN / 60} hours before the start.`,
+    );
+  }
+}
+
+export interface RefundSplit {
+  refundFils: number;
+  /** The travel-fee part of the refund, which carries no commission (ADR-0025). */
+  travelFils: number;
+  late: boolean;
+}
+
 /**
  * What a cancellation refunds. A business cancellation refunds in full. A customer cancellation
  * refunds in full up to and including the exact cutoff instant, then the policy's late share
  * (rounded down to whole fils), and is not possible once the appointment has started.
+ *
+ * A home visit's travel fee (included in the price) is refunded in full on a late cancellation
+ * when the professional has not started travelling; once travel has started it follows the late
+ * share like the rest (ADR-0025).
  */
 export function cancellationRefund(input: {
   priceFils: number;
@@ -271,17 +325,37 @@ export function cancellationRefund(input: {
   now: Date;
   policy: CancellationPolicy;
   by: 'customer' | 'business';
-}): { refundFils: number; late: boolean } {
-  if (input.by === 'business') return { refundFils: input.priceFils, late: false };
+  travelFeeFils?: number;
+  travelStarted?: boolean;
+}): RefundSplit {
+  const travel = input.travelFeeFils ?? 0;
+  if (input.by === 'business') {
+    return { refundFils: input.priceFils, travelFils: travel, late: false };
+  }
   if (input.now >= input.startAt) {
     throw new BookingRuleError('TOO_LATE', 'The appointment has already started.');
   }
   const cutoff = input.startAt.getTime() - input.policy.cutoffHours * 3_600_000;
-  if (input.now.getTime() <= cutoff) return { refundFils: input.priceFils, late: false };
-  return {
-    refundFils: applyBasisPoints(fils(input.priceFils), input.policy.lateRefundBps, 'down'),
-    late: true,
-  };
+  if (input.now.getTime() <= cutoff) {
+    return { refundFils: input.priceFils, travelFils: travel, late: false };
+  }
+  const bps = input.policy.lateRefundBps;
+  const service = applyBasisPoints(fils(input.priceFils - travel), bps, 'down');
+  const travelBack = input.travelStarted ? applyBasisPoints(fils(travel), bps, 'down') : travel;
+  return { refundFils: service + travelBack, travelFils: travelBack, late: true };
+}
+
+/** What a no-show refunds under the booking's policy: its share of the whole price, rounded down. */
+export function noShowRefund(input: {
+  priceFils: number;
+  travelFeeFils?: number;
+  policy: CancellationPolicy;
+}): RefundSplit {
+  const bps = input.policy.noShowRefundBps ?? 0;
+  const travel = input.travelFeeFils ?? 0;
+  const service = applyBasisPoints(fils(input.priceFils - travel), bps, 'down');
+  const travelBack = applyBasisPoints(fils(travel), bps, 'down');
+  return { refundFils: service + travelBack, travelFils: travelBack, late: true };
 }
 
 /** A customer may reschedule a confirmed booking until the free-cancellation cutoff. */

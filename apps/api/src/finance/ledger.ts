@@ -163,6 +163,8 @@ async function recordEarning(
     mode: FinanceMode;
     paymentId: string;
     grossFils: number;
+    /** Travel or delivery charge (VAT included): no commission, none returned on its refund. */
+    nonCommissionableFils?: number;
     lines: CommissionLine[];
     source: { merchantOrderId: string } | { bookingId: string };
     documents: {
@@ -204,6 +206,7 @@ async function recordEarning(
       payment_id: input.paymentId,
       mode: input.mode,
       gross_fils: input.grossFils,
+      non_commissionable_fils: input.nonCommissionableFils ?? 0,
       commission_base_fils: base,
       // One rule: its rate. Several: the blended rate, with each line in commission_detail.
       commission_bps:
@@ -319,6 +322,7 @@ export async function recordOrderCapture(trx: Trx, orderId: string, paymentId: s
         mode: 'shop',
         paymentId,
         grossFils: mo.total_fils,
+        nonCommissionableFils: mo.delivery_fils,
         lines: items.map((i) => ({
           ref: i.id,
           categoryId: i.live_category_id,
@@ -411,6 +415,7 @@ export async function recordBookingCapture(
       mode: 'services',
       paymentId,
       grossFils: booking.priceFils,
+      nonCommissionableFils: travel,
       lines: [
         {
           ref: booking.id,
@@ -448,6 +453,8 @@ export async function earningForRefund(
       'commission_refunded_fils',
       'commission_vat_fils',
       'commission_vat_refunded_fils',
+      'non_commissionable_fils',
+      'non_commissionable_refunded_fils',
       'status',
     ])
     .forUpdate();
@@ -467,6 +474,8 @@ export async function reverseEarning(
   amountFils: number,
   source: { kind: 'refund' | 'chargeback'; type: 'refund' | 'dispute'; id: string },
   now: Date,
+  /** The travel or delivery part of the refund, which returns no commission (ADR-0027). */
+  nonCommissionableFils: number | null = null,
 ) {
   const split = allocateRefund(
     {
@@ -476,8 +485,11 @@ export async function reverseEarning(
       commissionRefundedFils: earning.commission_refunded_fils,
       commissionVatFils: earning.commission_vat_fils,
       commissionVatRefundedFils: earning.commission_vat_refunded_fils,
+      nonCommissionableFils: earning.non_commissionable_fils,
+      nonCommissionableRefundedFils: earning.non_commissionable_refunded_fils,
     },
     amountFils,
+    { nonCommissionableFils },
   );
   const posted = await post(
     trx,
@@ -497,6 +509,8 @@ export async function reverseEarning(
       refunded_fils: earning.refunded_fils + amountFils,
       commission_refunded_fils: earning.commission_refunded_fils + split.commissionFils,
       commission_vat_refunded_fils: earning.commission_vat_refunded_fils + split.vatFils,
+      non_commissionable_refunded_fils:
+        earning.non_commissionable_refunded_fils + split.nonCommissionableFils,
     })
     .where('id', '=', earning.id)
     .execute();
