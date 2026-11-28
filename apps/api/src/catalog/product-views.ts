@@ -21,6 +21,7 @@ export const VARIANT_COLUMNS = [
   'sku',
   'name',
   'price_fils',
+  'compare_at_fils',
   'tax_class',
   'barcode',
   'weight_grams',
@@ -35,6 +36,7 @@ export function toMerchantVariant(v: {
   sku: string;
   name: Localized;
   price_fils: number;
+  compare_at_fils: number | null;
   tax_class: MerchantVariant['taxClass'];
   barcode: string | null;
   weight_grams: number | null;
@@ -48,6 +50,7 @@ export function toMerchantVariant(v: {
     sku: v.sku,
     name: v.name,
     priceFils: v.price_fils,
+    compareAtFils: v.compare_at_fils,
     taxClass: v.tax_class,
     barcode: v.barcode,
     weightGrams: v.weight_grams,

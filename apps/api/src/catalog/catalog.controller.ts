@@ -5,7 +5,10 @@ import {
   categoryListSchema,
   categoryQuerySchema,
   pageSchema,
+  productFacetsQuerySchema,
+  productFacetsSchema,
   productListQuerySchema,
+  type ProductFacetsQuery,
   publicProductListItemSchema,
   publicProductSchema,
   publicStoreSchema,
@@ -14,7 +17,7 @@ import {
   type StoreListQuery,
 } from '@jays/contracts';
 import type { Response } from 'express';
-import type { z } from 'zod';
+import { z } from 'zod';
 import { UuidParam } from '../common/params.js';
 import { ApiErrors, ApiZodQuery, ApiZodResponse, ZodQuery } from '../common/zod.js';
 import { PublicProductsService } from './public-products.service.js';
@@ -35,13 +38,38 @@ export class CatalogController {
   @ApiOperation({
     summary: 'Approved products on sale',
     description:
-      'Only approved listings of approved sellers with an active shop mode. Sold-out products are included unless availability=in_stock. Filters: q, category (with subcategories), brand, store, price; sort newest, price_asc or price_desc.',
+      'Only approved listings of approved sellers with an active shop mode. Sold-out products are included unless availability=in_stock. Filters: q (title or brand), category (with subcategories), brand, store, price, onSale, minRating. Sorts: newest, price_asc, price_desc, rating (published reviews), popular (units in orders paid in the last 90 days), discount (largest saving).',
   })
   @ApiZodQuery(productListQuerySchema)
   @ApiZodResponse(200, pageSchema(publicProductListItemSchema), 'A page of products.')
   @ApiErrors(400)
   productList(@ZodQuery(productListQuerySchema) query: ProductListQuery) {
     return this.products.list(query);
+  }
+
+  @Get('products/facets')
+  @ApiOperation({
+    summary: 'Filter panel counts for the current filters',
+    description: 'Brand counts ignore the brand filter so another brand can still be picked.',
+  })
+  @ApiZodQuery(productFacetsQuerySchema)
+  @ApiZodResponse(200, productFacetsSchema, 'Counts and price range.')
+  @ApiErrors(400)
+  productFacets(@ZodQuery(productFacetsQuerySchema) query: ProductFacetsQuery) {
+    return this.products.facets(query);
+  }
+
+  @Get('products/:productId/related')
+  @ApiParam({ name: 'productId', format: 'uuid' })
+  @ApiOperation({ summary: 'Other products in the same category, in stock and best sellers first' })
+  @ApiZodResponse(
+    200,
+    z.object({ items: z.array(publicProductListItemSchema) }),
+    'Up to 8 products.',
+  )
+  @ApiErrors(404)
+  related(@UuidParam('productId') productId: string) {
+    return this.products.related(productId);
   }
 
   @Get('products/:productId')

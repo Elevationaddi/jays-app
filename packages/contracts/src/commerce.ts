@@ -4,6 +4,7 @@ import {
   MOCK_PAYMENT_OUTCOMES,
   ORDER_STATUSES,
   PRODUCT_IMAGES_MAX,
+  PRODUCT_SORTS,
   PRODUCT_REVIEW_ACTIONS,
   PRODUCT_STATUSES,
   STOCK_ADJUST_MAX,
@@ -11,6 +12,7 @@ import {
   TAX_CLASSES,
   IMAGE_CONTENT_TYPES,
   IMAGE_MAX_BYTES,
+  validCompareAt,
 } from '@jays/domain';
 import { z } from 'zod';
 import { emirateCodeSchema, isoDateTime } from './identity.js';
@@ -39,25 +41,33 @@ const skuSchema = z
 // ---------------------------------------------------------------------------------------------
 // Merchant catalog
 
-export const variantInputSchema = z.strictObject({
-  sku: skuSchema,
-  name: localizedInputSchema(1, 80),
-  priceFils: positiveFils,
-  taxClass: taxClassSchema.default('standard'),
-  barcode: z
-    .string()
-    .regex(/^[0-9]{8,14}$/, '8 to 14 digits')
-    .nullable()
-    .optional(),
-  weightGrams: z.number().int().min(1).max(100_000).nullable().optional(),
-  lowStockThreshold: z.number().int().min(0).max(100_000).optional(),
-});
+export const variantInputSchema = z
+  .strictObject({
+    sku: skuSchema,
+    name: localizedInputSchema(1, 80),
+    priceFils: positiveFils,
+    /** The earlier (was) price, above the price. The merchant must be able to show it was genuine. */
+    compareAtFils: positiveFils.nullable().optional(),
+    taxClass: taxClassSchema.default('standard'),
+    barcode: z
+      .string()
+      .regex(/^[0-9]{8,14}$/, '8 to 14 digits')
+      .nullable()
+      .optional(),
+    weightGrams: z.number().int().min(1).max(100_000).nullable().optional(),
+    lowStockThreshold: z.number().int().min(0).max(100_000).optional(),
+  })
+  .refine((v) => validCompareAt(v.priceFils, v.compareAtFils), {
+    path: ['compareAtFils'],
+    message: 'must be above the price',
+  });
 export type VariantInput = z.infer<typeof variantInputSchema>;
 
 export const updateVariantRequestSchema = z
   .strictObject({
     name: localizedInputSchema(1, 80).optional(),
     priceFils: positiveFils.optional(),
+    compareAtFils: positiveFils.nullable().optional(),
     taxClass: taxClassSchema.optional(),
     barcode: z
       .string()
@@ -112,6 +122,7 @@ export const merchantVariantSchema = z.object({
   sku: z.string(),
   name: localized,
   priceFils: fils,
+  compareAtFils: fils.nullable(),
   taxClass: taxClassSchema,
   barcode: z.string().nullable(),
   weightGrams: z.number().int().nullable(),
@@ -263,6 +274,11 @@ export type PutDeliveryZonesRequest = z.infer<typeof putDeliveryZonesRequestSche
 
 const storeRef = z.object({ id: z.uuid(), name: localized });
 const brandRef = z.object({ id: z.uuid(), name: localized });
+/** From published reviews of verified purchases; null until the first one. */
+export const ratingSummarySchema = z.object({
+  average: z.number().min(1).max(5),
+  count: z.number().int().min(1),
+});
 
 export const publicProductListItemSchema = z.object({
   id: z.uuid(),
@@ -273,6 +289,11 @@ export const publicProductListItemSchema = z.object({
   imageUrl: z.url().nullable(),
   priceFromFils: fils,
   priceToFils: fils,
+  /** The was-price of the cheapest variant, when it is on sale. */
+  compareAtFils: fils.nullable(),
+  /** The largest saving across variants, in whole percent. */
+  discountPercent: z.number().int().min(1).max(99).nullable(),
+  rating: ratingSummarySchema.nullable(),
   currency: z.literal('AED'),
   inStock: z.boolean(),
   publishedAt: isoDateTime,
@@ -284,6 +305,8 @@ export const publicVariantSchema = z.object({
   name: localized,
   sku: z.string(),
   priceFils: fils,
+  compareAtFils: fils.nullable(),
+  discountPercent: z.number().int().min(1).max(99).nullable(),
   /** In stock now. No count is promised: stock is only held at checkout. */
   inStock: z.boolean(),
   /** Set when few units remain (at or below the merchant's low-stock threshold). */
@@ -303,12 +326,13 @@ export const publicProductSchema = z.object({
   currency: z.literal('AED'),
   variants: z.array(publicVariantSchema),
   delivery: z.array(deliveryZoneSchema),
+  rating: ratingSummarySchema.nullable(),
   inStock: z.boolean(),
   publishedAt: isoDateTime,
 });
 export type PublicProduct = z.infer<typeof publicProductSchema>;
 
-export const productListQuerySchema = z.strictObject({
+const productFilters = {
   q: z.string().trim().min(1).max(100).optional(),
   category: z.uuid().optional(),
   brand: z.uuid().optional(),
@@ -316,10 +340,59 @@ export const productListQuerySchema = z.strictObject({
   minPriceFils: z.coerce.number().int().min(0).optional(),
   maxPriceFils: z.coerce.number().int().min(0).optional(),
   availability: z.enum(['in_stock', 'all']).default('all'),
-  sort: z.enum(['newest', 'price_asc', 'price_desc']).default('newest'),
+  /** Only products with a variant below its compare-at price. */
+  onSale: z
+    .enum(['true', 'false'])
+    .transform((v) => v === 'true')
+    .optional(),
+  /** Average rating at least this (1 to 5). */
+  minRating: z.coerce.number().int().min(1).max(5).optional(),
+};
+
+export const productSortSchema = z.enum(PRODUCT_SORTS);
+export type ProductSort = z.infer<typeof productSortSchema>;
+
+export const productListQuerySchema = z.strictObject({
+  ...productFilters,
+  sort: productSortSchema.default('newest'),
   ...cursorQuery,
 });
 export type ProductListQuery = z.infer<typeof productListQuerySchema>;
+
+export const productFacetsQuerySchema = z.strictObject(productFilters);
+export type ProductFacetsQuery = z.infer<typeof productFacetsQuerySchema>;
+
+/** Counts for the filter panel, for the current filters (brand counts ignore the brand filter). */
+export const productFacetsSchema = z.object({
+  total: z.number().int(),
+  brands: z.array(brandRef.extend({ count: z.number().int() })),
+  priceMinFils: fils.nullable(),
+  priceMaxFils: fils.nullable(),
+  onSaleCount: z.number().int(),
+  inStockCount: z.number().int(),
+});
+export type ProductFacets = z.infer<typeof productFacetsSchema>;
+
+// ---------------------------------------------------------------------------------------------
+// Wishlist and back-in-stock alerts
+
+export const wishlistItemSchema = z.object({
+  productId: z.uuid(),
+  addedAt: isoDateTime,
+  /** Null when the product is no longer on sale (archived, suspended or store closed). */
+  product: publicProductListItemSchema.nullable(),
+});
+export const wishlistSchema = z.object({ items: z.array(wishlistItemSchema) });
+export type Wishlist = z.infer<typeof wishlistSchema>;
+
+export const stockAlertSchema = z.object({
+  id: z.uuid(),
+  variantId: z.uuid(),
+  productId: z.uuid(),
+  createdAt: isoDateTime,
+});
+export const stockAlertListSchema = z.object({ items: z.array(stockAlertSchema) });
+export type StockAlert = z.infer<typeof stockAlertSchema>;
 
 // ---------------------------------------------------------------------------------------------
 // Cart

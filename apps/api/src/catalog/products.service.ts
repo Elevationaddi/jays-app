@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import type {
   CreateProductRequest,
   MerchantProduct,
@@ -10,10 +10,11 @@ import type {
   VariantInput,
 } from '@jays/contracts';
 import type { Database, Db } from '@jays/db';
-import { canEditProduct, canSubmitProduct } from '@jays/domain';
+import { canEditProduct, canSubmitProduct, validCompareAt } from '@jays/domain';
 import { type Expression, type SqlBool, sql, type Transaction } from 'kysely';
 import type { BusinessContext } from '../businesses/business-access.guard.js';
 import { writeAudit } from '../common/audit.js';
+import { ApiError } from '../common/error.filter.js';
 import { CLOCK, type Clock } from '../common/clock.js';
 import { afterCursor, cursorTs, decodeCursor, toPage } from '../common/pagination.js';
 import type { RequestMeta } from '../common/request-context.js';
@@ -223,6 +224,7 @@ export class ProductsService {
       sku: v.sku,
       name: JSON.stringify(v.name),
       price_fils: v.priceFils,
+      compare_at_fils: v.compareAtFils ?? null,
       tax_class: v.taxClass,
       barcode: v.barcode ?? null,
       weight_grams: v.weightGrams ?? null,
@@ -518,7 +520,14 @@ export class ProductsService {
       const v = await trx
         .selectFrom('variants as v')
         .innerJoin('products as p', 'p.id', 'v.product_id')
-        .select(['v.id', 'v.product_id', 'v.price_fils', 'v.status', 'p.status as product_status'])
+        .select([
+          'v.id',
+          'v.product_id',
+          'v.price_fils',
+          'v.compare_at_fils',
+          'v.status',
+          'p.status as product_status',
+        ])
         .where('v.id', '=', variantId)
         .where('v.business_id', '=', ctx.businessId)
         .forUpdate('v')
@@ -546,6 +555,21 @@ export class ProductsService {
       const set: Record<string, unknown> = {};
       if (body.name !== undefined) set['name'] = JSON.stringify(body.name);
       if (body.priceFils !== undefined) set['price_fils'] = body.priceFils;
+      const price = body.priceFils ?? v.price_fils;
+      if (body.compareAtFils !== undefined) {
+        if (!validCompareAt(price, body.compareAtFils)) {
+          throw new ApiError(
+            HttpStatus.BAD_REQUEST,
+            'VALIDATION_FAILED',
+            'The compare-at price must be above the price.',
+            { compareAtFils: ['must be above the price'] },
+          );
+        }
+        set['compare_at_fils'] = body.compareAtFils;
+      } else if (v.compare_at_fils !== null && !validCompareAt(price, v.compare_at_fils)) {
+        // A price raised to or above the was-price ends the sale.
+        set['compare_at_fils'] = null;
+      }
       if (body.taxClass !== undefined) set['tax_class'] = body.taxClass;
       if (body.barcode !== undefined) set['barcode'] = body.barcode;
       if (body.weightGrams !== undefined) set['weight_grams'] = body.weightGrams;
@@ -563,6 +587,9 @@ export class ProductsService {
           fields: Object.keys(body),
           ...(body.priceFils !== undefined
             ? { priceFils: { before: v.price_fils, after: body.priceFils } }
+            : {}),
+          ...('compare_at_fils' in set
+            ? { compareAtFils: { before: v.compare_at_fils, after: set['compare_at_fils'] } }
             : {}),
         },
         requestId: meta.requestId,

@@ -3,9 +3,9 @@ import { colors, minTouchTarget, radius, spacing } from '@jays/ui';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ModeSwitch } from '../components/ModeSwitch';
-import { ProductCard, gridStyle } from '../components/ProductCard';
+import { ProductCard, gridStyle, toListItem } from '../components/ProductCard';
 import { Tabs } from '../components/Tabs';
-import { Banner, Body, Button, Screen, Title } from '../components/ui';
+import { Banner, Body, Button, Field, Screen, Title } from '../components/ui';
 import { useApp } from '../context';
 
 type Load =
@@ -30,6 +30,28 @@ export function ModeHome() {
   const name = state.session?.user.displayName;
   const [load, setLoad] = useState<Load>({ state: 'loading' });
   const [attempt, setAttempt] = useState(0);
+  const [query, setQuery] = useState('');
+  const [recent, setRecent] = useState<PublicProductListItem[]>([]);
+  const recentKey = state.recentProductIds.slice(0, 6).join(',');
+
+  // Recently viewed products, still on sale, in the order they were opened.
+  useEffect(() => {
+    if (!shop || !recentKey) return setRecent([]);
+    let cancelled = false;
+    Promise.all(
+      recentKey.split(',').map((id) =>
+        api
+          .product(id)
+          .then(toListItem)
+          .catch(() => null),
+      ),
+    )
+      .then((items) => !cancelled && setRecent(items.filter((p) => p !== null)))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [api, shop, recentKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,6 +83,42 @@ export function ModeHome() {
       <ModeSwitch />
       <Body muted>{name ? tr('gateway.greeting', { name }) : tr('gateway.greetingAnonymous')}</Body>
       <Title>{tr(shop ? 'shop.home.title' : 'services.home.title')}</Title>
+      {shop ? (
+        <>
+          <Field
+            label={tr('search.query')}
+            value={query}
+            onChangeText={setQuery}
+            returnKeyType="search"
+            maxLength={100}
+            placeholder={tr('search.placeholder')}
+            onSubmitEditing={() =>
+              dispatch({ type: 'search', filters: query.trim() ? { q: query.trim() } : {} })
+            }
+          />
+          <View style={styles.chips}>
+            <Button
+              variant="secondary"
+              label={tr('search.go')}
+              onPress={() =>
+                dispatch({ type: 'search', filters: query.trim() ? { q: query.trim() } : {} })
+              }
+            />
+            <Button
+              variant="ghost"
+              label={tr('search.deals')}
+              onPress={() =>
+                dispatch({ type: 'search', filters: { onSale: true, sort: 'discount' } })
+              }
+            />
+            <Button
+              variant="ghost"
+              label={tr('search.bestSellers')}
+              onPress={() => dispatch({ type: 'search', filters: { sort: 'popular' } })}
+            />
+          </View>
+        </>
+      ) : null}
       {load.state === 'loading' ? (
         <ActivityIndicator color={colors.accent} accessibilityLabel={tr('common.loading')} />
       ) : load.state === 'error' ? (
@@ -84,11 +142,23 @@ export function ModeHome() {
                 {tr('categories.title')}
               </Text>
               <View style={styles.chips}>
-                {load.categories.map((c) => (
-                  <View key={c.id} style={styles.chip}>
-                    <Text style={styles.chipText}>{c.name[state.locale]}</Text>
-                  </View>
-                ))}
+                {load.categories.map((c) =>
+                  shop ? (
+                    <Pressable
+                      key={c.id}
+                      accessibilityRole="button"
+                      accessibilityHint={tr('search.categoryHint')}
+                      onPress={() => dispatch({ type: 'search', filters: { category: c.id } })}
+                      style={({ pressed }) => [styles.chip, pressed && { opacity: 0.85 }]}
+                    >
+                      <Text style={styles.chipText}>{c.name[state.locale]}</Text>
+                    </Pressable>
+                  ) : (
+                    <View key={c.id} style={styles.chip}>
+                      <Text style={styles.chipText}>{c.name[state.locale]}</Text>
+                    </View>
+                  ),
+                )}
               </View>
             </>
           ) : null}
@@ -150,8 +220,24 @@ export function ModeHome() {
           )}
         </>
       )}
-      <Text style={styles.section}>{tr('gateway.recent')}</Text>
-      <Body muted>{tr('gateway.recent.empty')}</Body>
+      {shop && recent.length > 0 ? (
+        <>
+          <Text style={styles.section} accessibilityRole="header">
+            {tr('shop.recentlyViewed')}
+          </Text>
+          <View style={gridStyle}>
+            {recent.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </View>
+        </>
+      ) : null}
+      {!shop ? (
+        <>
+          <Text style={styles.section}>{tr('gateway.recent')}</Text>
+          <Body muted>{tr('gateway.recent.empty')}</Body>
+        </>
+      ) : null}
     </Screen>
   );
 }
@@ -169,7 +255,7 @@ const styles = StyleSheet.create({
   section: { marginTop: spacing[2], fontSize: 18, fontWeight: '700', color: colors.text },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing[1] },
   chip: {
-    minHeight: 36,
+    minHeight: minTouchTarget,
     paddingHorizontal: 14,
     justifyContent: 'center',
     borderRadius: 999,

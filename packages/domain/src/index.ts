@@ -11,3 +11,4 @@ export * from './booking.js';
 export * from './finance.js';
 export * from './aftercare.js';
 export * from './home.js';
+export * from './discovery.js';

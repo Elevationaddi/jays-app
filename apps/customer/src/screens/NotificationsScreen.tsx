@@ -5,6 +5,7 @@ import { cardStyles as s } from '../components/Picker';
 import { Tabs } from '../components/Tabs';
 import { Banner, Body, Button, Screen, Title } from '../components/ui';
 import { useApp } from '../context';
+import { actionForLink } from '../state';
 
 type Page = Awaited<ReturnType<ReturnType<typeof useApp>['api']['notifications']>>;
 
@@ -61,16 +62,28 @@ export function NotificationsScreen() {
       ) : (
         <>
           {page.unread ? <Body muted>{tr('inbox.unread', { count: page.unread })}</Body> : null}
-          {page.items.map((n) => (
-            <View
-              key={n.id}
-              style={[s.card, !n.readAt && { borderColor: colors.accent, borderWidth: 2 }]}
-            >
-              <Text style={s.text}>{n.title}</Text>
-              <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24 }}>{n.body}</Text>
-              <Text style={s.muted}>{when(n.createdAt)}</Text>
-            </View>
-          ))}
+          {page.items.map((n) => {
+            const open = n.link ? actionForLink(n.link) : null;
+            return (
+              <View
+                key={n.id}
+                style={[s.card, !n.readAt && { borderColor: colors.accent, borderWidth: 2 }]}
+              >
+                <Text style={s.text}>{n.title}</Text>
+                <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24 }}>{n.body}</Text>
+                <Text style={s.muted}>{when(n.createdAt)}</Text>
+                {open ? (
+                  <View style={{ alignItems: 'flex-start' }}>
+                    <Button
+                      variant="secondary"
+                      label={tr('inbox.open')}
+                      onPress={() => dispatch(open)}
+                    />
+                  </View>
+                ) : null}
+              </View>
+            );
+          })}
         </>
       )}
     </Screen>

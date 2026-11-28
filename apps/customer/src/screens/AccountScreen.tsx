@@ -54,6 +54,15 @@ export function AccountScreen() {
           />
           <Button
             variant="secondary"
+            label={
+              state.wishlist?.length
+                ? `${tr('wishlist.title')} (${state.wishlist.length})`
+                : tr('wishlist.title')
+            }
+            onPress={() => dispatch({ type: 'navigate', route: '/wishlist' })}
+          />
+          <Button
+            variant="secondary"
             label={tr('support.title')}
             onPress={() => dispatch({ type: 'navigate', route: '/support' })}
           />

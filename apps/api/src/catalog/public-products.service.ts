@@ -1,7 +1,22 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
-import type { ProductListQuery, PublicProduct, PublicProductListItem } from '@jays/contracts';
+import type {
+  ProductFacets,
+  ProductFacetsQuery,
+  ProductListQuery,
+  PublicProduct,
+  PublicProductListItem,
+} from '@jays/contracts';
 import type { Database, Db } from '@jays/db';
-import { availableStock, DOWNLOAD_URL_TTL_SECONDS, type EmirateCode } from '@jays/domain';
+import {
+  availableStock,
+  discountPercent,
+  DOWNLOAD_URL_TTL_SECONDS,
+  type EmirateCode,
+  FACET_BRANDS_LIMIT,
+  POPULAR_WINDOW_DAYS,
+  ratingSummary,
+  RELATED_PRODUCTS_LIMIT,
+} from '@jays/domain';
 import { type ExpressionBuilder, sql, type SqlBool, type Transaction } from 'kysely';
 import { z } from 'zod';
 import { API_ENV, type ApiEnv } from '../config.js';
@@ -87,6 +102,10 @@ function decodeProductCursor(cursor: string | undefined): [string | number, stri
 const encodeProductCursor = (key: string | number, id: string) =>
   Buffer.from(JSON.stringify([key, id])).toString('base64url');
 
+type ListRow = Awaited<
+  ReturnType<ReturnType<PublicProductsService['visibleBase']>['executeTakeFirstOrThrow']>
+>;
+
 @Injectable()
 export class PublicProductsService {
   constructor(
@@ -100,7 +119,8 @@ export class PublicProductsService {
     return id ? `${this.env.API_PUBLIC_URL.replace(/\/$/, '')}/media/${id}` : null;
   }
 
-  private visibleBase() {
+  /** Visible products with prices, stock, rating and recent sales (public for its row type). */
+  visibleBase() {
     const agg = this.db
       .selectFrom('variants')
       .select([
@@ -108,15 +128,48 @@ export class PublicProductsService {
         sql<number>`min(price_fils)::int`.as('price_from'),
         sql<number>`max(price_fils)::int`.as('price_to'),
         sql<boolean>`bool_or(stock_on_hand > stock_reserved)`.as('in_stock'),
+        // The was-price of the cheapest variant (ties by sort order), when it is on sale.
+        sql<number | null>`(array_agg(compare_at_fils ORDER BY price_fils, sort_order, id))[1]`.as(
+          'compare_at',
+        ),
+        // Largest whole-percent saving across variants; 0 when nothing is on sale.
+        sql<number>`coalesce(max(floor((compare_at_fils - price_fils) * 100.0 / compare_at_fils)), 0)::int`.as(
+          'discount',
+        ),
       ])
       .where('status', '=', 'active')
       .groupBy('product_id')
       .as('va');
+    // Ratings come only from published product reviews (each tied to a delivered order line).
+    const rv = this.db
+      .selectFrom('reviews')
+      .select([
+        'product_id',
+        sql<number>`sum(rating)::int`.as('rating_sum'),
+        sql<number>`count(*)::int`.as('rating_count'),
+        sql<number>`round(avg(rating) * 100)::int`.as('rating_key'),
+      ])
+      .where('target_type', '=', 'product')
+      .where('status', '=', 'published')
+      .groupBy('product_id')
+      .as('rv');
+    // Units in orders paid in the popularity window.
+    const since = new Date(this.clock.now().getTime() - POPULAR_WINDOW_DAYS * 86_400_000);
+    const sl = this.db
+      .selectFrom('order_items as oi')
+      .innerJoin('orders as o', 'o.id', 'oi.order_id')
+      .select(['oi.product_id', sql<number>`sum(oi.qty)::int`.as('units')])
+      .where('o.paid_at', 'is not', null)
+      .where('o.paid_at', '>=', since)
+      .groupBy('oi.product_id')
+      .as('sl');
     return this.db
       .selectFrom('products as p')
       .innerJoin('businesses as b', 'b.id', 'p.business_id')
       .innerJoin('storefronts as s', 's.business_id', 'b.id')
       .innerJoin(agg, 'va.product_id', 'p.id')
+      .leftJoin(rv, 'rv.product_id', 'p.id')
+      .leftJoin(sl, 'sl.product_id', 'p.id')
       .leftJoin('brands as br', 'br.id', 'p.live_brand_id')
       .where((eb) => productVisible(eb as unknown as Eb))
       .select([
@@ -135,19 +188,25 @@ export class PublicProductsService {
         'va.price_from',
         'va.price_to',
         'va.in_stock',
+        'va.compare_at',
+        'va.discount',
+        'rv.rating_sum',
+        'rv.rating_count',
       ])
-      .select(
+      .select([
         sql<string>`to_char(p.published_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`.as(
           'published_ts',
         ),
-      );
+        sql<number>`coalesce(rv.rating_key, 0)`.as('rating_key'),
+        sql<number>`coalesce(sl.units, 0)`.as('units'),
+      ]);
   }
 
-  async list(query: ProductListQuery) {
-    const cursor = decodeProductCursor(query.cursor);
+  /** The filters shared by the list and the facet counts. */
+  private filtered(query: ProductFacetsQuery, opts: { skipBrand?: boolean } = {}) {
     let q = this.visibleBase();
     if (query.store) q = q.where('p.business_id', '=', query.store);
-    if (query.brand) q = q.where('p.live_brand_id', '=', query.brand);
+    if (query.brand && !opts.skipBrand) q = q.where('p.live_brand_id', '=', query.brand);
     if (query.category) {
       const root = query.category;
       // The category and its descendants (the tree has at most three levels).
@@ -164,15 +223,49 @@ export class PublicProductsService {
     if (query.minPriceFils !== undefined) q = q.where('va.price_from', '>=', query.minPriceFils);
     if (query.maxPriceFils !== undefined) q = q.where('va.price_from', '<=', query.maxPriceFils);
     if (query.availability === 'in_stock') q = q.where('va.in_stock', '=', true);
+    if (query.onSale) q = q.where('va.discount', '>', 0);
+    if (query.minRating !== undefined) {
+      q = q.where(sql<boolean>`coalesce(rv.rating_key, 0) >= ${query.minRating * 100}`);
+    }
     if (query.q) {
       const like = `%${query.q.replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
       q = q.where((eb) =>
         eb.or([
           eb(sql`p.live_title->>'en'`, 'ilike', like),
           eb(sql`p.live_title->>'ar'`, 'ilike', like),
+          eb(sql`br.name->>'en'`, 'ilike', like),
+          eb(sql`br.name->>'ar'`, 'ilike', like),
         ]),
       );
     }
+    return q;
+  }
+
+  private toListItem(r: ListRow): PublicProductListItem {
+    return {
+      id: r.id,
+      title: r.live_title as Localized,
+      brand:
+        r.live_brand_id && r.brand_name
+          ? { id: r.live_brand_id, name: r.brand_name as Localized }
+          : null,
+      store: { id: r.business_id, name: r.store_name as Localized },
+      categoryId: r.live_category_id as string,
+      imageUrl: this.mediaUrl(r.live_media_ids[0]),
+      priceFromFils: r.price_from,
+      priceToFils: r.price_to,
+      compareAtFils: discountPercent(r.price_from, r.compare_at) === null ? null : r.compare_at,
+      discountPercent: r.discount > 0 ? r.discount : null,
+      rating: ratingSummary(r.rating_sum ?? 0, r.rating_count ?? 0),
+      currency: 'AED',
+      inStock: r.in_stock,
+      publishedAt: (r.published_at as Date).toISOString(),
+    };
+  }
+
+  async list(query: ProductListQuery) {
+    const cursor = decodeProductCursor(query.cursor);
+    let q = this.filtered(query);
     if (query.sort === 'newest') {
       if (cursor) {
         q = q.where(
@@ -180,7 +273,7 @@ export class PublicProductsService {
         );
       }
       q = q.orderBy('p.published_at', 'desc').orderBy('p.id', 'desc');
-    } else {
+    } else if (query.sort === 'price_asc' || query.sort === 'price_desc') {
       const asc = query.sort === 'price_asc';
       if (cursor) {
         const op = asc ? sql`>` : sql`<`;
@@ -189,32 +282,108 @@ export class PublicProductsService {
         );
       }
       q = q.orderBy('va.price_from', asc ? 'asc' : 'desc').orderBy('p.id', asc ? 'asc' : 'desc');
+    } else {
+      // rating, popular and discount: an integer key, highest first, then id.
+      const key = {
+        rating: sql<number>`coalesce(rv.rating_key, 0)`,
+        popular: sql<number>`coalesce(sl.units, 0)`,
+        discount: sql<number>`va.discount`,
+      }[query.sort];
+      if (cursor) {
+        q = q.where(sql<boolean>`(${key}, p.id) < (${Number(cursor[0])}::int, ${cursor[1]}::uuid)`);
+      }
+      q = q.orderBy(key, 'desc').orderBy('p.id', 'desc');
     }
     const rows = await q.limit(query.limit + 1).execute();
     const page = rows.slice(0, query.limit);
     const last = page.at(-1);
-    return {
-      items: page.map((r): PublicProductListItem => ({
-        id: r.id,
-        title: r.live_title as Localized,
-        brand: r.live_brand_id && r.brand_name ? { id: r.live_brand_id, name: r.brand_name } : null,
-        store: { id: r.business_id, name: r.store_name as Localized },
-        categoryId: r.live_category_id as string,
-        imageUrl: this.mediaUrl(r.live_media_ids[0]),
-        priceFromFils: r.price_from,
-        priceToFils: r.price_to,
-        currency: 'AED',
-        inStock: r.in_stock,
-        publishedAt: (r.published_at as Date).toISOString(),
-      })),
-      nextCursor:
-        rows.length > query.limit && last
-          ? encodeProductCursor(
-              query.sort === 'newest' ? last.published_ts : last.price_from,
-              last.id,
-            )
-          : null,
+    const cursorKey = (r: ListRow): string | number => {
+      switch (query.sort) {
+        case 'newest':
+          return r.published_ts;
+        case 'price_asc':
+        case 'price_desc':
+          return r.price_from;
+        case 'rating':
+          return r.rating_key;
+        case 'popular':
+          return r.units;
+        case 'discount':
+          return r.discount;
+      }
     };
+    return {
+      items: page.map((r) => this.toListItem(r)),
+      nextCursor:
+        rows.length > query.limit && last ? encodeProductCursor(cursorKey(last), last.id) : null,
+    };
+  }
+
+  /** Counts for the filter panel. Brand counts ignore the brand filter so other brands stay pickable. */
+  async facets(query: ProductFacetsQuery): Promise<ProductFacets> {
+    const base = this.filtered(query).as('f');
+    const [totals, brands] = await Promise.all([
+      this.db
+        .selectFrom(base)
+        .select([
+          sql<number>`count(*)::int`.as('total'),
+          sql<number | null>`min(f.price_from)`.as('min'),
+          sql<number | null>`max(f.price_from)`.as('max'),
+          sql<number>`count(*) FILTER (WHERE f.discount > 0)::int`.as('on_sale'),
+          sql<number>`count(*) FILTER (WHERE f.in_stock)::int`.as('in_stock'),
+        ])
+        .executeTakeFirstOrThrow(),
+      this.db
+        .selectFrom(this.filtered(query, { skipBrand: true }).as('f'))
+        .select([
+          'f.live_brand_id',
+          sql<Localized>`min(f.brand_name::text)::jsonb`.as('brand_name'),
+          sql<number>`count(*)::int`.as('n'),
+        ])
+        .where('f.live_brand_id', 'is not', null)
+        .groupBy('f.live_brand_id')
+        .orderBy(sql`count(*)`, 'desc')
+        .orderBy('f.live_brand_id')
+        .limit(FACET_BRANDS_LIMIT)
+        .execute(),
+    ]);
+    return {
+      total: totals.total,
+      brands: brands.map((b) => ({
+        id: b.live_brand_id as string,
+        name: b.brand_name,
+        count: b.n,
+      })),
+      priceMinFils: totals.min,
+      priceMaxFils: totals.max,
+      onSaleCount: totals.on_sale,
+      inStockCount: totals.in_stock,
+    };
+  }
+
+  /** Other products of the same category, in stock and best sellers first. */
+  async related(productId: string): Promise<{ items: PublicProductListItem[] }> {
+    const product = await this.visibleBase().where('p.id', '=', productId).executeTakeFirst();
+    if (!product) throw notFound();
+    const rows = await this.visibleBase()
+      .where('p.live_category_id', '=', product.live_category_id as string)
+      .where('p.id', '<>', productId)
+      .orderBy('va.in_stock', 'desc')
+      .orderBy(sql`coalesce(sl.units, 0)`, 'desc')
+      .orderBy('p.published_at', 'desc')
+      .orderBy('p.id')
+      .limit(RELATED_PRODUCTS_LIMIT)
+      .execute();
+    return { items: rows.map((r) => this.toListItem(r)) };
+  }
+
+  /** List items for the given ids that are visible now (wishlists). */
+  async listItems(ids: readonly string[]): Promise<Map<string, PublicProductListItem>> {
+    if (ids.length === 0) return new Map();
+    const rows = await this.visibleBase()
+      .where('p.id', 'in', [...ids])
+      .execute();
+    return new Map(rows.map((r) => [r.id, this.toListItem(r)]));
   }
 
   async get(productId: string): Promise<PublicProduct> {
@@ -228,6 +397,7 @@ export class PublicProductsService {
           'name',
           'sku',
           'price_fils',
+          'compare_at_fils',
           'stock_on_hand',
           'stock_reserved',
           'low_stock_threshold',
@@ -265,6 +435,9 @@ export class PublicProductsService {
           name: v.name,
           sku: v.sku,
           priceFils: v.price_fils,
+          compareAtFils:
+            discountPercent(v.price_fils, v.compare_at_fils) === null ? null : v.compare_at_fils,
+          discountPercent: discountPercent(v.price_fils, v.compare_at_fils),
           inStock: available > 0,
           lowStock: available > 0 && available <= v.low_stock_threshold,
         };
@@ -276,6 +449,7 @@ export class PublicProductsService {
         minDays: z.min_days,
         maxDays: z.max_days,
       })),
+      rating: ratingSummary(r.rating_sum ?? 0, r.rating_count ?? 0),
       inStock: r.in_stock,
       publishedAt: (r.published_at as Date).toISOString(),
     };

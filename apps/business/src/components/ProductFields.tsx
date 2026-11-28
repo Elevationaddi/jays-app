@@ -189,6 +189,22 @@ export function VariantFields({
         />
       </div>
       <div className="field">
+        <label htmlFor={id('compareAt')}>{tr('product.variant.compareAt')}</label>
+        <input
+          id={id('compareAt')}
+          type="text"
+          name="compareAt"
+          dir="ltr"
+          inputMode="decimal"
+          pattern="\d{1,7}(\.\d{1,2})?"
+          aria-describedby={id('compareAtHint')}
+          defaultValue={variant?.compareAtFils ? aedInput(variant.compareAtFils) : ''}
+        />
+        <p id={id('compareAtHint')} className="hint">
+          {tr('product.variant.compareAtHint')}
+        </p>
+      </div>
+      <div className="field">
         <label htmlFor={id('tax')}>{tr('product.variant.taxClass')}</label>
         <select id={id('tax')} name="taxClass" defaultValue={variant?.taxClass ?? 'standard'}>
           {TAX_CLASSES.map((c) => (
