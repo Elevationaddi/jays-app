@@ -27,7 +27,7 @@ describe('reference data', () => {
 });
 
 describe('profile', () => {
-  it('updates language, emirate and preferred mode, and audits consent changes', async () => {
+  it('updates language, emirate and preferred mode', async () => {
     const session = await signUp(h);
     const res = await h
       .http()
@@ -38,21 +38,21 @@ describe('profile', () => {
         emirate: 'SHJ',
         preferredMode: 'services',
         displayName: 'Fictional Noor',
-        marketingConsent: true,
       })
       .expect(200);
     expect(meSchema.parse(res.body)).toMatchObject({
       locale: 'ar',
       emirate: 'SHJ',
       preferredMode: 'services',
-      marketingConsent: true,
+      marketing: { email: false, sms: false, push: false },
     });
-    const audit = await h.db
-      .selectFrom('audit_logs')
-      .select('action')
-      .where('target_id', '=', session.user.id)
-      .execute();
-    expect(audit.map((a) => a.action)).toContain('user.marketing_consent_changed');
+    // Consent moved to PATCH /me/privacy, which records its history.
+    await h
+      .http()
+      .patch('/v1/me')
+      .set('Authorization', bearer(session))
+      .send({ marketingConsent: true })
+      .expect(400);
     await h
       .http()
       .patch('/v1/me')

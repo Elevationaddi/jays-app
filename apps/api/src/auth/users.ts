@@ -35,7 +35,7 @@ export async function toMe(db: Db, user: User): Promise<Me> {
     locale: user.locale,
     emirate: (user.emirate_code as Me['emirate']) ?? null,
     preferredMode: user.preferred_mode,
-    marketingConsent: user.marketing_consent,
+    marketing: { email: user.marketing_email, sms: user.marketing_sms, push: user.marketing_push },
     hasBusinessMembership: membership !== undefined,
     createdAt: user.created_at.toISOString(),
   };

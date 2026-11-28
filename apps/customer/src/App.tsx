@@ -1,6 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { ApiClientError } from '@jays/api-client';
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
+import { Linking } from 'react-native';
 import { makeApi } from './api';
 import { AppContext } from './context';
 import { deviceLocale } from './locale';
@@ -13,6 +14,7 @@ import { CheckoutScreen } from './screens/CheckoutScreen';
 import { ModeHome } from './screens/ModeHome';
 import { NotificationsScreen } from './screens/NotificationsScreen';
 import { OrderScreen, OrdersScreen } from './screens/OrdersScreen';
+import { PrivacyScreen, UnsubscribeScreen } from './screens/PrivacyScreens';
 import { ProductScreen } from './screens/ProductScreen';
 import { ResetScreen } from './screens/ResetScreen';
 import { StoreScreen } from './screens/StoreScreen';
@@ -20,7 +22,7 @@ import { NewTicketScreen, SupportScreen, TicketScreen } from './screens/SupportS
 import { VerifyScreen } from './screens/VerifyScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { loadRefreshToken, saveRefreshToken } from './secure-session';
-import { initialState, reducer } from './state';
+import { initialState, reducer, unsubscribeTokenFrom } from './state';
 
 export function App() {
   const [state, dispatch] = useReducer(
@@ -63,6 +65,16 @@ export function App() {
       cancelled = true;
     };
   }, [api]);
+
+  // A marketing unsubscribe link (…/unsubscribe?token=…) opens its screen, signed in or not.
+  useEffect(() => {
+    void Linking.getInitialURL()
+      .then((url) => {
+        const token = url ? unsubscribeTokenFrom(url) : null;
+        if (token) dispatch({ type: 'openUnsubscribe', token });
+      })
+      .catch(() => undefined);
+  }, []);
 
   // After sign-in, move the guest cart into the account cart (quantities add, capped at stock).
   const signedInUser = state.session?.user.id;
@@ -118,6 +130,10 @@ export function App() {
         return <TicketScreen />;
       case '/notifications':
         return <NotificationsScreen />;
+      case '/privacy':
+        return <PrivacyScreen />;
+      case '/unsubscribe':
+        return <UnsubscribeScreen />;
       case '/shop/store':
       case '/services/store':
         return <StoreScreen />;

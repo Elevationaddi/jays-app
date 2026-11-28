@@ -67,45 +67,18 @@ export class MeService {
     return toMe(this.db, user);
   }
 
-  async update(userId: string, body: UpdateMeRequest, meta: RequestMeta): Promise<Me> {
+  async update(userId: string, body: UpdateMeRequest): Promise<Me> {
     if (body.emirate) await this.assertEmirateEnabled(body.emirate);
-    const now = this.clock.now();
-    await this.db.transaction().execute(async (trx) => {
-      const before = await trx
-        .selectFrom('users')
-        .selectAll()
-        .where('id', '=', userId)
-        .forUpdate()
-        .executeTakeFirstOrThrow();
-      await trx
-        .updateTable('users')
-        .set({
-          ...(body.displayName !== undefined ? { display_name: body.displayName } : {}),
-          ...(body.locale !== undefined ? { locale: body.locale } : {}),
-          ...(body.emirate !== undefined ? { emirate_code: body.emirate } : {}),
-          ...(body.preferredMode !== undefined ? { preferred_mode: body.preferredMode } : {}),
-          ...(body.marketingConsent !== undefined &&
-          body.marketingConsent !== before.marketing_consent
-            ? { marketing_consent: body.marketingConsent, marketing_consent_at: now }
-            : {}),
-        })
-        .where('id', '=', userId)
-        .execute();
-      if (
-        body.marketingConsent !== undefined &&
-        body.marketingConsent !== before.marketing_consent
-      ) {
-        await writeAudit(trx, {
-          actorType: 'user',
-          actorId: userId,
-          action: 'user.marketing_consent_changed',
-          targetType: 'user',
-          targetId: userId,
-          diff: { before: before.marketing_consent, after: body.marketingConsent },
-          requestId: meta.requestId,
-        });
-      }
-    });
+    await this.db
+      .updateTable('users')
+      .set({
+        ...(body.displayName !== undefined ? { display_name: body.displayName } : {}),
+        ...(body.locale !== undefined ? { locale: body.locale } : {}),
+        ...(body.emirate !== undefined ? { emirate_code: body.emirate } : {}),
+        ...(body.preferredMode !== undefined ? { preferred_mode: body.preferredMode } : {}),
+      })
+      .where('id', '=', userId)
+      .execute();
     return this.get(userId);
   }
 

@@ -40,10 +40,15 @@ export interface UsersTable {
   preferred_mode: 'shop' | 'services' | null;
   terms_version: string;
   terms_accepted_at: Timestamp;
-  marketing_consent: Generated<boolean>;
-  marketing_consent_at: Timestamp | null;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+  marketing_email: Generated<boolean>;
+  marketing_sms: Generated<boolean>;
+  marketing_push: Generated<boolean>;
+  notify_email: Generated<boolean>;
+  notify_sms: Generated<boolean>;
+  notify_push: Generated<boolean>;
+  deleted_at: Timestamp | null;
 }
 
 export type ChallengePurpose = 'verify_contact' | 'password_reset';
@@ -66,7 +71,9 @@ export interface VerificationChallengesTable {
   updated_at: UpdatedAt;
 }
 
-export type RevokeReason = 'logout' | 'refresh_reuse' | 'password_reset' | 'admin';
+/** `account_deleted` is for user sessions only (migration 0008). */
+export type RevokeReason =
+  'logout' | 'refresh_reuse' | 'password_reset' | 'admin' | 'account_deleted';
 
 interface SessionColumns {
   id: Id;
@@ -1106,6 +1113,36 @@ export interface NotificationDeliveriesTable {
   sent_at: CreatedAt;
 }
 
+export type ConsentPurpose = 'marketing_email' | 'marketing_sms' | 'marketing_push';
+export type ConsentSource =
+  'signup' | 'settings' | 'unsubscribe_link' | 'account_deletion' | 'migration';
+
+export interface ConsentRecordsTable {
+  id: Id;
+  user_id: string;
+  purpose: ConsentPurpose;
+  granted: boolean;
+  source: ConsentSource;
+  locale: 'en' | 'ar';
+  policy_version: string;
+  request_id: string | null;
+  created_at: CreatedAt;
+}
+
+export interface AccountDeletionRequestsTable {
+  id: Id;
+  user_id: string;
+  status: Generated<'pending' | 'canceled' | 'completed'>;
+  reason: string | null;
+  requested_at: Timestamp;
+  scheduled_for: Timestamp;
+  canceled_at: Timestamp | null;
+  completed_at: Timestamp | null;
+  postponed_reason: string | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
 export interface Database {
   emirates: EmiratesTable;
   users: UsersTable;
@@ -1175,6 +1212,8 @@ export interface Database {
   notification_templates: NotificationTemplatesTable;
   notifications: NotificationsTable;
   notification_deliveries: NotificationDeliveriesTable;
+  consent_records: ConsentRecordsTable;
+  account_deletion_requests: AccountDeletionRequestsTable;
 }
 
 /** Every column of every table, used by the drift test. Keep in the same order as above. */
@@ -1194,10 +1233,15 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'preferred_mode',
     'terms_version',
     'terms_accepted_at',
-    'marketing_consent',
-    'marketing_consent_at',
     'created_at',
     'updated_at',
+    'marketing_email',
+    'marketing_sms',
+    'marketing_push',
+    'notify_email',
+    'notify_sms',
+    'notify_push',
+    'deleted_at',
   ],
   verification_challenges: [
     'id',
@@ -1996,6 +2040,30 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'created_at',
   ],
   notification_deliveries: ['id', 'outbox_id', 'user_id', 'channel', 'sent_at'],
+  consent_records: [
+    'id',
+    'user_id',
+    'purpose',
+    'granted',
+    'source',
+    'locale',
+    'policy_version',
+    'request_id',
+    'created_at',
+  ],
+  account_deletion_requests: [
+    'id',
+    'user_id',
+    'status',
+    'reason',
+    'requested_at',
+    'scheduled_for',
+    'canceled_at',
+    'completed_at',
+    'postponed_reason',
+    'created_at',
+    'updated_at',
+  ],
 };
 
 export type User = Selectable<UsersTable>;

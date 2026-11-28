@@ -175,6 +175,15 @@ input[dir='ltr'] {
   margin-top: 2px;
   accent-color: var(--accent);
 }
+.check-group {
+  border: 0;
+  padding: 0;
+  margin: 0 0 12px;
+}
+.check-group legend {
+  margin-block-end: 8px;
+  color: var(--text);
+}
 .alert {
   padding: 12px 16px;
   border-radius: var(--radius-sm);

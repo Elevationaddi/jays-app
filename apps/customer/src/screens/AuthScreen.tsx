@@ -13,7 +13,7 @@ export function AuthScreen() {
   const [contact, setContact] = useState('');
   const [password, setPassword] = useState('');
   const [terms, setTerms] = useState(false);
-  const [marketing, setMarketing] = useState(false);
+  const [marketing, setMarketing] = useState({ email: false, sms: false, push: false });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ReturnType<typeof errorKey> | null>(null);
 
@@ -35,7 +35,7 @@ export function AuthScreen() {
           password,
           locale: state.locale,
           acceptTerms: terms as true,
-          marketingConsent: marketing,
+          marketing,
         });
         dispatch({ type: 'challenge', challenge });
       }
@@ -89,7 +89,15 @@ export function AuthScreen() {
       {mode === 'register' ? (
         <View style={{ gap: 4 }}>
           <Checkbox label={tr('auth.terms')} value={terms} onChange={setTerms} />
-          <Checkbox label={tr('auth.marketing')} value={marketing} onChange={setMarketing} />
+          <Body muted>{tr('auth.marketing')}</Body>
+          {(['email', 'sms', 'push'] as const).map((c) => (
+            <Checkbox
+              key={c}
+              label={tr(`auth.marketing.${c}`)}
+              value={marketing[c]}
+              onChange={(v) => setMarketing({ ...marketing, [c]: v })}
+            />
+          ))}
         </View>
       ) : null}
       <Button

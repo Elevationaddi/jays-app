@@ -21,6 +21,18 @@ export const ADMIN_INVITE_TTL_SECONDS = 72 * 3600;
 /** Placeholder until the founder approves the terms of use (ADR-0007). Stored on every account. */
 export const TERMS_VERSION = 'draft-2026-11';
 
+/**
+ * Version of the marketing consent wording (D15). A draft until legal approves it (ADR-0018 D13,
+ * D15); every consent record stores the version it was given under.
+ */
+export const MARKETING_POLICY_VERSION = 'draft-2026-11';
+
+/**
+ * Days between an account deletion request and the anonymisation, so a mistaken or coerced
+ * request can be undone. Proposed default (ADR-0019), pending legal review.
+ */
+export const ACCOUNT_DELETION_GRACE_DAYS = 14;
+
 const rule = (name: string, limit: number, windowSeconds: number): RateLimitRule => ({
   name,
   limit,
@@ -41,4 +53,6 @@ export const LIMITS = {
   createBusinessPerUser: rule('business-create-user', 10, 24 * 3600),
   inviteMemberPerUser: rule('member-invite-user', 50, 24 * 3600),
   uploadPerBusiness: rule('upload-business', 200, 24 * 3600),
+  deletionPerUser: rule('deletion-user', 5, 15 * 60),
+  unsubscribePerIp: rule('unsubscribe-ip', 60, 3600),
 } as const;

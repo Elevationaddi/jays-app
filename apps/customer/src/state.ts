@@ -24,7 +24,9 @@ export type Route =
   | '/support'
   | '/support/new'
   | '/support/detail'
-  | '/notifications';
+  | '/notifications'
+  | '/privacy'
+  | '/unsubscribe';
 
 /** What a new support ticket is about, prefilled from an order or appointment. */
 export interface TicketDraft {
@@ -54,6 +56,8 @@ export interface AppState {
   /** The support ticket open in /support/detail, and the draft for /support/new. */
   ticketId: string | null;
   ticketDraft: TicketDraft;
+  /** The token from a marketing unsubscribe link opened in the app. */
+  unsubscribeToken: string | null;
   /** A guest cart's token, merged into the account cart after sign-in. */
   cartToken: string | null;
   /** Items in the cart, for the tab badge. */
@@ -74,6 +78,7 @@ export type Action =
   | { type: 'openBooking'; bookingId: string }
   | { type: 'openTicket'; ticketId: string }
   | { type: 'newTicket'; draft: TicketDraft }
+  | { type: 'openUnsubscribe'; token: string }
   | { type: 'cart'; cartToken: string | null; count: number }
   | { type: 'requireSignIn'; returnTo: Route }
   | { type: 'challenge'; challenge: Challenge }
@@ -99,10 +104,22 @@ export function initialState(locale: Locale): AppState {
     bookingId: null,
     ticketId: null,
     ticketDraft: { type: 'other' },
+    unsubscribeToken: null,
     cartToken: null,
     cartCount: 0,
     auth: { returnTo: '/welcome', challenge: null },
   };
+}
+
+/** The token of an unsubscribe link (`…/unsubscribe?token=…`), or null for any other URL. */
+export function unsubscribeTokenFrom(url: string): string | null {
+  const match = /\/unsubscribe\/?\?(?:.*&)?token=([^&#]+)/.exec(url);
+  if (!match?.[1]) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return null;
+  }
 }
 
 export function modeOf(route: Route): Mode | null {
@@ -175,6 +192,9 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, route: '/support/detail', ticketId: action.ticketId };
     case 'newTicket':
       return { ...state, route: '/support/new', ticketDraft: action.draft };
+    case 'openUnsubscribe':
+      // Works signed out: the link itself identifies the person.
+      return { ...state, route: '/unsubscribe', unsubscribeToken: action.token };
     case 'cart':
       return { ...state, cartToken: action.cartToken, cartCount: action.count };
     case 'requireSignIn':

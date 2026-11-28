@@ -31,7 +31,11 @@ export const registerRequestSchema = z
     password: passwordSchema,
     locale: localeSchema.default('en'),
     acceptTerms: z.literal(true, 'you must accept the terms'),
-    marketingConsent: z.boolean().default(false),
+    /** Optional and separate from the terms (D15). Each channel is its own choice. */
+    marketing: z
+      .strictObject({ email: z.boolean(), sms: z.boolean(), push: z.boolean() })
+      .partial()
+      .default({}),
   })
   .refine((body) => (body.email === undefined) !== (body.phone === undefined), {
     message: 'provide either an email address or a phone number',
@@ -90,7 +94,8 @@ export const meSchema = z.object({
   locale: localeSchema,
   emirate: emirateCodeSchema.nullable(),
   preferredMode: modeSchema.nullable(),
-  marketingConsent: z.boolean(),
+  /** Marketing consent per channel (D15). */
+  marketing: z.object({ email: z.boolean(), sms: z.boolean(), push: z.boolean() }),
   /** True when the user has at least one active business membership. */
   hasBusinessMembership: z.boolean(),
   createdAt: isoDateTime,
@@ -106,7 +111,6 @@ export const updateMeRequestSchema = z
     locale: localeSchema,
     emirate: emirateCodeSchema.nullable(),
     preferredMode: modeSchema.nullable(),
-    marketingConsent: z.boolean(),
   })
   .partial()
   .refine((body) => Object.keys(body).length > 0, 'provide at least one field');

@@ -48,7 +48,11 @@ export async function register(formData: FormData) {
       password: String(formData.get('password') ?? ''),
       locale,
       acceptTerms: formData.get('acceptTerms') === 'on' ? true : (false as unknown as true),
-      marketingConsent: formData.get('marketingConsent') === 'on',
+      marketing: {
+        email: formData.get('marketing.email') === 'on',
+        sms: formData.get('marketing.sms') === 'on',
+        push: formData.get('marketing.push') === 'on',
+      },
     });
     destination = `/verify?${new URLSearchParams({ c: challenge.challengeId, to: challenge.destination }).toString()}`;
   } catch (error) {

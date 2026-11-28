@@ -2,6 +2,7 @@ import { parseEnv, workerEnvSchema } from '@jays/config';
 import { pino } from 'pino';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  completeAccountDeletionsJob,
   expireBookingHoldsJob,
   expireUnpaidOrdersJob,
   MARK_EARNINGS_ELIGIBLE_SQL,
@@ -71,5 +72,12 @@ describe('jobs', () => {
     await expect(job.run()).resolves.toBe(3);
     expect(query).toHaveBeenCalledWith(MARK_EARNINGS_ELIGIBLE_SQL);
     expect(MARK_EARNINGS_ELIGIBLE_SQL).toContain('payout_dispute_window_days');
+  });
+
+  it('completes due account deletions through the shared database function', async () => {
+    const query = vi.fn(async () => ({ rows: [{ n: 1 }] }));
+    const job = completeAccountDeletionsJob({ query } as never, 1000);
+    await expect(job.run()).resolves.toBe(1);
+    expect(query).toHaveBeenCalledWith('SELECT complete_account_deletions(now(), 50) AS n');
   });
 });

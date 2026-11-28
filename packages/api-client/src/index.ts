@@ -1,4 +1,9 @@
 import {
+  consentRecordSchema,
+  dataExportSchema,
+  privacySchema,
+  unsubscribeResultSchema,
+  type updatePrivacyRequestSchema,
   adminDashboardSchema,
   adminOrderSchema,
   adminReviewSchema,
@@ -372,6 +377,21 @@ export function createApiClient(options: ApiClientOptions) {
       call('POST', `/me/memberships/${encodeURIComponent(id)}/accept`, myMembershipSchema),
     declineMembership: (id: string) =>
       call('POST', `/me/memberships/${encodeURIComponent(id)}/decline`, none),
+
+    // Account and privacy (ADR-0019)
+    privacy: () => call('GET', '/me/privacy', privacySchema),
+    updatePrivacy: (body: z.input<typeof updatePrivacyRequestSchema>) =>
+      call('PATCH', '/me/privacy', privacySchema, body),
+    consentHistory: (params?: { cursor?: string; limit?: number }) =>
+      call('GET', `/me/consents${q(params)}`, pageSchema(consentRecordSchema)),
+    exportMyData: () => call('GET', '/me/export', dataExportSchema),
+    requestAccountDeletion: (password: string, reason?: string) =>
+      call('POST', '/me/deletion', privacySchema, { password, ...(reason ? { reason } : {}) }),
+    cancelAccountDeletion: () => call('DELETE', '/me/deletion', privacySchema),
+    checkUnsubscribe: (token: string) =>
+      call('GET', `/unsubscribe?token=${encodeURIComponent(token)}`, unsubscribeResultSchema),
+    unsubscribe: (token: string) =>
+      call('POST', `/unsubscribe?token=${encodeURIComponent(token)}`, unsubscribeResultSchema),
 
     // Businesses
     createBusiness: (body: z.input<typeof createBusinessRequestSchema>) =>

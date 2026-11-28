@@ -65,10 +65,15 @@ export default async function RegisterPage({ searchParams }: { searchParams: Sea
             <input type="checkbox" name="acceptTerms" required />
             <span>{tr('auth.terms')}</span>
           </label>
-          <label className="check">
-            <input type="checkbox" name="marketingConsent" />
-            <span>{tr('auth.marketing')}</span>
-          </label>
+          <fieldset className="check-group">
+            <legend>{tr('auth.marketing')}</legend>
+            {(['email', 'sms', 'push'] as const).map((c) => (
+              <label className="check" key={c}>
+                <input type="checkbox" name={`marketing.${c}`} />
+                <span>{tr(`auth.marketing.${c}`)}</span>
+              </label>
+            ))}
+          </fieldset>
           <button className="btn block" type="submit">
             {tr('common.continue')}
           </button>

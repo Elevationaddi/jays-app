@@ -55,7 +55,7 @@ export class MeController {
 
   @Patch()
   @ApiOperation({
-    summary: 'Update profile, language, emirate, preferred mode or marketing consent',
+    summary: 'Update profile, language, emirate or preferred mode (consent: PATCH /me/privacy)',
   })
   @ApiZodBody(updateMeRequestSchema)
   @ApiZodResponse(200, meSchema, 'Updated profile.')
@@ -63,9 +63,8 @@ export class MeController {
   update(
     @CurrentUser() user: UserPrincipal,
     @ZodBody(updateMeRequestSchema) body: UpdateMeRequest,
-    @Req() req: Request,
   ) {
-    return this.me.update(user.userId, body, requestMeta(req));
+    return this.me.update(user.userId, body);
   }
 
   @Get('addresses')
