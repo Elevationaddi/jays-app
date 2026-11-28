@@ -17,3 +17,7 @@ dump.rdb
 # Staging secrets (infra/staging)
 infra/staging/staging.env
 infra/staging/postgres_password.txt
+
+# Demo account credentials (scripts/demo/load-demo.ts): never commit
+demo-credentials.json
+*.demo-credentials.json

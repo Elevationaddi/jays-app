@@ -316,6 +316,7 @@ export class OnboardingService {
     const result = await verifyStoredUpload(this.storage, this.scanner, doc.object_key, {
       contentType: doc.content_type,
       maxBytes: Math.min(doc.declared_size_bytes, DOCUMENT_MAX_BYTES),
+      limitBytes: DOCUMENT_MAX_BYTES,
     });
     if (!result.ok && result.reason === 'missing') throw uploadFailure('missing');
     await this.db.transaction().execute(async (trx) => {
@@ -631,6 +632,7 @@ export class OnboardingService {
       const result = await verifyStoredUpload(this.storage, this.scanner, media.object_key, {
         contentType: media.content_type,
         maxBytes: Math.min(media.declared_size_bytes, IMAGE_MAX_BYTES),
+        limitBytes: IMAGE_MAX_BYTES,
         purpose: media.purpose,
       });
       if (!result.ok && result.reason === 'missing') throw uploadFailure('missing');

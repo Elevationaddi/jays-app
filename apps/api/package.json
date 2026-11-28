@@ -17,7 +17,8 @@
     "seed": "node --env-file-if-exists=../../.env dist/scripts/seed.js",
     "totp": "node --env-file-if-exists=../../.env dist/scripts/totp.js",
     "admin:bootstrap": "node --env-file-if-exists=../../.env dist/scripts/admin-bootstrap.js",
-    "legal:import": "node --env-file-if-exists=../../.env dist/scripts/legal-import.js"
+    "legal:import": "node --env-file-if-exists=../../.env dist/scripts/legal-import.js",
+    "demo:load": "node --env-file-if-exists=../../.env dist/scripts/demo/load-demo.js"
   },
   "dependencies": {
     "@jays/config": "workspace:*",

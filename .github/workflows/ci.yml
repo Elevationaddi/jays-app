@@ -82,6 +82,27 @@ jobs:
           PG_RESTORE: docker run --rm -i --network host postgres:17-alpine pg_restore
           PSQL: docker run --rm -i --network host postgres:17-alpine psql
         run: DRILL_ENCRYPTION=age infra/backup/drill.sh && DRILL_ENCRYPTION=openssl infra/backup/drill.sh
+      - name: Demonstration data loads through the real flows (small set) and refuses a second run
+        env:
+          PSQL: docker run --rm -i --network host postgres:17-alpine psql
+          DEMO_SIZE: small
+          DEMO_CREDENTIALS_FILE: ${{ runner.temp }}/demo-credentials.json
+        run: |
+          $PSQL postgresql://jays:jays@localhost:5432/postgres -qc "CREATE DATABASE jays_demo"
+          export DATABASE_URL=postgresql://jays:jays@localhost:5432/jays_demo
+          pnpm db:migrate
+          pnpm --filter @jays/api build
+          pnpm --filter @jays/api demo:load
+          if pnpm --filter @jays/api demo:load; then echo "::error::a second load was not refused"; exit 1; fi
+          test "$($PSQL "$DATABASE_URL" -Atqc 'SELECT count(*) FROM businesses WHERE NOT is_demo')" = 0
+          rm -f "$DEMO_CREDENTIALS_FILE"
+      - name: Restore drill on the demonstration data
+        env:
+          DATABASE_URL: postgresql://jays:jays@localhost:5432/jays_demo
+          PG_DUMP: docker run --rm -i --network host postgres:17-alpine pg_dump
+          PG_RESTORE: docker run --rm -i --network host postgres:17-alpine pg_restore
+          PSQL: docker run --rm -i --network host postgres:17-alpine psql
+        run: DRILL_ENCRYPTION=age infra/backup/drill.sh
 
   images:
     name: Container images build and start (staging)

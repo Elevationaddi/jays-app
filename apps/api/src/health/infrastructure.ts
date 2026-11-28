@@ -14,8 +14,10 @@ export class Infrastructure implements OnApplicationShutdown {
   readonly pool: pg.Pool;
   readonly redis: Redis | null;
   readonly db: Db;
+  private readonly production: boolean;
 
   constructor(@Inject(API_ENV) env: ApiEnv) {
+    this.production = env.APP_ENV === 'production';
     this.pool = new pg.Pool({
       connectionString: env.DATABASE_URL,
       max: env.DB_POOL_MAX,
@@ -55,7 +57,10 @@ export class Infrastructure implements OnApplicationShutdown {
     const probes: DependencyProbe[] = [
       {
         name: 'database',
-        check: async () => (await this.pool.query('SELECT 1 AS ok')).rows[0]?.ok === 1,
+        check: async () =>
+          this.production
+            ? productionDatabaseOk(this.pool)
+            : (await this.pool.query('SELECT 1 AS ok')).rows[0]?.ok === 1,
       },
     ];
     const redis = this.redis;
@@ -81,4 +86,18 @@ export class Infrastructure implements OnApplicationShutdown {
         : Promise.resolve(redis.disconnect());
     await Promise.allSettled([this.pool.end(), closeRedis]);
   }
+}
+
+/**
+ * Production readiness also refuses a database that holds staging demonstration data or is marked
+ * as another environment (ADR-0038), so a staging database can never serve production traffic.
+ */
+export async function productionDatabaseOk(pool: Pick<pg.Pool, 'query'>): Promise<boolean> {
+  const { rows } = await pool.query<{ demo: boolean; other_env: boolean }>(
+    `SELECT EXISTS (SELECT 1 FROM businesses WHERE is_demo)
+              OR EXISTS (SELECT 1 FROM users WHERE is_demo) AS demo,
+            EXISTS (SELECT 1 FROM environment_marker WHERE environment <> 'production') AS other_env`,
+  );
+  const row = rows[0];
+  return row !== undefined && !row.demo && !row.other_env;
 }

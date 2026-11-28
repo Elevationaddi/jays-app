@@ -70,7 +70,17 @@ export async function verifyStoredUpload(
   storage: ObjectStorage,
   scanner: MalwareScanner,
   key: string,
-  declared: { contentType: string; maxBytes: number; purpose?: MediaPurpose },
+  declared: {
+    contentType: string;
+    /** The most bytes the uploaded object may have (the declared size, capped by the hard limit). */
+    maxBytes: number;
+    /**
+     * The hard limit for the purpose. The re-encoded copy is checked against this, not against the
+     * declared size: a well-compressed upload can grow slightly when it is written again.
+     */
+    limitBytes: number;
+    purpose?: MediaPurpose;
+  },
 ): Promise<VerifyResult> {
   const head = await storage.head(key);
   if (!head) return { ok: false, reason: 'missing' };
@@ -98,7 +108,7 @@ export async function verifyStoredUpload(
       const clean = await sanitizeImage(bytes, check.contentType, maxSide ? { maxSide } : {});
       if (!clean.ok) {
         result = { ok: false, reason: clean.reason };
-      } else if (clean.bytes.length > declared.maxBytes) {
+      } else if (clean.bytes.length > declared.limitBytes) {
         result = { ok: false, reason: 'too_large' };
       } else {
         // The stored object becomes the re-encoded copy; the original bytes are never served.

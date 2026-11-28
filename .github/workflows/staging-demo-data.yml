@@ -1,0 +1,71 @@
+# Loads the FICTIONAL demonstration dataset into STAGING (docs/DEMO_DATA.md, ADR-0038).
+# Manual only. Refuses production, refuses a database not marked as staging, and refuses to run
+# twice. Every demo account gets a new random password; the credentials file is encrypted with
+# DEMO_CREDENTIALS_PASSPHRASE before it is stored, and the artifact is deleted after one day.
+name: 'Staging: load demonstration data'
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "fictional-demo-data" to load the demonstration data into staging'
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-database
+  cancel-in-progress: false
+
+jobs:
+  load:
+    name: Load fictional demonstration data
+    if: inputs.confirm == 'fictional-demo-data'
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      APP_ENV: staging
+      DEMO_DATA_CONFIRM: fictional-demo-data
+      DATABASE_URL: ${{ secrets.STAGING_DATABASE_DIRECT_URL }}
+      MFA_ENCRYPTION_KEY: ${{ secrets.STAGING_MFA_ENCRYPTION_KEY }}
+      STORAGE_PROVIDER: supabase
+      STORAGE_BUCKET: jays-files
+      SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @jays/api build
+      - name: Require the passphrase before creating any account
+        env:
+          PASSPHRASE: ${{ secrets.DEMO_CREDENTIALS_PASSPHRASE }}
+        run: |
+          if [ "${#PASSPHRASE}" -lt 20 ]; then
+            echo "::error::DEMO_CREDENTIALS_PASSPHRASE is missing or shorter than 20 characters."
+            exit 1
+          fi
+      - name: Load the dataset (passwords are never printed)
+        env:
+          DEMO_CREDENTIALS_FILE: ${{ runner.temp }}/demo-credentials.json
+        run: pnpm --filter @jays/api demo:load
+      - name: Encrypt the credentials file
+        env:
+          PASSPHRASE: ${{ secrets.DEMO_CREDENTIALS_PASSPHRASE }}
+          DEMO_CREDENTIALS_FILE: ${{ runner.temp }}/demo-credentials.json
+        run: |
+          gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+            --symmetric --cipher-algo AES256 \
+            --output "$RUNNER_TEMP/demo-credentials.json.gpg" "$DEMO_CREDENTIALS_FILE" <<< "$PASSPHRASE"
+          shred -u "$DEMO_CREDENTIALS_FILE"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: demo-credentials-encrypted
+          path: ${{ runner.temp }}/demo-credentials.json.gpg
+          retention-days: 1
+          if-no-files-found: error

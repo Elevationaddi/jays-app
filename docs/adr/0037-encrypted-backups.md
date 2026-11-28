@@ -66,7 +66,9 @@ Then the workflow template (`infra/backup/github-actions-backup.example.yml`) is
   3. restores into a new empty database;
   4. compares the exact row count of every table;
   5. checks that the migrations match, that the ledger is balanced, and that the append-only triggers are present.
-- **Run on 28 November 2026** in the development environment, against PostgreSQL 16 with all 20 migrations and the demonstration data. Result: passed (89 tables compared, ledger balanced). It is recorded in IMPLEMENTATION_STATUS.md.
+- **Run on 28 November 2026** in the development environment, against PostgreSQL 16:
+  - with all 20 migrations and the local seed data: passed (89 tables compared, ledger balanced);
+  - with migration 21 and the full fictional demonstration dataset (ADR-0038; 70 orders, 156 bookings, 241 ledger transactions): passed with `age`, a 1 MB encrypted backup, 90 tables compared, ledger balanced. CI repeats this on the small dataset.
 - **Still to do on real infrastructure:** a drill from a real staging backup (Supabase to GitHub release, then a restore into a fresh database), once the destination is approved. It must use the `pg_dump` and `pg_restore` versions matching Supabase's PostgreSQL major version.
 
 ## Consequences
