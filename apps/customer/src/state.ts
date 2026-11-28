@@ -30,6 +30,8 @@ export type Route =
   | '/documents/detail'
   | '/notifications'
   | '/privacy'
+  | '/legal'
+  | '/legal/detail'
   | '/unsubscribe';
 
 /** What a new support ticket is about, prefilled from an order or appointment. */
@@ -103,6 +105,8 @@ export interface AppState {
   /** The invoice or credit note open in /documents/detail, and where its back button goes. */
   documentId: string | null;
   documentBack: Route;
+  /** The legal document open in /legal/detail (phase 8.8). */
+  legalKind: string | null;
   /** The token from a marketing unsubscribe link opened in the app. */
   unsubscribeToken: string | null;
   /** A guest cart's token, merged into the account cart after sign-in. */
@@ -130,6 +134,7 @@ export type Action =
   | { type: 'openTicket'; ticketId: string }
   | { type: 'newTicket'; draft: TicketDraft }
   | { type: 'openDocument'; documentId: string; back: Route }
+  | { type: 'openLegal'; kind: string }
   | { type: 'openUnsubscribe'; token: string }
   | { type: 'cart'; cartToken: string | null; count: number }
   | { type: 'requireSignIn'; returnTo: Route }
@@ -164,6 +169,7 @@ export function initialState(locale: Locale): AppState {
     ticketId: null,
     ticketDraft: { type: 'other' },
     documentId: null,
+    legalKind: null,
     documentBack: '/orders',
     unsubscribeToken: null,
     cartToken: null,
@@ -204,6 +210,9 @@ export function actionForLink(link: string): Action | null {
     return { type: 'openService', venueId: venue[1], serviceId: venue[2] };
   }
   if (link === '/reviews') return { type: 'navigate', route: '/orders' };
+  const legal = /^\/legal\/([a-z_]{3,40})$/.exec(link);
+  if (legal?.[1]) return { type: 'openLegal', kind: legal[1] };
+  if (link === '/legal') return { type: 'navigate', route: '/legal' };
   return null;
 }
 
@@ -323,6 +332,8 @@ export function reducer(state: AppState, action: Action): AppState {
         documentId: action.documentId,
         documentBack: action.back,
       };
+    case 'openLegal':
+      return { ...state, route: '/legal/detail', legalKind: action.kind };
     case 'openUnsubscribe':
       // Works signed out: the link itself identifies the person.
       return { ...state, route: '/unsubscribe', unsubscribeToken: action.token };

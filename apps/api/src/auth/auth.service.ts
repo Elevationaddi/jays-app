@@ -32,6 +32,7 @@ import {
 } from './policy.js';
 import { refreshFailure, type SessionStore } from './sessions.js';
 import { findUserByIdentifier, normalizeIdentifier, toMe } from './users.js';
+import { LegalService } from '../legal/legal.service.js';
 
 export type LoginResult =
   | ({ status: 'authenticated' } & Session)
@@ -57,6 +58,7 @@ export class AuthService {
     @Inject(NOTIFIER) private readonly notifier: Notifier,
     @Inject(USER_SESSIONS) private readonly sessions: SessionStore,
     @Inject(API_ENV) private readonly env: ApiEnv,
+    @Inject(LegalService) private readonly legal: LegalService,
   ) {}
 
   /**
@@ -115,6 +117,14 @@ export class AuthService {
         })
         .returning(['id'])
         .executeTakeFirstOrThrow();
+      // Acceptance of the customer terms and privacy policy in force, if any are published
+      // (D13, ADR-0028); `terms_version` above stays as the summary for older records.
+      const legal = await this.legal.acceptAtSignUp(
+        trx,
+        user.id,
+        body.locale === 'ar' ? 'ar' : 'en',
+        meta,
+      );
       const granted = (['email', 'sms', 'push'] as const).filter((c) => body.marketing[c]);
       if (granted.length > 0) {
         await trx
@@ -138,7 +148,7 @@ export class AuthService {
         action: 'user.registered',
         targetType: 'user',
         targetId: user.id,
-        diff: { channel, termsVersion: TERMS_VERSION, marketing: granted },
+        diff: { channel, termsVersion: TERMS_VERSION, legal, marketing: granted },
         requestId: meta.requestId,
       });
       const real = await this.createChallenge(

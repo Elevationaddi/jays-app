@@ -15,7 +15,8 @@
     "openapi": "tsc -p tsconfig.build.json && node dist/scripts/openapi.js",
     "seed": "node --env-file-if-exists=../../.env dist/scripts/seed.js",
     "totp": "node --env-file-if-exists=../../.env dist/scripts/totp.js",
-    "admin:bootstrap": "node --env-file-if-exists=../../.env dist/scripts/admin-bootstrap.js"
+    "admin:bootstrap": "node --env-file-if-exists=../../.env dist/scripts/admin-bootstrap.js",
+    "legal:import": "node --env-file-if-exists=../../.env dist/scripts/legal-import.js"
   },
   "dependencies": {
     "@jays/config": "workspace:*",

@@ -6220,7 +6220,8 @@
                               "support.handle",
                               "notifications.manage",
                               "exports.run",
-                              "operations.manage"
+                              "operations.manage",
+                              "legal.manage"
                             ]
                           }
                         }
@@ -6643,7 +6644,8 @@
                               "support.handle",
                               "notifications.manage",
                               "exports.run",
-                              "operations.manage"
+                              "operations.manage",
+                              "legal.manage"
                             ]
                           }
                         }
@@ -6758,7 +6760,8 @@
                           "support.handle",
                           "notifications.manage",
                           "exports.run",
-                          "operations.manage"
+                          "operations.manage",
+                          "legal.manage"
                         ]
                       }
                     }
@@ -36180,6 +36183,2422 @@
         "summary": "What \"Book again\" prefills from one of my appointments",
         "tags": [
           "bookings"
+        ]
+      }
+    },
+    "/v1/legal": {
+      "get": {
+        "description": "Every document says legalReview \"pending\": none has been reviewed by a lawyer.",
+        "operationId": "LegalController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Documents, without their text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "customer_terms",
+                              "merchant_agreement",
+                              "privacy_policy",
+                              "returns_refunds",
+                              "appointment_cancellation",
+                              "home_services",
+                              "marketing_consent",
+                              "prohibited_items",
+                              "review_moderation",
+                              "merchant_licensing",
+                              "authenticity",
+                              "promotional_pricing"
+                            ]
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "title": {
+                            "type": "object",
+                            "properties": {
+                              "en": {
+                                "type": "string"
+                              },
+                              "ar": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "en",
+                              "ar"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "effectiveAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "publishedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "legalReview": {
+                            "type": "string",
+                            "const": "pending"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "kind",
+                          "version",
+                          "title",
+                          "effectiveAt",
+                          "publishedAt",
+                          "legalReview"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "summary": "The legal documents in force (drafts awaiting legal review)",
+        "tags": [
+          "legal"
+        ]
+      }
+    },
+    "/v1/legal/{kind}": {
+      "get": {
+        "operationId": "LegalController_current",
+        "parameters": [
+          {
+            "name": "kind",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "customer_terms",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The document.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "customer_terms",
+                        "merchant_agreement",
+                        "privacy_policy",
+                        "returns_refunds",
+                        "appointment_cancellation",
+                        "home_services",
+                        "marketing_consent",
+                        "prohibited_items",
+                        "review_moderation",
+                        "merchant_licensing",
+                        "authenticity",
+                        "promotional_pricing"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "title": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "type": "string"
+                        },
+                        "ar": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "en",
+                        "ar"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "effectiveAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "publishedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "legalReview": {
+                      "type": "string",
+                      "const": "pending"
+                    },
+                    "body": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "type": "string"
+                        },
+                        "ar": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "en",
+                        "ar"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "kind",
+                    "version",
+                    "title",
+                    "effectiveAt",
+                    "publishedAt",
+                    "legalReview",
+                    "body"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Absent, or hidden from this caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "The version of a document in force, in English and Arabic",
+        "tags": [
+          "legal"
+        ]
+      }
+    },
+    "/v1/legal/{kind}/versions/{version}": {
+      "get": {
+        "operationId": "LegalController_version",
+        "parameters": [
+          {
+            "name": "kind",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "customer_terms",
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The document.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "customer_terms",
+                        "merchant_agreement",
+                        "privacy_policy",
+                        "returns_refunds",
+                        "appointment_cancellation",
+                        "home_services",
+                        "marketing_consent",
+                        "prohibited_items",
+                        "review_moderation",
+                        "merchant_licensing",
+                        "authenticity",
+                        "promotional_pricing"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "title": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "type": "string"
+                        },
+                        "ar": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "en",
+                        "ar"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "effectiveAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "publishedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "legalReview": {
+                      "type": "string",
+                      "const": "pending"
+                    },
+                    "body": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "type": "string"
+                        },
+                        "ar": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "en",
+                        "ar"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "kind",
+                    "version",
+                    "title",
+                    "effectiveAt",
+                    "publishedAt",
+                    "legalReview",
+                    "body"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Absent, or hidden from this caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "A published or retired version, for the record",
+        "tags": [
+          "legal"
+        ]
+      }
+    },
+    "/v1/me/legal": {
+      "get": {
+        "operationId": "LegalController_mine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Acceptances.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pending": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "customer_terms",
+                              "merchant_agreement",
+                              "privacy_policy",
+                              "returns_refunds",
+                              "appointment_cancellation",
+                              "home_services",
+                              "marketing_consent",
+                              "prohibited_items",
+                              "review_moderation",
+                              "merchant_licensing",
+                              "authenticity",
+                              "promotional_pricing"
+                            ]
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "title": {
+                            "type": "object",
+                            "properties": {
+                              "en": {
+                                "type": "string"
+                              },
+                              "ar": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "en",
+                              "ar"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "version",
+                          "title"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "accepted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "customer_terms",
+                              "merchant_agreement",
+                              "privacy_policy",
+                              "returns_refunds",
+                              "appointment_cancellation",
+                              "home_services",
+                              "marketing_consent",
+                              "prohibited_items",
+                              "review_moderation",
+                              "merchant_licensing",
+                              "authenticity",
+                              "promotional_pricing"
+                            ]
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "acceptedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "current": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "version",
+                          "acceptedAt",
+                          "current"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "pending",
+                    "accepted"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Which documents I accepted, and which new versions need accepting",
+        "tags": [
+          "legal"
+        ]
+      }
+    },
+    "/v1/me/legal/accept": {
+      "post": {
+        "description": "Each version must be the one in force (409 VERSION_NOT_CURRENT). Recorded with time, language and request id; never edited.",
+        "operationId": "LegalController_accept",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "documents": {
+                    "minItems": 1,
+                    "maxItems": 12,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "customer_terms",
+                            "merchant_agreement",
+                            "privacy_policy",
+                            "returns_refunds",
+                            "appointment_cancellation",
+                            "home_services",
+                            "marketing_consent",
+                            "prohibited_items",
+                            "review_moderation",
+                            "merchant_licensing",
+                            "authenticity",
+                            "promotional_pricing"
+                          ]
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "version"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "documents"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Acceptances.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pending": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "customer_terms",
+                              "merchant_agreement",
+                              "privacy_policy",
+                              "returns_refunds",
+                              "appointment_cancellation",
+                              "home_services",
+                              "marketing_consent",
+                              "prohibited_items",
+                              "review_moderation",
+                              "merchant_licensing",
+                              "authenticity",
+                              "promotional_pricing"
+                            ]
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "title": {
+                            "type": "object",
+                            "properties": {
+                              "en": {
+                                "type": "string"
+                              },
+                              "ar": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "en",
+                              "ar"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "version",
+                          "title"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "accepted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "customer_terms",
+                              "merchant_agreement",
+                              "privacy_policy",
+                              "returns_refunds",
+                              "appointment_cancellation",
+                              "home_services",
+                              "marketing_consent",
+                              "prohibited_items",
+                              "review_moderation",
+                              "merchant_licensing",
+                              "authenticity",
+                              "promotional_pricing"
+                            ]
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "acceptedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "current": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "version",
+                          "acceptedAt",
+                          "current"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "pending",
+                    "accepted"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed (VALIDATION_FAILED) or a code is invalid or expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refused by policy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept the versions in force",
+        "tags": [
+          "legal"
+        ]
+      }
+    },
+    "/v1/businesses/{businessId}/legal/merchant-agreement": {
+      "get": {
+        "operationId": "BusinessLegalController_status",
+        "parameters": [
+          {
+            "name": "businessId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "document": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "customer_terms",
+                                "merchant_agreement",
+                                "privacy_policy",
+                                "returns_refunds",
+                                "appointment_cancellation",
+                                "home_services",
+                                "marketing_consent",
+                                "prohibited_items",
+                                "review_moderation",
+                                "merchant_licensing",
+                                "authenticity",
+                                "promotional_pricing"
+                              ]
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "title": {
+                              "type": "object",
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "ar": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "en",
+                                "ar"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "effectiveAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "publishedAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "legalReview": {
+                              "type": "string",
+                              "const": "pending"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "kind",
+                            "version",
+                            "title",
+                            "effectiveAt",
+                            "publishedAt",
+                            "legalReview"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "accepted": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "version": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "acceptedAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "acceptedBy": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            }
+                          },
+                          "required": [
+                            "version",
+                            "acceptedAt",
+                            "acceptedBy"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "required": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "document",
+                    "accepted",
+                    "required"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Absent, or hidden from this caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The merchant agreement in force and whether this business accepted it",
+        "tags": [
+          "business-legal"
+        ]
+      }
+    },
+    "/v1/businesses/{businessId}/legal/merchant-agreement/accept": {
+      "post": {
+        "description": "409 VERSION_NOT_CURRENT when the version is not the one in force.",
+        "operationId": "BusinessLegalController_accept",
+        "parameters": [
+          {
+            "name": "businessId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "document": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "customer_terms",
+                                "merchant_agreement",
+                                "privacy_policy",
+                                "returns_refunds",
+                                "appointment_cancellation",
+                                "home_services",
+                                "marketing_consent",
+                                "prohibited_items",
+                                "review_moderation",
+                                "merchant_licensing",
+                                "authenticity",
+                                "promotional_pricing"
+                              ]
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "title": {
+                              "type": "object",
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "ar": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "en",
+                                "ar"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "effectiveAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "publishedAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "legalReview": {
+                              "type": "string",
+                              "const": "pending"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "kind",
+                            "version",
+                            "title",
+                            "effectiveAt",
+                            "publishedAt",
+                            "legalReview"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "accepted": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "version": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "acceptedAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "acceptedBy": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            }
+                          },
+                          "required": [
+                            "version",
+                            "acceptedAt",
+                            "acceptedBy"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "required": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "document",
+                    "accepted",
+                    "required"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed (VALIDATION_FAILED) or a code is invalid or expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Absent, or hidden from this caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept the merchant agreement in force for this business (owner)",
+        "tags": [
+          "business-legal"
+        ]
+      }
+    },
+    "/v1/admin/legal": {
+      "get": {
+        "operationId": "AdminLegalController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Versions without their text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "customer_terms",
+                              "merchant_agreement",
+                              "privacy_policy",
+                              "returns_refunds",
+                              "appointment_cancellation",
+                              "home_services",
+                              "marketing_consent",
+                              "prohibited_items",
+                              "review_moderation",
+                              "merchant_licensing",
+                              "authenticity",
+                              "promotional_pricing"
+                            ]
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "title": {
+                            "type": "object",
+                            "properties": {
+                              "en": {
+                                "type": "string"
+                              },
+                              "ar": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "en",
+                              "ar"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "summaryOfChanges": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "draft",
+                              "published",
+                              "retired"
+                            ]
+                          },
+                          "effectiveAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "publishedAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "retiredAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "legalReview": {
+                            "type": "string",
+                            "const": "pending"
+                          },
+                          "acceptances": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "kind",
+                          "version",
+                          "title",
+                          "summaryOfChanges",
+                          "status",
+                          "effectiveAt",
+                          "publishedAt",
+                          "retiredAt",
+                          "legalReview",
+                          "acceptances",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Every version of every document, newest first",
+        "tags": [
+          "admin-legal"
+        ]
+      },
+      "post": {
+        "description": "409 DRAFT_EXISTS when the document already has an open draft.",
+        "operationId": "AdminLegalController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "customer_terms",
+                      "merchant_agreement",
+                      "privacy_policy",
+                      "returns_refunds",
+                      "appointment_cancellation",
+                      "home_services",
+                      "marketing_consent",
+                      "prohibited_items",
+                      "review_moderation",
+                      "merchant_licensing",
+                      "authenticity",
+                      "promotional_pricing"
+                    ]
+                  },
+                  "title": {
+                    "type": "object",
+                    "properties": {
+                      "en": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "ar": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      }
+                    },
+                    "required": [
+                      "en",
+                      "ar"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "body": {
+                    "type": "object",
+                    "properties": {
+                      "en": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 60000
+                      },
+                      "ar": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 60000
+                      }
+                    },
+                    "required": [
+                      "en",
+                      "ar"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "summaryOfChanges": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 1000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "kind",
+                  "title",
+                  "body"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The draft.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "customer_terms",
+                        "merchant_agreement",
+                        "privacy_policy",
+                        "returns_refunds",
+                        "appointment_cancellation",
+                        "home_services",
+                        "marketing_consent",
+                        "prohibited_items",
+                        "review_moderation",
+                        "merchant_licensing",
+                        "authenticity",
+                        "promotional_pricing"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "title": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "type": "string"
+                        },
+                        "ar": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "en",
+                        "ar"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "body": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "type": "string"
+                        },
+                        "ar": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "en",
+                        "ar"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "summaryOfChanges": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "published",
+                        "retired"
+                      ]
+                    },
+                    "effectiveAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "publishedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "retiredAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "legalReview": {
+                      "type": "string",
+                      "const": "pending"
+                    },
+                    "acceptances": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "kind",
+                    "version",
+                    "title",
+                    "body",
+                    "summaryOfChanges",
+                    "status",
+                    "effectiveAt",
+                    "publishedAt",
+                    "retiredAt",
+                    "legalReview",
+                    "acceptances",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed (VALIDATION_FAILED) or a code is invalid or expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start a new draft version of a document",
+        "tags": [
+          "admin-legal"
+        ]
+      }
+    },
+    "/v1/admin/legal/{id}": {
+      "get": {
+        "operationId": "AdminLegalController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "customer_terms",
+                        "merchant_agreement",
+                        "privacy_policy",
+                        "returns_refunds",
+                        "appointment_cancellation",
+                        "home_services",
+                        "marketing_consent",
+                        "prohibited_items",
+                        "review_moderation",
+                        "merchant_licensing",
+                        "authenticity",
+                        "promotional_pricing"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "title": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "type": "string"
+                        },
+                        "ar": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "en",
+                        "ar"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "body": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "type": "string"
+                        },
+                        "ar": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "en",
+                        "ar"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "summaryOfChanges": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "published",
+                        "retired"
+                      ]
+                    },
+                    "effectiveAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "publishedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "retiredAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "legalReview": {
+                      "type": "string",
+                      "const": "pending"
+                    },
+                    "acceptances": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "kind",
+                    "version",
+                    "title",
+                    "body",
+                    "summaryOfChanges",
+                    "status",
+                    "effectiveAt",
+                    "publishedAt",
+                    "retiredAt",
+                    "legalReview",
+                    "acceptances",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Absent, or hidden from this caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "One version with its text and how many people accepted it",
+        "tags": [
+          "admin-legal"
+        ]
+      },
+      "patch": {
+        "operationId": "AdminLegalController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "object",
+                    "properties": {
+                      "en": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "ar": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      }
+                    },
+                    "required": [
+                      "en",
+                      "ar"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "body": {
+                    "type": "object",
+                    "properties": {
+                      "en": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 60000
+                      },
+                      "ar": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 60000
+                      }
+                    },
+                    "required": [
+                      "en",
+                      "ar"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "summaryOfChanges": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 1000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The draft.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "customer_terms",
+                        "merchant_agreement",
+                        "privacy_policy",
+                        "returns_refunds",
+                        "appointment_cancellation",
+                        "home_services",
+                        "marketing_consent",
+                        "prohibited_items",
+                        "review_moderation",
+                        "merchant_licensing",
+                        "authenticity",
+                        "promotional_pricing"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "title": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "type": "string"
+                        },
+                        "ar": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "en",
+                        "ar"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "body": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "type": "string"
+                        },
+                        "ar": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "en",
+                        "ar"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "summaryOfChanges": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "published",
+                        "retired"
+                      ]
+                    },
+                    "effectiveAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "publishedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "retiredAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "legalReview": {
+                      "type": "string",
+                      "const": "pending"
+                    },
+                    "acceptances": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "kind",
+                    "version",
+                    "title",
+                    "body",
+                    "summaryOfChanges",
+                    "status",
+                    "effectiveAt",
+                    "publishedAt",
+                    "retiredAt",
+                    "legalReview",
+                    "acceptances",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed (VALIDATION_FAILED) or a code is invalid or expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Absent, or hidden from this caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit a draft (published versions are frozen: 409 DOCUMENT_FROZEN)",
+        "tags": [
+          "admin-legal"
+        ]
+      }
+    },
+    "/v1/admin/legal/{id}/publish": {
+      "post": {
+        "description": "Refused in production (409 LEGAL_REVIEW_REQUIRED) until a UAE lawyer has reviewed the documents. Customers are asked to accept the new version.",
+        "operationId": "AdminLegalController_publish",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "effectiveAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The published version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "customer_terms",
+                        "merchant_agreement",
+                        "privacy_policy",
+                        "returns_refunds",
+                        "appointment_cancellation",
+                        "home_services",
+                        "marketing_consent",
+                        "prohibited_items",
+                        "review_moderation",
+                        "merchant_licensing",
+                        "authenticity",
+                        "promotional_pricing"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "title": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "type": "string"
+                        },
+                        "ar": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "en",
+                        "ar"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "body": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "type": "string"
+                        },
+                        "ar": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "en",
+                        "ar"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "summaryOfChanges": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "published",
+                        "retired"
+                      ]
+                    },
+                    "effectiveAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "publishedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "retiredAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "legalReview": {
+                      "type": "string",
+                      "const": "pending"
+                    },
+                    "acceptances": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "kind",
+                    "version",
+                    "title",
+                    "body",
+                    "summaryOfChanges",
+                    "status",
+                    "effectiveAt",
+                    "publishedAt",
+                    "retiredAt",
+                    "legalReview",
+                    "acceptances",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed (VALIDATION_FAILED) or a code is invalid or expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Absent, or hidden from this caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refused by policy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Put a draft in force and retire the previous version",
+        "tags": [
+          "admin-legal"
         ]
       }
     },

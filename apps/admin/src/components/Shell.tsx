@@ -27,6 +27,7 @@ export function Shell({
     | 'notifications'
     | 'content'
     | 'operations'
+    | 'legal'
     | 'security';
   children: ReactNode;
 }) {
@@ -108,6 +109,12 @@ export function Shell({
       href: '/admin/operations',
       label: t(locale, 'admin.nav.operations'),
       show: admin.capabilities.includes('operations.manage'),
+    },
+    {
+      key: 'legal',
+      href: '/admin/legal',
+      label: t(locale, 'admin.nav.legal'),
+      show: admin.capabilities.includes('legal.manage'),
     },
     {
       key: 'security',

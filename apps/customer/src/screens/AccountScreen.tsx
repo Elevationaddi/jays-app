@@ -75,6 +75,11 @@ export function AccountScreen() {
       ) : null}
       <Button
         variant="secondary"
+        label={tr('legal.title')}
+        onPress={() => dispatch({ type: 'navigate', route: '/legal' })}
+      />
+      <Button
+        variant="secondary"
         label={tr('language.switch')}
         onPress={() => dispatch({ type: 'setLocale', locale: state.locale === 'ar' ? 'en' : 'ar' })}
       />

@@ -3,6 +3,7 @@ import { colors, minTouchTarget, radius, spacing } from '@jays/ui';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ModeSwitch } from '../components/ModeSwitch';
+import { LegalPendingBanner } from './LegalScreens';
 import { ProductCard, gridStyle, toListItem } from '../components/ProductCard';
 import { Tabs } from '../components/Tabs';
 import { Banner, Body, Button, Field, Screen, Title } from '../components/ui';
@@ -81,6 +82,7 @@ export function ModeHome() {
   return (
     <Screen footer={<Tabs />}>
       <ModeSwitch />
+      <LegalPendingBanner />
       <Body muted>{name ? tr('gateway.greeting', { name }) : tr('gateway.greetingAnonymous')}</Body>
       <Title>{tr(shop ? 'shop.home.title' : 'services.home.title')}</Title>
       {shop ? (
