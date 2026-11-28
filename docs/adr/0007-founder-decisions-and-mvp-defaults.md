@@ -1,5 +1,7 @@
 # ADR-0007: Founder decisions and MVP defaults
 
+> Update 2026-11-28: the founder answered D1–D15. See [ADR-0018](0018-founder-decisions-2026-11-28.md).
+
 - Status: **Proposed. Nothing in this record is approved.**
 - Date: 2026-11-27
 

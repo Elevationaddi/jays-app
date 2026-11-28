@@ -11,10 +11,12 @@ import { BookScreen } from './screens/BookScreen';
 import { CartScreen } from './screens/CartScreen';
 import { CheckoutScreen } from './screens/CheckoutScreen';
 import { ModeHome } from './screens/ModeHome';
+import { NotificationsScreen } from './screens/NotificationsScreen';
 import { OrderScreen, OrdersScreen } from './screens/OrdersScreen';
 import { ProductScreen } from './screens/ProductScreen';
 import { ResetScreen } from './screens/ResetScreen';
 import { StoreScreen } from './screens/StoreScreen';
+import { NewTicketScreen, SupportScreen, TicketScreen } from './screens/SupportScreens';
 import { VerifyScreen } from './screens/VerifyScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { loadRefreshToken, saveRefreshToken } from './secure-session';
@@ -108,6 +110,14 @@ export function App() {
         return <AppointmentsScreen />;
       case '/appointments/detail':
         return <AppointmentScreen />;
+      case '/support':
+        return <SupportScreen />;
+      case '/support/new':
+        return <NewTicketScreen />;
+      case '/support/detail':
+        return <TicketScreen />;
+      case '/notifications':
+        return <NotificationsScreen />;
       case '/shop/store':
       case '/services/store':
         return <StoreScreen />;

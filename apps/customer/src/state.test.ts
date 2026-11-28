@@ -135,3 +135,20 @@ describe('customer navigation state', () => {
     expect(s.bookingId).toBe('b-1');
   });
 });
+
+describe('after-sales navigation', () => {
+  it('opens a prefilled support ticket from an order and keeps the mode', () => {
+    const s = run([
+      { type: 'chooseMode', mode: 'shop' },
+      { type: 'newTicket', draft: { type: 'order', orderId: 'o-1' } },
+    ]);
+    expect(s.route).toBe('/support/new');
+    expect(s.ticketDraft).toEqual({ type: 'order', orderId: 'o-1' });
+    expect(s.mode).toBe('shop');
+  });
+
+  it('opens a ticket by id', () => {
+    const s = run([{ type: 'openTicket', ticketId: 't-1' }]);
+    expect(s).toMatchObject({ route: '/support/detail', ticketId: 't-1' });
+  });
+});

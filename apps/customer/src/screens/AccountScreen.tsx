@@ -1,4 +1,5 @@
 import { colors, radius, spacing } from '@jays/ui';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ModeSwitch } from '../components/ModeSwitch';
 import { Tabs } from '../components/Tabs';
@@ -8,8 +9,16 @@ import { FALLBACK_EMIRATES } from '../location';
 
 /** /account: shared profile across both modes. Personal data requires sign-in. */
 export function AccountScreen() {
-  const { state, dispatch, tr, signOut } = useApp();
+  const { state, api, dispatch, tr, signOut } = useApp();
   const user = state.session?.user;
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    if (!user) return;
+    api
+      .notifications({ limit: 1 })
+      .then((p) => setUnread(p.unread))
+      .catch(() => setUnread(0));
+  }, [api, user]);
   const emirate = FALLBACK_EMIRATES.find((e) => e.code === (user?.emirate ?? state.emirate));
   return (
     <Screen footer={<Tabs />}>
@@ -32,6 +41,24 @@ export function AccountScreen() {
           </Body>
         </View>
       )}
+      {user ? (
+        <>
+          <Button
+            variant="secondary"
+            label={
+              unread
+                ? `${tr('inbox.title')} (${tr('inbox.unread', { count: unread })})`
+                : tr('inbox.title')
+            }
+            onPress={() => dispatch({ type: 'navigate', route: '/notifications' })}
+          />
+          <Button
+            variant="secondary"
+            label={tr('support.title')}
+            onPress={() => dispatch({ type: 'navigate', route: '/support' })}
+          />
+        </>
+      ) : null}
       <Button
         variant="secondary"
         label={tr('language.switch')}

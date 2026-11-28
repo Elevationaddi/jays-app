@@ -23,3 +23,4 @@ Status values: **Accepted** (engineering decision, in force), **Proposed** (need
 | [0015](0015-ledger-refunds-payouts-and-reconciliation.md)         | Ledger, refunds, payouts and reconciliation                                   | Accepted |
 | [0016](0016-fulfillment-returns-reviews-support-notifications.md) | Fulfillment, returns, reviews, support, notifications, dashboards and exports | Accepted |
 | [0017](0017-hardening-observability-backups.md)                   | Hardening, observability, backups and staging                                 | Accepted |
+| [0018](0018-founder-decisions-2026-11-28.md)                      | Founder decisions D1–D15 (28 November 2026)                                   | Accepted |
