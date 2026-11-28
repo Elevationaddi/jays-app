@@ -1,7 +1,8 @@
 import type { OrderView } from '@jays/contracts';
 import { colors, minTouchTarget, radius, spacing } from '@jays/ui';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ShipmentCare } from '../components/AfterSales';
 import { Tabs } from '../components/Tabs';
 import { Totals } from '../components/Totals';
 import { Banner, Body, Button, Screen, Title } from '../components/ui';
@@ -76,14 +77,23 @@ export function OrdersScreen() {
 export function OrderScreen() {
   const { state, api, dispatch, tr } = useApp();
   const [order, setOrder] = useState<OrderView | 'loading' | 'error'>('loading');
+  const [notice, setNotice] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!state.orderId) return setOrder('error');
     api
       .order(state.orderId)
       .then(setOrder)
       .catch(() => setOrder('error'));
   }, [api, state.orderId]);
+  useEffect(load, [load]);
+
+  // After an action, show what happened and the order as the API now sees it.
+  const changed = (next: OrderView | null, message: string) => {
+    setNotice(message);
+    if (next) setOrder(next);
+    else load();
+  };
 
   return (
     <Screen footer={<Tabs />}>
@@ -104,6 +114,7 @@ export function OrderScreen() {
           <Body muted>
             {tr(`orderStatus.${order.status}`)} · {dateOf(order.createdAt, state.locale)}
           </Body>
+          {notice ? <Banner kind="info">{notice}</Banner> : null}
           {order.merchants.map((m) => (
             <View key={m.id} style={styles.card}>
               <View style={styles.row}>
@@ -121,6 +132,7 @@ export function OrderScreen() {
               <Text style={styles.muted}>
                 {tr('orders.deliveryWindow', { min: m.delivery.minDays, max: m.delivery.maxDays })}
               </Text>
+              <ShipmentCare orderId={order.id} shipment={m} onChanged={changed} />
             </View>
           ))}
           <Totals t={order} />

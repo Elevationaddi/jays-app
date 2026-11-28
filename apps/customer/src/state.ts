@@ -20,7 +20,18 @@ export type Route =
   | '/auth'
   | '/auth/verify'
   | '/auth/reset'
-  | '/account';
+  | '/account'
+  | '/support'
+  | '/support/new'
+  | '/support/detail'
+  | '/notifications';
+
+/** What a new support ticket is about, prefilled from an order or appointment. */
+export interface TicketDraft {
+  type: 'order' | 'booking' | 'payment' | 'account' | 'other';
+  orderId?: string;
+  bookingId?: string;
+}
 
 export interface AppState {
   locale: Locale;
@@ -40,6 +51,9 @@ export interface AppState {
   bookServiceId: string | null;
   /** The appointment open in /appointments/detail. */
   bookingId: string | null;
+  /** The support ticket open in /support/detail, and the draft for /support/new. */
+  ticketId: string | null;
+  ticketDraft: TicketDraft;
   /** A guest cart's token, merged into the account cart after sign-in. */
   cartToken: string | null;
   /** Items in the cart, for the tab badge. */
@@ -58,6 +72,8 @@ export type Action =
   | { type: 'openOrder'; orderId: string }
   | { type: 'startBooking'; serviceId: string }
   | { type: 'openBooking'; bookingId: string }
+  | { type: 'openTicket'; ticketId: string }
+  | { type: 'newTicket'; draft: TicketDraft }
   | { type: 'cart'; cartToken: string | null; count: number }
   | { type: 'requireSignIn'; returnTo: Route }
   | { type: 'challenge'; challenge: Challenge }
@@ -81,6 +97,8 @@ export function initialState(locale: Locale): AppState {
     orderId: null,
     bookServiceId: null,
     bookingId: null,
+    ticketId: null,
+    ticketDraft: { type: 'other' },
     cartToken: null,
     cartCount: 0,
     auth: { returnTo: '/welcome', challenge: null },
@@ -153,6 +171,10 @@ export function reducer(state: AppState, action: Action): AppState {
       };
     case 'openBooking':
       return { ...state, route: '/appointments/detail', bookingId: action.bookingId };
+    case 'openTicket':
+      return { ...state, route: '/support/detail', ticketId: action.ticketId };
+    case 'newTicket':
+      return { ...state, route: '/support/new', ticketDraft: action.draft };
     case 'cart':
       return { ...state, cartToken: action.cartToken, cartCount: action.count };
     case 'requireSignIn':

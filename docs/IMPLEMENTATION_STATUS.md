@@ -11,11 +11,28 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 | 4     | Services, staff, availability, booking holds                 | Merged (PR #5)                        |
 | 5     | Ledger, refunds, payouts, reconciliation (mock PSP)          | Merged (PR #6); real PSP needs D3, D5 |
 | 6     | Fulfillment, reviews, support, notifications, dashboards     | Merged (PR #7); D7, D12, D14 assumed  |
-| 7     | RTL/accessibility, hardening, backups, observability, pilot  | In review; pilot waits on decisions   |
+| 7     | RTL/accessibility, hardening, backups, observability, pilot  | Merged (PR #8); pilot not started     |
+
+## Phase 8: Complete application functionality
+
+Founder decisions: [ADR-0018](adr/0018-founder-decisions-2026-11-28.md). Phase 8 ships as slices. Each slice is its own PR, merged once CI passes.
+
+### 8.1 Customer app after-sales, branding, decisions record
+
+- **Customer app:**
+  - The order screen gains tracking, cancel before processing (full refund), returns (choose quantities and a reason), returns history, reviews of delivered items, and "Get help".
+  - Appointments: a review after completion, and "Get help".
+  - New screens: Help and support (list, new request prefilled from an order or appointment, conversation with replies) and Notifications (marked read on open).
+  - The account screen links to both, with an unread count.
+- **Branding (D1):** "JAYS" is set once in `packages/i18n/src/brand.ts`. Web titles, top bars, the customer app and the admin authenticator issuer follow it. Colors stay in `@jays/ui`.
+- **ADR-0018:** records D1–D15, separating approved technical work from proposed commercial and legal terms.
+- **Status:** phase 7 is marked merged.
+- **Screenshots:** [`docs/screenshots/phase-8/`](screenshots/phase-8/) shows the customer app (phone size, web build) in English and Arabic. The orders and the ticket come from the API, paid through the mock provider.
+- **Checks:** format, lint, typecheck and OpenAPI unchanged. 230 unit tests and 160 integration tests pass.
 
 ## Phase 7: Hardening, observability, backups and staging
 
-Date: 2026-11-28. Branch: `claude/project-thread-qyds1l`. Decision: [ADR-0017](adr/0017-hardening-observability-backups.md). Hosting, alerting destination, backup storage and pilot scope are not decided, so staging is ready to deploy but no pilot was started.
+Date: 2026-11-28. Branch: `claude/project-thread-qyds1l`. Merged in PR #8. Decision: [ADR-0017](adr/0017-hardening-observability-backups.md). Hosting, alerting destination, backup storage and pilot scope are not decided, so staging is ready to deploy but no pilot was started.
 
 ### Delivered
 

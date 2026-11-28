@@ -28,6 +28,14 @@ export function errorKey(error: unknown): { key: MessageKey; seconds: number } {
     CANCEL_TOO_LATE: 'error.cancelTooLate',
     RESCHEDULE_NOT_ALLOWED: 'error.rescheduleNotAllowed',
     OUTSIDE_BOOKING_WINDOW: 'error.outsideWindow',
+    NOT_REFUNDABLE: 'error.notRefundable',
+    RETURN_OPEN: 'error.returnOpen',
+    RETURN_WINDOW_CLOSED: 'error.returnWindowClosed',
+    RETURN_EXCEEDS_PURCHASE: 'error.returnExceedsPurchase',
+    ALREADY_REVIEWED: 'error.alreadyReviewed',
+    NOT_REVIEWABLE: 'error.notReviewable',
+    INVALID_TRANSITION: 'care.changed',
+    VERSION_CONFLICT: 'care.changed',
   };
   return { key: map[error.code] ?? 'common.error', seconds };
 }

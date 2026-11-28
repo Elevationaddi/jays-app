@@ -1,3 +1,4 @@
+import { BRAND } from '@jays/i18n';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import type { AdminListItem, AdminSession, AdminView, AuditLogItem } from '@jays/contracts';
 import type { Db } from '@jays/db';
@@ -30,7 +31,7 @@ import { ADMIN_INVITE_TTL_SECONDS, LIMITS } from '../auth/policy.js';
 import { refreshFailure, type SessionStore } from '../auth/sessions.js';
 import { generateTotpSecret, otpauthUri, verifyTotp } from '../auth/totp.js';
 
-const TOTP_ISSUER = 'Marketplace Admin';
+const TOTP_ISSUER = BRAND.adminIssuer;
 
 const invalidCredentials = () =>
   new ApiError(

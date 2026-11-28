@@ -3,6 +3,7 @@ import { addDays, localDateOf } from '@jays/domain';
 import { colors } from '@jays/ui';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ReviewForm } from '../components/AfterSales';
 import { Chips, cardStyles as s } from '../components/Picker';
 import { Tabs } from '../components/Tabs';
 import { Banner, Body, Button, Screen, Title } from '../components/ui';
@@ -96,6 +97,8 @@ export function AppointmentScreen() {
   const [date, setDate] = useState<string | null>(null);
   const [slots, setSlots] = useState<Availability | 'loading' | null>(null);
   const [slot, setSlot] = useState<string | null>(null);
+  /** Whether a completed appointment can still be reviewed (one review per appointment, T10). */
+  const [canReview, setCanReview] = useState(false);
 
   const load = useCallback(async () => {
     if (!state.bookingId) return;
@@ -113,6 +116,24 @@ export function AppointmentScreen() {
     }
     void load();
   }, [load, state.session]);
+
+  const completedId =
+    typeof booking === 'object' && booking.status === 'completed' ? booking.id : null;
+  useEffect(() => {
+    if (!completedId) return setCanReview(false);
+    let cancelled = false;
+    api
+      .myReviews({ limit: 100 })
+      .then((p) => {
+        if (!cancelled) setCanReview(!p.items.some((r) => r.bookingId === completedId));
+      })
+      .catch(() => {
+        if (!cancelled) setCanReview(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [api, completedId]);
 
   useEffect(() => {
     if (!moving || typeof booking !== 'object' || !date) return;
@@ -292,6 +313,17 @@ export function AppointmentScreen() {
         )
       ) : null}
 
+      {canReview ? (
+        <ReviewForm
+          title={b.service.title[state.locale]}
+          onSubmit={async (rating, body) => {
+            await api.createReview({ bookingId: b.id, rating, ...(body ? { body } : {}) });
+            setCanReview(false);
+            setNotice(tr('care.reviewed'));
+          }}
+        />
+      ) : null}
+
       {b.cancelRefundFils !== null ? (
         <View style={s.card}>
           <Body muted>
@@ -305,6 +337,11 @@ export function AppointmentScreen() {
           />
         </View>
       ) : null}
+      <Button
+        variant="ghost"
+        label={tr('care.help')}
+        onPress={() => dispatch({ type: 'newTicket', draft: { type: 'booking', bookingId: b.id } })}
+      />
     </Screen>
   );
 }
