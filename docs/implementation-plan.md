@@ -123,8 +123,8 @@ Acceptance coverage: T07, T08, T09, T13 (services), T14 and T06 (mock, bookings)
 
 - PSP adapter for the founder-chosen provider in sandbox, raw-body webhook signature verification, replay protection.
 - Balanced immutable ledger, effective-dated fee rules, refunds (partial, two-approver threshold), payout eligibility and holds, daily reconciliation job.
-- Blocked until the founder picks the PSP and merchant-of-record model (ADR-0007).
-- Tests: T06 (real sandbox), T09, T15, T16.
+- Built against the mock PSP (ADR-0015); only the real-provider adapter waits for the founder's PSP and merchant-of-record decisions (ADR-0007 D3, D5).
+- Tests: T06 (mock now, real sandbox later), T09, T13 (fees), T15, T16.
 
 ### Phase 6: Fulfillment, reviews, support, notifications, dashboards, exports
 
@@ -138,4 +138,4 @@ Acceptance coverage: T07, T08, T09, T13 (services), T14 and T06 (mock, bookings)
 
 ## Founder decisions that block later phases
 
-See [ADR-0007](adr/0007-founder-decisions-and-mvp-defaults.md). None block phases 0–4 (phase 4 assumptions are listed in ADR-0014); the PSP and merchant-of-record decisions block phase 5, and all of them block production.
+See [ADR-0007](adr/0007-founder-decisions-and-mvp-defaults.md). None block phases 0–4 (phase 4 assumptions are listed in ADR-0014); the PSP and merchant-of-record decisions block the real-provider part of phase 5 (assumptions in ADR-0015), and all of them block production.

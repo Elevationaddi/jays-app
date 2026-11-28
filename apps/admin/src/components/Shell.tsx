@@ -14,7 +14,14 @@ export function Shell({
   locale: Locale;
   admin: AdminView;
   current:
-    'dashboard' | 'businesses' | 'products' | 'services' | 'bookings' | 'content' | 'security';
+    | 'dashboard'
+    | 'businesses'
+    | 'products'
+    | 'services'
+    | 'bookings'
+    | 'finance'
+    | 'content'
+    | 'security';
   children: ReactNode;
 }) {
   const items = [
@@ -47,6 +54,12 @@ export function Shell({
       href: '/admin/bookings',
       label: t(locale, 'admin.nav.bookings'),
       show: admin.capabilities.includes('bookings.view'),
+    },
+    {
+      key: 'finance',
+      href: '/admin/finance',
+      label: t(locale, 'admin.nav.finance'),
+      show: admin.capabilities.includes('finance.view'),
     },
     {
       key: 'content',

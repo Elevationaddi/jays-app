@@ -14,6 +14,12 @@ describe('admin console helpers', () => {
     expect(errorMessageKey('SLUG_TAKEN')).toBe('error.slugTaken');
   });
 
+  it('explains finance refusals', () => {
+    expect(errorMessageKey('SAME_APPROVER')).toBe('error.sameApprover');
+    expect(errorMessageKey('REFUND_EXCEEDS_CAPTURE')).toBe('error.refundExceeds');
+    expect(errorMessageKey('ALREADY_RECONCILED')).toBe('error.alreadyReconciled');
+  });
+
   it('refuses off-site return paths', () => {
     expect(safeReturnTo('//evil.example', '/admin/dashboard')).toBe('/admin/dashboard');
     expect(safeReturnTo('/admin/security')).toBe('/admin/security');

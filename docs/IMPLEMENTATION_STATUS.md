@@ -2,16 +2,87 @@
 
 Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/README.md).
 
-| Phase | Scope                                                        | Status                              |
-| ----- | ------------------------------------------------------------ | ----------------------------------- |
-| 0     | Monorepo, local Docker, env schema, CI, ADRs                 | Merged (PR #1)                      |
-| 1     | Identity, roles, memberships, bilingual gateway              | Merged (PR #2)                      |
-| 2     | Merchant onboarding, approval, categories, media, storefront | Merged (PR #3)                      |
-| 3     | Catalog, inventory, cart, multi-seller checkout (mock PSP)   | Merged (PR #4)                      |
-| 4     | Services, staff, availability, booking holds                 | In review                           |
-| 5     | Real PSP sandbox, ledger, refunds, payouts, reconciliation   | Blocked on founder decisions D3, D5 |
-| 6     | Fulfillment, reviews, support, notifications, dashboards     | Not started                         |
-| 7     | RTL/accessibility, hardening, backups, observability, pilot  | Not started                         |
+| Phase | Scope                                                        | Status                           |
+| ----- | ------------------------------------------------------------ | -------------------------------- |
+| 0     | Monorepo, local Docker, env schema, CI, ADRs                 | Merged (PR #1)                   |
+| 1     | Identity, roles, memberships, bilingual gateway              | Merged (PR #2)                   |
+| 2     | Merchant onboarding, approval, categories, media, storefront | Merged (PR #3)                   |
+| 3     | Catalog, inventory, cart, multi-seller checkout (mock PSP)   | Merged (PR #4)                   |
+| 4     | Services, staff, availability, booking holds                 | Merged (PR #5)                   |
+| 5     | Ledger, refunds, payouts, reconciliation (mock PSP)          | In review; real PSP needs D3, D5 |
+| 6     | Fulfillment, reviews, support, notifications, dashboards     | Not started                      |
+| 7     | RTL/accessibility, hardening, backups, observability, pilot  | Not started                      |
+
+## Phase 5: Ledger, refunds, payouts and reconciliation (mock PSP)
+
+Date: 2026-11-28. Branch: `claude/project-thread-qyds1l`. Decision: [ADR-0015](adr/0015-ledger-refunds-payouts-and-reconciliation.md). The real-provider adapter is still open, because the PSP and the merchant-of-record model are founder decisions (D3, D5). Everything else in the phase is built against the mock provider.
+
+### Delivered
+
+- Migration `0006_finance.sql`:
+  - Effective-dated fee rules and finance settings. Fee rules are append-only.
+  - Merchant earnings, which keep the commission rate captured at payment.
+  - A double-entry ledger. It is append-only, idempotent per source event, and a deferred trigger refuses unbalanced transactions.
+  - Refund requests, with a CHECK constraint that the approver is not the requester.
+  - Disputes (one open per earning) and payout holds (one active per business).
+  - Payouts, and reconciliation runs and items.
+  - Refunds can never exceed the captured amount (trigger `refunds_within_capture`).
+  - SQL function `mark_earnings_eligible`, shared by the API and the worker.
+- Domain package: fee rule selection, commission and net, proportional refund allocation, ledger postings, the payout amount, the second-approval rule, and payment status after refunds.
+- Payments: captures, late payments, refunds and payouts post to the ledger. Several partial refunds are allowed. The provider interface gains `createPayout` and `listRecords`. The mock provider records refunds and payouts and has test seams for dropped webhooks, failed payouts and tampered amounts.
+- API (126 paths, up from 106):
+  - Admin (`/admin/finance`): overview, fee rules, settings, payments, refund requests and decisions, earnings, disputes, holds, payouts and payout runs, reconciliation runs and finding resolution.
+  - Business: `/businesses/:id/finance/{summary,earnings,ledger,payouts}`.
+- Worker: marks earnings eligible every 10 minutes. The API reconciles the previous day hourly.
+- Admin console Finance section with seven tabs:
+  - **Overview:** balances, items needing attention, last reconciliation, versioned settings and commission rules.
+  - **Payments:** payment detail with per-seller refunds.
+  - **Refunds:** approvals by a second admin.
+  - **Payouts:** holds and payout runs.
+  - **Earnings:** opening disputes.
+  - **Disputes**
+  - **Reconciliation**
+- Business portal Finance tab: balance owed, ready for payout, pending, on its way, paid out and commission, plus earnings, payouts and a statement. Owners and finance members see it.
+- Seed data: placeholder 10 % platform commission for local use only, labelled as not founder-approved.
+- Screenshots: [`docs/screenshots/phase-5/`](screenshots/phase-5/) (14 screens, English and Arabic RTL). They come from real bookings paid through the mock provider. To make some earnings eligible, the demo moved those appointments' completion ten days into the past in the local database.
+
+### Verified locally (2026-11-28)
+
+| Command                                | Result                                                            |
+| -------------------------------------- | ----------------------------------------------------------------- |
+| `pnpm format:check`                    | pass                                                              |
+| `pnpm lint`                            | pass                                                              |
+| `pnpm typecheck`                       | pass                                                              |
+| `pnpm test`                            | pass, 211 unit tests                                              |
+| `pnpm build`                           | pass (packages, API, worker, both Next.js apps)                   |
+| `pnpm openapi`                         | 126 paths; committed with the code                                |
+| `pnpm db:migrate` on an empty database | applied 0001 to 0006                                              |
+| `pnpm test:integration`                | pass, 137 tests (22 database, 115 API against Postgres and Redis) |
+
+Acceptance coverage:
+
+- **T06:** a capture posts one balanced transaction even when the webhook is duplicated. Multi-seller orders split into one earning per seller, with commission on goods only. The database refuses unbalanced, edited or deleted ledger rows, and a second posting for the same source event.
+- **T09:**
+  - Refunds at or below the threshold go through at once, and several partial refunds are allowed.
+  - More than was paid is refused by the API (422) and by a database trigger.
+  - An open dispute keeps its earning out of payouts. A lost dispute after payout leaves a negative balance, which the next payout recovers.
+- **T13:** an earning keeps the commission rate in force at payment after the rule changes. Rules and settings are versioned and cannot take effect in the past.
+- **T15:** a lost payment webhook and a lost refund webhook are recovered by reconciliation through the normal webhook path, exactly once. A different amount is flagged and left unchanged until finance marks it handled. A day can be reconciled only once, and only after it has ended.
+- **T16:** a refund above the threshold waits for a second admin. The requester cannot approve it, in the API (403) or in the database.
+- Also covered: payouts settle by webhook, failed payouts return earnings and reverse the ledger, holds and suspensions skip a business, and a business sees only its own finance data. Support can refund but cannot manage rules or payouts.
+
+### Known limitations and follow-ups
+
+- No real PSP adapter yet (D5), and the merchant-of-record model is assumed (D3). Commission rates (D2), VAT on commission (D4) and payout timing (D6) are placeholders. See the ADR-0015 assumptions.
+- Payout destinations (bank details) are not collected. The provider is assumed to hold them.
+- Payouts run when an admin starts them, not on a schedule.
+- Shop earnings become eligible only after delivery, which phase 6 records.
+- Admins enter a business id to place a hold. A business picker would be friendlier.
+- Arabic copy for this phase needs review by a native speaker before the pilot.
+
+### Rollback
+
+`0006_finance.sql` adds tables and functions, and a few nullable columns and widened checks on existing tables. Rolling back means deploying the previous code. Do not delete ledger rows: they are append-only by design.
 
 ## Phase 4: Services, staff, availability and booking
 

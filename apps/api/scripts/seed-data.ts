@@ -649,3 +649,9 @@ export const SEED_VENUES: SeedVenue[] = [
     ],
   },
 ];
+
+/** Local-only placeholder commission (ADR-0015, D2). Real rates are a founder decision. */
+export const SEED_FEE_RULES: { mode: 'shop' | 'services'; commissionBps: number }[] = [
+  { mode: 'shop', commissionBps: 1_000 },
+  { mode: 'services', commissionBps: 1_000 },
+];

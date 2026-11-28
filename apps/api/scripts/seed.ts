@@ -15,6 +15,7 @@ import {
   SEED_BUSINESSES,
   SEED_CUSTOMER_ADDRESS,
   SEED_DELIVERY_ZONES,
+  SEED_FEE_RULES,
   SEED_PASSWORD,
   SEED_PRODUCTS,
   SEED_SUBCATEGORIES,
@@ -584,6 +585,28 @@ try {
           building: a.building,
           unit: a.unit,
           is_default: true,
+        })
+        .execute();
+    }
+    // Placeholder platform commission so local flows show a commission. Not founder-approved
+    // rates (ADR-0015, decision D2); production starts with no rule, so no commission.
+    for (const rule of SEED_FEE_RULES) {
+      const existing = await trx
+        .selectFrom('fee_rules')
+        .select('id')
+        .where('mode', '=', rule.mode)
+        .where('business_id', 'is', null)
+        .executeTakeFirst();
+      if (existing) continue;
+      await trx
+        .insertInto('fee_rules')
+        .values({
+          mode: rule.mode,
+          business_id: null,
+          commission_bps: rule.commissionBps,
+          effective_at: new Date('2026-01-01T00:00:00.000Z'),
+          reason: 'Local placeholder rate, not founder-approved (ADR-0015)',
+          created_by: adminIds.get('finance') ?? null,
         })
         .execute();
     }
