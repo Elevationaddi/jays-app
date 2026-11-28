@@ -54,6 +54,8 @@ jobs:
         env:
           DEMO_CREDENTIALS_FILE: ${{ runner.temp }}/demo-credentials.json
         run: pnpm --filter @jays/api demo:load
+      - name: Publish the draft legal documents (shown with the "draft, not reviewed" notice, ADR-0028)
+        run: pnpm --filter @jays/api legal:import --publish
       - name: Encrypt the credentials file
         env:
           PASSPHRASE: ${{ secrets.DEMO_CREDENTIALS_PASSPHRASE }}

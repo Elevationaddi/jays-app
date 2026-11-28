@@ -33,6 +33,8 @@ Numbers are from a full local run on 28 November 2026. Orders and bookings are d
 | Notifications           | 743 notification events, processed in the loader's own process by an in-memory notifier. Nothing is emailed or pushed.                                                                                                                                 |
 | Admins (6)              | One per role: super admin, operations, compliance, catalogue, finance and support. Each needs an authenticator app (TOTP).                                                                                                                             |
 
+**Legal documents:** the workflow then imports the drafts in `docs/legal/drafts` and publishes them on staging, so sign-up and the legal pages work. Every app shows them with the notice that they are drafts awaiting legal review (founder question 4, ADR-0028). They are never presented as approved, and production refuses to publish them before the review.
+
 Analytics pages read from these orders, bookings and ledger entries, so they show realistic numbers without any separate fake figures.
 
 ## How it is made
