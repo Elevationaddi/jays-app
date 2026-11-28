@@ -24,8 +24,17 @@ export const PSP_PROVIDERS = ['mock', 'stripe'] as const;
 export const STRIPE_TEST_SECRET_KEY = /^(sk|rk)_test_[A-Za-z0-9]{10,}$/;
 export const STRIPE_TEST_PUBLISHABLE_KEY = /^pk_test_[A-Za-z0-9]{10,}$/;
 
-/** Email/SMS providers with an adapter. Only the mock exists until a provider is chosen (ADR-0007). */
-export const NOTIFY_PROVIDERS = ['mock'] as const;
+/**
+ * Email providers with an adapter (ADR-0031). `resend` sends email through Resend's free plan.
+ * There is no SMS provider (ADR-0024): with `resend`, sign-up and recovery by phone are refused.
+ */
+export const NOTIFY_PROVIDERS = ['mock', 'resend'] as const;
+
+/**
+ * Push providers (ADR-0031). `none` sends no push; `mock` records pushes locally and production
+ * refuses it; `fcm` uses Firebase Cloud Messaging (HTTP v1) on the no-cost Spark plan.
+ */
+export const PUSH_PROVIDERS = ['none', 'mock', 'fcm'] as const;
 
 /**
  * Object storage adapters. `local` keeps files on disk and serves HMAC-signed URLs from the API
@@ -113,6 +122,14 @@ const apiShape = {
   /** Key material for encrypting admin TOTP secrets at rest (HKDF-derived AES-256-GCM key). */
   MFA_ENCRYPTION_KEY: z.string().min(32, 'must be at least 32 characters'),
   NOTIFY_PROVIDER: z.enum(NOTIFY_PROVIDERS).default('mock'),
+  /** Sender for Resend, such as `JAYS <no-reply@mail.example.com>` on a verified domain. */
+  EMAIL_FROM: z.string().min(3).max(200).optional(),
+  /** Resend Free allows 100 emails a day and 3,000 a month; never set these above the plan. */
+  EMAIL_DAILY_LIMIT: z.coerce.number().int().min(1).max(100_000).default(100),
+  EMAIL_MONTHLY_LIMIT: z.coerce.number().int().min(1).max(3_000_000).default(3000),
+  PUSH_PROVIDER: z.enum(PUSH_PROVIDERS).default('none'),
+  /** The Firebase service account JSON (one line). Only the API project holds it. */
+  FCM_SERVICE_ACCOUNT_JSON: z.string().min(2).optional(),
   /** Base URL of the admin console, used in invite links. */
   ADMIN_WEB_URL: z.url().default('http://localhost:3002'),
   /** Number of reverse proxies in front of the API, so client IPs for rate limits are correct. */
@@ -172,6 +189,12 @@ function productionIssues(env: Record<string, unknown>, shape: z.ZodRawShape): I
       message: 'mock malware scanner is not allowed in production',
     });
   }
+  if (env['PUSH_PROVIDER'] === 'mock') {
+    issues.push({
+      path: 'PUSH_PROVIDER',
+      message: 'mock push provider is not allowed in production',
+    });
+  }
   if (env['DELIVERY_PARTNER'] === 'mock') {
     issues.push({
       path: 'DELIVERY_PARTNER',
@@ -215,6 +238,32 @@ function productionIssues(env: Record<string, unknown>, shape: z.ZodRawShape): I
   return issues;
 }
 
+/** The fields of a Firebase service account that FCM needs; null when the value is not one. */
+export function fcmServiceAccount(
+  value: unknown,
+): { projectId: string; clientEmail: string; privateKey: string } | null {
+  if (typeof value !== 'string') return null;
+  try {
+    const parsed = JSON.parse(value) as Record<string, unknown>;
+    const projectId = parsed['project_id'];
+    const clientEmail = parsed['client_email'];
+    const privateKey = parsed['private_key'];
+    if (
+      typeof projectId !== 'string' ||
+      !/^[a-z0-9-]{4,40}$/.test(projectId) ||
+      typeof clientEmail !== 'string' ||
+      !clientEmail.includes('@') ||
+      typeof privateKey !== 'string' ||
+      !privateKey.includes('PRIVATE KEY')
+    ) {
+      return null;
+    }
+    return { projectId, clientEmail, privateKey };
+  } catch {
+    return null;
+  }
+}
+
 function withProductionGuards<T extends z.ZodRawShape>(shape: T) {
   return z.object(shape).superRefine((env, ctx) => {
     for (const issue of productionIssues(env as Record<string, unknown>, shape)) {
@@ -226,6 +275,24 @@ function withProductionGuards<T extends z.ZodRawShape>(shape: T) {
         code: 'custom',
         path: ['PSP_API_KEY'],
         message: 'is required for a real payment provider',
+      });
+    }
+    if (record['NOTIFY_PROVIDER'] === 'resend') {
+      for (const key of ['EMAIL_KEY', 'EMAIL_FROM'] as const) {
+        if (!record[key]) {
+          ctx.addIssue({ code: 'custom', path: [key], message: 'is required for Resend' });
+        }
+      }
+    }
+    if (
+      record['PUSH_PROVIDER'] === 'fcm' &&
+      !fcmServiceAccount(record['FCM_SERVICE_ACCOUNT_JSON'])
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['FCM_SERVICE_ACCOUNT_JSON'],
+        message:
+          'must be a Firebase service account JSON with project_id, client_email and private_key',
       });
     }
     // Live payments are not approved (founder decision D5): only Stripe test-mode keys start.

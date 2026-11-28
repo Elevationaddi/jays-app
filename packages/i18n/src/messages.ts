@@ -1836,6 +1836,7 @@ const en = {
   'finance.payoutAccount.privacy':
     'Stripe collects your identity and bank details on its own site. JAYS never sees or stores them. Test mode only: no real money moves.',
   'error.businessNotApproved': 'Payouts can be set up once your business is approved.',
+  'auth.error.smsUnavailable': 'Text messages are not available. Use an email address instead.',
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -3630,6 +3631,7 @@ const ar: Record<MessageKey, string> = {
   'finance.payoutAccount.privacy':
     'يجمع Stripe بيانات هويتك وحسابك البنكي على موقعه. لا تطّلع JAYS عليها ولا تحفظها. وضع تجريبي فقط: لا تتحرك أموال حقيقية.',
   'error.businessNotApproved': 'يمكن إعداد الدفعات بعد اعتماد نشاطك التجاري.',
+  'auth.error.smsUnavailable': 'الرسائل النصية غير متاحة. استخدم بريدًا إلكترونيًا بدلًا من ذلك.',
 };
 
 export const catalogs: Record<Locale, Record<MessageKey, string>> = { en, ar };

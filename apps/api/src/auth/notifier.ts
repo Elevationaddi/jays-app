@@ -16,10 +16,16 @@ export interface OutboundMessage {
   template: MessageTemplate;
   locale: Locale;
   params: Record<string, string>;
+  /** Makes a retried send a no-op at the provider (one per outbox event, user and channel). */
+  idempotencyKey?: string;
 }
 
-/** Email/SMS delivery adapter. A real provider replaces the mock once chosen (ADR-0007). */
+/**
+ * Email/SMS delivery adapter (ADR-0031): the local mock, or Resend for email. There is no SMS
+ * provider (ADR-0024), so callers check `supports('sms')` before offering text messages.
+ */
 export interface Notifier {
+  supports(channel: OutboundMessage['channel']): boolean;
   send(message: OutboundMessage): Promise<void>;
 }
 
@@ -33,7 +39,14 @@ export class MockNotifier implements Notifier {
   readonly sent: OutboundMessage[] = [];
   private failures = 0;
 
+  /** Test seam: pretend the provider has no SMS, as with Resend. */
+  sms = true;
+
   constructor(private readonly logToConsole: boolean) {}
+
+  supports(channel: OutboundMessage['channel']): boolean {
+    return channel === 'email' || this.sms;
+  }
 
   /** Test seam (T12): the next `count` sends throw, as a provider outage would. */
   failNext(count: number) {

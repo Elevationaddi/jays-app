@@ -64,6 +64,11 @@ import {
 import { PaymentsService } from './payments/payments.service.js';
 import { PAYMENT_PROVIDER, type PaymentProvider } from './payments/provider.js';
 import { StripePaymentProvider } from './payments/stripe-provider.js';
+import { EMAIL_BUDGET, EmailBudget } from './notify/email-budget.js';
+import { PushDevicesController, PushDevicesService } from './notify/push-devices.js';
+import { FcmPushSender, MockPushSender, PUSH_SENDER, type PushSender } from './notify/push.js';
+import { ResendNotifier } from './notify/resend-notifier.js';
+import { fcmServiceAccount } from '@jays/config';
 import { AdminFinanceController } from './finance/admin-finance.controller.js';
 import { AdminFinanceService } from './finance/admin-finance.service.js';
 import { BusinessFinanceController } from './finance/business-finance.controller.js';
@@ -151,6 +156,8 @@ export interface AppModuleOptions {
   clock?: Clock;
   /** Test seam: capture outbound messages. */
   notifier?: Notifier;
+  /** Test seam: replace the push sender (null sends no push). */
+  pushSender?: PushSender | null;
   /** Test seam: replace the Redis rate limiter. */
   rateLimiter?: RateLimiter;
   /** Redis key namespace for rate limits; tests use a unique one per run. */
@@ -181,6 +188,7 @@ export class AppModule {
     deliveryPartner,
     paymentProvider,
     webhookSink,
+    pushSender,
   }: AppModuleOptions): DynamicModule {
     const theClock = clock ?? systemClock;
     const provider =
@@ -262,6 +270,7 @@ export class AppModule {
         AdminAftercareController,
         WebhooksController,
         PaymentConfigController,
+        PushDevicesController,
         // The mock provider's hosted payment step. Production cannot run the mock (ADR-0006).
         ...(env.PSP_PROVIDER === 'mock' ? [MockPspController] : []),
         // Signed URLs of the local storage adapter are served by the API itself.
@@ -279,7 +288,37 @@ export class AppModule {
         { provide: DB, useFactory: (infra: Infrastructure) => infra.db, inject: [Infrastructure] },
         { provide: CLOCK, useValue: theClock },
         { provide: PAYMENT_PROVIDER, useValue: provider },
-        { provide: NOTIFIER, useValue: notifier ?? new MockNotifier(env.APP_ENV !== 'test') },
+        {
+          provide: EMAIL_BUDGET,
+          useFactory: (infra: Infrastructure) =>
+            new EmailBudget(infra.db, theClock, env.EMAIL_DAILY_LIMIT, env.EMAIL_MONTHLY_LIMIT),
+          inject: [Infrastructure],
+        },
+        {
+          provide: NOTIFIER,
+          useFactory: (budget: EmailBudget) =>
+            notifier ??
+            (env.NOTIFY_PROVIDER === 'resend'
+              ? new ResendNotifier(env.EMAIL_KEY as string, env.EMAIL_FROM as string, budget)
+              : new MockNotifier(env.APP_ENV !== 'test')),
+          inject: [EMAIL_BUDGET],
+        },
+        {
+          provide: PUSH_SENDER,
+          useValue:
+            pushSender !== undefined
+              ? pushSender
+              : env.PUSH_PROVIDER === 'fcm'
+                ? new FcmPushSender(
+                    fcmServiceAccount(env.FCM_SERVICE_ACCOUNT_JSON) as NonNullable<
+                      ReturnType<typeof fcmServiceAccount>
+                    >,
+                  )
+                : env.PUSH_PROVIDER === 'mock'
+                  ? new MockPushSender()
+                  : null,
+        },
+        PushDevicesService,
         {
           provide: RATE_LIMITER,
           useFactory: (infra: Infrastructure) =>

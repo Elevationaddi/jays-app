@@ -104,3 +104,31 @@ export const dataExportSchema = z.object({
   tickets: z.array(z.record(z.string(), z.unknown())),
 });
 export type DataExport = z.infer<typeof dataExportSchema>;
+
+/**
+ * A device that receives push notifications (ADR-0031). The token comes from Firebase Cloud
+ * Messaging on the device. Registering a token another account used moves it to this account.
+ */
+export const registerPushDeviceRequestSchema = z.object({
+  token: z
+    .string()
+    .min(20)
+    .max(4096)
+    .regex(/^[A-Za-z0-9_:\-.]+$/, 'not a push token'),
+  platform: z.enum(['ios', 'android', 'web']),
+});
+export type RegisterPushDeviceRequest = z.infer<typeof registerPushDeviceRequestSchema>;
+
+export const unregisterPushDeviceRequestSchema = registerPushDeviceRequestSchema.pick({
+  token: true,
+});
+export type UnregisterPushDeviceRequest = z.infer<typeof unregisterPushDeviceRequestSchema>;
+
+export const pushDeviceSchema = z.object({
+  id: z.uuid(),
+  platform: z.enum(['ios', 'android', 'web']),
+  createdAt: isoDateTime,
+  lastSeenAt: isoDateTime,
+});
+export type PushDeviceView = z.infer<typeof pushDeviceSchema>;
+export const pushDeviceListSchema = z.object({ items: z.array(pushDeviceSchema) });

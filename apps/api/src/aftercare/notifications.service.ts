@@ -17,6 +17,8 @@ import {
 } from '@jays/domain';
 import { sql } from 'kysely';
 import type { Notifier } from '../auth/notifier.js';
+import { EmailBudgetExceededError } from '../notify/email-budget.js';
+import { PUSH_SENDER, type PushSender } from '../notify/push.js';
 import { writeAudit } from '../common/audit.js';
 import { CLOCK, type Clock } from '../common/clock.js';
 import { ApiError } from '../common/error.filter.js';
@@ -32,6 +34,8 @@ interface Recipient {
   userId: string;
   locale: Locale;
   email: string | null;
+  /** True when the person has push on (D14); devices are looked up at send time. */
+  push: boolean;
   link: string | null;
 }
 
@@ -66,6 +70,7 @@ export class NotificationsService {
     @Inject(DB) private readonly db: Db,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(NOTIFIER) private readonly notifier: Notifier,
+    @Inject(PUSH_SENDER) private readonly push: PushSender | null,
   ) {}
 
   /**
@@ -114,6 +119,22 @@ export class NotificationsService {
           .where('id', '=', row.id)
           .execute();
       } catch (error) {
+        if (error instanceof EmailBudgetExceededError) {
+          // Over the email plan's allowance: not a failure. Keep the event for the next window;
+          // what was already delivered (in-app, push, some emails) is not sent again.
+          this.log.warn({ outboxId: row.id }, 'email allowance reached; retrying later');
+          await this.db
+            .updateTable('outbox')
+            .set({
+              status: 'pending',
+              attempts: row.attempts - 1,
+              available_at: error.retryAt,
+              last_error: 'email allowance reached',
+            })
+            .where('id', '=', row.id)
+            .execute();
+          continue;
+        }
         const failed = row.attempts >= NOTIFICATION_MAX_ATTEMPTS;
         this.log.warn({ err: error, outboxId: row.id, attempts: row.attempts }, 'delivery failed');
         await this.db
@@ -151,6 +172,8 @@ export class NotificationsService {
         })
         .onConflict((oc) => oc.columns(['outbox_id', 'user_id']).doNothing())
         .execute();
+      // Push before email, so a full email allowance never holds push back.
+      if (r.push) await this.sendPush(outboxId, r, title, body);
       if (!r.email) continue;
       const sent = await this.db
         .selectFrom('notification_deliveries')
@@ -166,6 +189,7 @@ export class NotificationsService {
         template: 'notification',
         locale: r.locale,
         params: { title, body },
+        idempotencyKey: `notify-${outboxId}-${r.userId}-email`,
       });
       await this.db
         .insertInto('notification_deliveries')
@@ -173,6 +197,45 @@ export class NotificationsService {
         .onConflict((oc) => oc.columns(['outbox_id', 'user_id', 'channel']).doNothing())
         .execute();
     }
+  }
+
+  /**
+   * Sends one push per active device, once per event and person. Tokens FCM reports as gone are
+   * revoked. A provider outage throws, so the event is retried (devices sent to before the
+   * outage may get the push twice; push carries no money or security action).
+   */
+  private async sendPush(outboxId: string, r: Recipient, title: string, body: string) {
+    if (!this.push) return;
+    const done = await this.db
+      .selectFrom('notification_deliveries')
+      .select('id')
+      .where('outbox_id', '=', outboxId)
+      .where('user_id', '=', r.userId)
+      .where('channel', '=', 'push')
+      .executeTakeFirst();
+    if (done) return;
+    const devices = await this.db
+      .selectFrom('push_devices')
+      .select(['id', 'token'])
+      .where('user_id', '=', r.userId)
+      .where('revoked_at', 'is', null)
+      .execute();
+    if (devices.length === 0) return;
+    for (const d of devices) {
+      const result = await this.push.send({ token: d.token, title, body, link: r.link });
+      if (result === 'invalid') {
+        await this.db
+          .updateTable('push_devices')
+          .set({ revoked_at: this.clock.now(), revoke_reason: 'invalid' })
+          .where('id', '=', d.id)
+          .execute();
+      }
+    }
+    await this.db
+      .insertInto('notification_deliveries')
+      .values({ outbox_id: outboxId, user_id: r.userId, channel: 'push' })
+      .onConflict((oc) => oc.columns(['outbox_id', 'user_id', 'channel']).doNothing())
+      .execute();
   }
 
   /** Who hears about an event, and the values its template can use. */
@@ -380,7 +443,15 @@ export class NotificationsService {
     if (ids.length === 0) return [];
     const rows = await this.db
       .selectFrom('users')
-      .select(['id', 'locale', 'email', 'email_verified_at', 'status', 'notify_email'])
+      .select([
+        'id',
+        'locale',
+        'email',
+        'email_verified_at',
+        'status',
+        'notify_email',
+        'notify_push',
+      ])
       .where('id', 'in', ids)
       .execute();
     return rows
@@ -390,6 +461,7 @@ export class NotificationsService {
         locale: u.locale,
         // In-app always; email only to a verified address the person has not switched off (D14).
         email: u.email_verified_at && u.notify_email ? u.email : null,
+        push: u.notify_push,
         link,
       }));
   }

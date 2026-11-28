@@ -19,6 +19,7 @@ import { generateTotpSecret, totpAt } from '../auth/totp.js';
 import type { Clock } from '../common/clock.js';
 import { MockPaymentProvider, type WebhookDelivery } from '../payments/mock-provider.js';
 import type { PaymentProvider } from '../payments/provider.js';
+import { MockPushSender } from '../notify/push.js';
 import type { ApiEnv } from '../config.js';
 import { testEnv } from './test-env.js';
 
@@ -42,6 +43,8 @@ export interface Harness {
   db: Db;
   /** Directory of the local storage adapter for this run. */
   storageDir: string;
+  /** The mock push sender (Firebase Cloud Messaging is never called in tests). */
+  push: MockPushSender;
   /** The mock payment provider; its webhooks are captured in `webhooks` instead of being sent. */
   psp: MockPaymentProvider;
   webhooks: WebhookDelivery[];
@@ -102,6 +105,7 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
     ...options.env,
   });
   const notifier = new MockNotifier(false);
+  const push = new MockPushSender();
   const clock = new TestClock();
   const webhooks: WebhookDelivery[] = [];
   const psp = new MockPaymentProvider(env.PSP_WEBHOOK_SECRET, (d) => webhooks.push(d), clock);
@@ -110,6 +114,7 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
     notifier,
     clock,
     paymentProvider: options.paymentProvider?.(env, clock) ?? psp,
+    pushSender: push,
     rateLimitNamespace: `it-${process.pid}-${Date.now()}`,
   });
   await app.init();
@@ -120,6 +125,7 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
     app,
     http: (ip?: string) => withIp(request(server), ip ?? randomIp()),
     notifier,
+    push,
     clock,
     db,
     storageDir,
