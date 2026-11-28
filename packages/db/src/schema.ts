@@ -148,6 +148,9 @@ export interface BusinessesTable {
   suspended_at: Timestamp | null;
   suspension_reason: string | null;
   version: Generated<number>;
+  /** Migration 0016 (ADR-0029). */
+  return_window_days: Generated<number>;
+  return_policy_note: LocalizedOrNull;
 }
 
 export type MembershipStatus = 'invited' | 'active' | 'removed';
@@ -319,6 +322,7 @@ export interface CategoriesTable {
   updated_at: UpdatedAt;
   /** Switched off by an admin without archiving (migration 0009). */
   enabled: Generated<boolean>;
+  returnable: Generated<boolean>;
 }
 
 export interface BrandsTable {
@@ -431,6 +435,7 @@ export interface DeliveryZonesTable {
   max_days: number;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+  method: Generated<'standard' | 'express'>;
 }
 
 export interface CartsTable {
@@ -512,6 +517,8 @@ export interface MerchantOrdersTable extends Totals {
   carrier: string | null;
   tracking_number: string | null;
   tracking_url: string | null;
+  return_window_days: Generated<number | null>;
+  delivery_partner: Generated<'mock' | null>;
 }
 
 export interface OrderItemsTable {
@@ -530,6 +537,7 @@ export interface OrderItemsTable {
   tax_fils: number;
   snapshot: Json;
   created_at: CreatedAt;
+  returnable: Generated<boolean>;
 }
 
 export interface ReservationsTable {
@@ -1221,6 +1229,7 @@ export interface ReturnRequestsTable {
   refund_id: string | null;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+  faulty: Generated<boolean>;
 }
 
 export interface ReturnItemsTable {
@@ -1626,6 +1635,8 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'suspended_at',
     'suspension_reason',
     'version',
+    'return_window_days',
+    'return_policy_note',
   ],
   memberships: [
     'id',
@@ -1771,6 +1782,7 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'created_at',
     'updated_at',
     'enabled',
+    'returnable',
   ],
   brands: ['id', 'slug', 'name', 'status', 'created_by', 'created_at', 'updated_at'],
   tax_rates: ['id', 'tax_class', 'rate_bps', 'effective_at', 'created_at'],
@@ -1849,6 +1861,7 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'max_days',
     'created_at',
     'updated_at',
+    'method',
   ],
   carts: ['id', 'user_id', 'guest_token_hash', 'status', 'merged_into', 'created_at', 'updated_at'],
   cart_items: ['id', 'cart_id', 'variant_id', 'qty', 'price_seen_fils', 'created_at', 'updated_at'],
@@ -1909,6 +1922,8 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'carrier',
     'tracking_number',
     'tracking_url',
+    'return_window_days',
+    'delivery_partner',
   ],
   order_items: [
     'id',
@@ -1926,6 +1941,7 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'tax_fils',
     'snapshot',
     'created_at',
+    'returnable',
   ],
   reservations: [
     'id',
@@ -2294,6 +2310,7 @@ export const SCHEMA_COLUMNS: { [T in keyof Database]: readonly (keyof Database[T
     'refund_id',
     'created_at',
     'updated_at',
+    'faulty',
   ],
   return_items: ['id', 'return_request_id', 'order_item_id', 'qty', 'amount_fils'],
   reviews: [

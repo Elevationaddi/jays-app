@@ -260,7 +260,14 @@ export function ProductScreen() {
               })}
             </Body>
           ))}
-          {product.returnEligible ? <Body muted>{tr('shop.returnEligible')}</Body> : null}
+          <Body muted>
+            {product.returns.returnable
+              ? tr('returns.policy', { days: product.returns.windowDays })
+              : tr('returns.notReturnable')}
+          </Body>
+          {product.returns.note?.[state.locale] ? (
+            <Body muted>{product.returns.note[state.locale]}</Body>
+          ) : null}
           {reviews && reviews.count > 0 ? (
             <>
               <Text style={styles.section} accessibilityRole="header">

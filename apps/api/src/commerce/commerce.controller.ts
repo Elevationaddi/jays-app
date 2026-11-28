@@ -157,7 +157,7 @@ export class CommerceController {
     @CurrentUser() user: UserPrincipal,
     @ZodBody(quoteRequestSchema) body: z.infer<typeof quoteRequestSchema>,
   ) {
-    return this.checkout.quote(user.userId, body.addressId);
+    return this.checkout.quote(user.userId, body.addressId, body.deliveryMethods);
   }
 
   @Post('orders')

@@ -10,6 +10,7 @@ import {
   setBrandStatus,
   setCategoryStatus,
   setCategoryEnabled,
+  setCategoryReturnable,
 } from './actions';
 
 type Search = Promise<Record<string, string | undefined>>;
@@ -84,6 +85,11 @@ export default async function ContentPage({ searchParams }: { searchParams: Sear
                       ) : (
                         <span className="badge active">✓</span>
                       )}
+                      {mode === 'shop' && !c.returnable ? (
+                        <span className="badge pending" style={{ marginInlineStart: 6 }}>
+                          {tr('admin.content.nonReturnable')}
+                        </span>
+                      ) : null}
                     </td>
                     <td>
                       <form action={setCategoryStatus}>
@@ -107,6 +113,21 @@ export default async function ContentPage({ searchParams }: { searchParams: Sear
                             {c.enabled
                               ? tr('admin.content.switchOff')
                               : tr('admin.content.switchOn')}
+                          </button>
+                        </form>
+                      ) : null}
+                      {mode === 'shop' && c.status === 'active' ? (
+                        <form action={setCategoryReturnable}>
+                          <input type="hidden" name="id" value={c.id} />
+                          <input
+                            type="hidden"
+                            name="returnable"
+                            value={c.returnable ? 'off' : 'on'}
+                          />
+                          <button className="btn ghost" type="submit">
+                            {c.returnable
+                              ? tr('admin.content.markNonReturnable')
+                              : tr('admin.content.markReturnable')}
                           </button>
                         </form>
                       ) : null}

@@ -131,6 +131,7 @@ export function OrderScreen() {
                 </View>
               ))}
               <Text style={styles.muted}>
+                {tr(`delivery.method.${m.delivery.method}`)} ·{' '}
                 {tr('orders.deliveryWindow', { min: m.delivery.minDays, max: m.delivery.maxDays })}
               </Text>
               <ShipmentCare orderId={order.id} shipment={m} onChanged={changed} />

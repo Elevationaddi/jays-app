@@ -326,7 +326,7 @@ try {
             min_days: z.minDays,
             max_days: z.maxDays,
           })
-          .onConflict((oc) => oc.columns(['business_id', 'emirate_code']).doNothing())
+          .onConflict((oc) => oc.columns(['business_id', 'emirate_code', 'method']).doNothing())
           .execute();
       }
     }

@@ -13,6 +13,9 @@ import {
   IMAGE_CONTENT_TYPES,
   IMAGE_MAX_BYTES,
   validCompareAt,
+  DELIVERY_METHODS,
+  RETURN_WINDOW_MAX_DAYS,
+  RETURN_WINDOW_MIN_DAYS,
 } from '@jays/domain';
 import { z } from 'zod';
 import { emirateCodeSchema, isoDateTime } from './identity.js';
@@ -236,8 +239,11 @@ export const stockMovementSchema = z.object({
 // ---------------------------------------------------------------------------------------------
 // Delivery zones (merchant-defined, ADR-0007 D8)
 
+export const deliveryMethodSchema = z.enum(DELIVERY_METHODS);
+
 export const deliveryZoneSchema = z.object({
   emirate: emirateCodeSchema,
+  method: deliveryMethodSchema,
   feeFils: fils,
   freeOverFils: fils.nullable(),
   minDays: z.number().int(),
@@ -252,6 +258,7 @@ export const putDeliveryZonesRequestSchema = z.strictObject({
       z
         .strictObject({
           emirate: emirateCodeSchema,
+          method: deliveryMethodSchema.default('standard'),
           feeFils: z.number().int().min(0).max(100_000_000),
           freeOverFils: positiveFils.nullable().optional(),
           minDays: z.number().int().min(0).max(30),
@@ -262,12 +269,28 @@ export const putDeliveryZonesRequestSchema = z.strictObject({
           path: ['maxDays'],
         }),
     )
-    .max(7)
-    .refine((zones) => new Set(zones.map((z) => z.emirate)).size === zones.length, {
-      message: 'one zone per emirate',
-    }),
+    .max(14)
+    .refine(
+      (zones) => new Set(zones.map((z) => `${z.emirate}:${z.method}`)).size === zones.length,
+      { message: 'one zone per emirate and method' },
+    ),
 });
 export type PutDeliveryZonesRequest = z.infer<typeof putDeliveryZonesRequestSchema>;
+
+/** A business's return policy (ADR-0029), copied onto each order when it is placed. */
+export const returnPolicySchema = z.object({
+  windowDays: z.number().int(),
+  note: localized.nullable(),
+});
+export type ReturnPolicyView = z.infer<typeof returnPolicySchema>;
+export const putReturnPolicyRequestSchema = z.strictObject({
+  windowDays: z.number().int().min(RETURN_WINDOW_MIN_DAYS).max(RETURN_WINDOW_MAX_DAYS),
+  note: z
+    .strictObject({ en: z.string().trim().max(500), ar: z.string().trim().max(500) })
+    .nullable()
+    .optional(),
+});
+export type PutReturnPolicyRequest = z.infer<typeof putReturnPolicyRequestSchema>;
 
 // ---------------------------------------------------------------------------------------------
 // Public catalog
@@ -326,6 +349,12 @@ export const publicProductSchema = z.object({
   currency: z.literal('AED'),
   variants: z.array(publicVariantSchema),
   delivery: z.array(deliveryZoneSchema),
+  /** The seller's return policy for this product (ADR-0029). */
+  returns: z.object({
+    windowDays: z.number().int(),
+    returnable: z.boolean(),
+    note: localized.nullable(),
+  }),
   rating: ratingSummarySchema.nullable(),
   inStock: z.boolean(),
   publishedAt: isoDateTime,
@@ -448,6 +477,8 @@ export const mergeCartRequestSchema = z.strictObject({
 
 export const quoteRequestSchema = z.strictObject({
   addressId: z.uuid(),
+  /** The delivery method per seller (store id). Omitted: standard where offered (ADR-0029). */
+  deliveryMethods: z.record(z.uuid(), deliveryMethodSchema).optional(),
 });
 
 const pricedLineSchema = z.object({
@@ -464,6 +495,7 @@ const pricedLineSchema = z.object({
 
 const deliveryInfoSchema = z.object({
   emirate: emirateCodeSchema,
+  method: deliveryMethodSchema,
   feeFils: fils,
   minDays: z.number().int(),
   maxDays: z.number().int(),
@@ -473,6 +505,15 @@ export const quoteGroupSchema = z.object({
   store: storeRef,
   lines: z.array(pricedLineSchema),
   delivery: deliveryInfoSchema,
+  /** Every method this seller offers to the address, with the fee this order would pay. */
+  deliveryOptions: z.array(
+    z.object({
+      method: deliveryMethodSchema,
+      feeFils: fils,
+      minDays: z.number().int(),
+      maxDays: z.number().int(),
+    }),
+  ),
   subtotalFils: fils,
   deliveryFils: fils,
   discountFils: fils,
@@ -532,6 +573,8 @@ export const orderItemSchema = z.object({
   unitPriceFils: fils,
   lineTotalFils: fils,
   taxFils: fils,
+  /** False when its category is non-returnable at the time of the order (faulty items aside). */
+  returnable: z.boolean(),
 });
 
 /** Shipment and timeline of one seller's part of an order (phase 6). */
@@ -539,6 +582,8 @@ export const fulfillmentSchema = z.object({
   carrier: z.string().nullable(),
   trackingNumber: z.string().nullable(),
   trackingUrl: z.string().nullable(),
+  /** The delivery partner that booked the shipment; null when the business entered tracking. */
+  partner: z.enum(['mock']).nullable(),
   processingAt: isoDateTime.nullable(),
   shippedAt: isoDateTime.nullable(),
   deliveredAt: isoDateTime.nullable(),
@@ -554,6 +599,8 @@ export const orderShipmentGroupSchema = z.object({
   canCancel: z.boolean(),
   /** Delivered and inside the return window, with no return in progress. */
   canReturn: z.boolean(),
+  /** The return policy copied onto this order; returnUntil is set once delivered. */
+  returnPolicy: z.object({ windowDays: z.number().int(), returnUntil: isoDateTime.nullable() }),
   returns: z.array(
     z.object({ id: z.uuid(), status: z.string(), amountFils: fils, createdAt: isoDateTime }),
   ),
@@ -603,6 +650,8 @@ export const merchantOrderSchema = z.object({
   status: merchantOrderStatusSchema,
   cancelReason: z.string().nullable(),
   fulfillment: fulfillmentSchema,
+  /** A delivery partner is configured, so shipping can book it instead of manual tracking. */
+  partnerAvailable: z.boolean(),
   items: z.array(orderItemSchema),
   delivery: deliveryInfoSchema,
   address: addressSnapshotSchema,

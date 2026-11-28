@@ -548,7 +548,7 @@ const en = {
   'stockReason.lost': 'Lost',
   'stockReason.correction': 'Count correction',
   'stockReason.return_restock': 'Return restocked',
-  'delivery.title': 'Delivery zones',
+  'delivery.title': 'Delivery and returns',
   'delivery.intro':
     'You deliver your own orders. Customers can only check out to emirates you cover.',
   'delivery.covered': 'Deliver here',
@@ -1789,6 +1789,35 @@ const en = {
   'admin.legal.kind.merchant_licensing': 'Merchant licensing requirements',
   'admin.legal.kind.authenticity': 'Authenticity and counterfeit restrictions',
   'admin.legal.kind.promotional_pricing': 'Promotional pricing rules',
+  'delivery.method': 'Method',
+  'delivery.method.standard': 'Standard',
+  'delivery.method.express': 'Express',
+  'checkout.deliveryMethod': 'Delivery method',
+  'error.deliveryMethodUnavailable':
+    'This seller no longer offers that delivery method. Choose another.',
+  'error.deliveryPartnerUnavailable':
+    'No delivery partner is set up. Enter the carrier and tracking number yourself.',
+  'returnPolicy.title': 'Return policy',
+  'returnPolicy.intro':
+    'Customers can ask to return items within this many days of delivery. You can offer more than {days} days, not fewer. Each order keeps the policy it was placed under.',
+  'returnPolicy.window': 'Return window (days after delivery)',
+  'returnPolicy.noteEn': 'Note for customers (English, optional)',
+  'returnPolicy.noteAr': 'Note for customers (Arabic, optional)',
+  'returnPolicy.excluded':
+    'Products you mark as not returnable, and categories JAYS marks as not returnable (such as opened hygiene products), can still be returned if faulty or not as ordered.',
+  'returns.policy': 'Returns accepted within {days} days of delivery.',
+  'returns.notReturnable': 'Not returnable unless faulty or not as ordered.',
+  'returns.until': 'You can request a return until {date}.',
+  'returns.itemFaultyOnly': 'Returnable only if faulty or not as ordered.',
+  'returns.faulty': 'The item is faulty or not what I ordered',
+  'fulfil.partnerTitle': 'Book with the delivery partner',
+  'fulfil.partnerHint':
+    'The partner creates the shipment and its tracking link. In this test setup the partner is a mock and no parcel is collected.',
+  'fulfil.partnerShip': 'Book and mark shipped',
+  'fulfil.partnerBadge': 'Delivery partner',
+  'admin.content.nonReturnable': 'Not returnable',
+  'admin.content.markNonReturnable': 'Mark not returnable',
+  'admin.content.markReturnable': 'Allow returns',
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -2319,7 +2348,7 @@ const ar: Record<MessageKey, string> = {
   'stockReason.lost': 'مفقود',
   'stockReason.correction': 'تصحيح الجرد',
   'stockReason.return_restock': 'إرجاع إلى المخزون',
-  'delivery.title': 'مناطق التوصيل',
+  'delivery.title': 'التوصيل والإرجاع',
   'delivery.intro': 'أنت من يوصل طلباتك. لا يمكن للعملاء إتمام الشراء إلا للإمارات التي تغطيها.',
   'delivery.covered': 'التوصيل إلى هنا',
   'delivery.fee': 'الرسوم (درهم)',
@@ -3537,6 +3566,33 @@ const ar: Record<MessageKey, string> = {
   'admin.legal.kind.merchant_licensing': 'متطلبات ترخيص التجار',
   'admin.legal.kind.authenticity': 'الأصالة وحظر المنتجات المقلدة',
   'admin.legal.kind.promotional_pricing': 'قواعد الأسعار الترويجية',
+  'delivery.method': 'الطريقة',
+  'delivery.method.standard': 'عادي',
+  'delivery.method.express': 'سريع',
+  'checkout.deliveryMethod': 'طريقة التوصيل',
+  'error.deliveryMethodUnavailable': 'لم يعد هذا البائع يوفر طريقة التوصيل هذه. اختر طريقة أخرى.',
+  'error.deliveryPartnerUnavailable': 'لا يوجد شريك توصيل مُعدّ. أدخل شركة الشحن ورقم التتبع بنفسك.',
+  'returnPolicy.title': 'سياسة الإرجاع',
+  'returnPolicy.intro':
+    'يمكن للعملاء طلب الإرجاع خلال هذا العدد من الأيام بعد التسليم. يمكنك تقديم أكثر من {days} يومًا، وليس أقل. يحتفظ كل طلب بالسياسة التي قُدّم بموجبها.',
+  'returnPolicy.window': 'مدة الإرجاع (أيام بعد التسليم)',
+  'returnPolicy.noteEn': 'ملاحظة للعملاء (بالإنجليزية، اختياري)',
+  'returnPolicy.noteAr': 'ملاحظة للعملاء (بالعربية، اختياري)',
+  'returnPolicy.excluded':
+    'المنتجات التي تحددها كغير قابلة للإرجاع، والفئات التي تحددها JAYS كغير قابلة للإرجاع (مثل منتجات النظافة المفتوحة)، يمكن إرجاعها إذا كانت معيبة أو غير مطابقة للطلب.',
+  'returns.policy': 'يُقبل الإرجاع خلال {days} يومًا من التسليم.',
+  'returns.notReturnable': 'غير قابل للإرجاع إلا إذا كان معيبًا أو غير مطابق للطلب.',
+  'returns.until': 'يمكنك طلب الإرجاع حتى {date}.',
+  'returns.itemFaultyOnly': 'قابل للإرجاع فقط إذا كان معيبًا أو غير مطابق للطلب.',
+  'returns.faulty': 'المنتج معيب أو غير ما طلبته',
+  'fulfil.partnerTitle': 'الحجز مع شريك التوصيل',
+  'fulfil.partnerHint':
+    'ينشئ الشريك الشحنة ورابط تتبعها. في بيئة الاختبار هذه الشريك تجريبي ولا تُستلم أي طرود.',
+  'fulfil.partnerShip': 'احجز وسجّل الشحن',
+  'fulfil.partnerBadge': 'شريك التوصيل',
+  'admin.content.nonReturnable': 'غير قابل للإرجاع',
+  'admin.content.markNonReturnable': 'تحديد كغير قابل للإرجاع',
+  'admin.content.markReturnable': 'السماح بالإرجاع',
 };
 
 export const catalogs: Record<Locale, Record<MessageKey, string>> = { en, ar };

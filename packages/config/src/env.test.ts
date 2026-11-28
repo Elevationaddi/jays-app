@@ -68,6 +68,7 @@ describe('apiEnvSchema', () => {
         ...local,
         APP_ENV: 'production',
         MOCK_PAYMENT_OUTCOMES: 'true',
+        DELIVERY_PARTNER: 'mock',
         CORS_ORIGINS: 'http://example.test',
       }),
     );
@@ -88,6 +89,7 @@ describe('apiEnvSchema', () => {
         'STORAGE_PROVIDER',
         'STORAGE_SIGNING_SECRET',
         'MALWARE_SCANNER',
+        'DELIVERY_PARTNER',
         'API_PUBLIC_URL',
       ]),
     );

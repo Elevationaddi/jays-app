@@ -81,6 +81,11 @@ import { OnboardingController } from './onboarding/onboarding.controller.js';
 import { OnboardingService } from './onboarding/onboarding.service.js';
 import { LocalObjectStorage } from './storage/local-storage.js';
 import { MockMalwareScanner } from './storage/scanner.js';
+import {
+  DELIVERY_PARTNER,
+  type DeliveryPartner,
+  MockDeliveryPartner,
+} from './commerce/delivery-partner.js';
 import { LocalStorageController } from './storage/storage.controller.js';
 import {
   MALWARE_SCANNER,
@@ -148,6 +153,8 @@ export interface AppModuleOptions {
   storage?: ObjectStorage;
   /** Test seam: replace the malware scanner. */
   scanner?: MalwareScanner;
+  /** Test seam: replace the delivery partner. */
+  deliveryPartner?: DeliveryPartner | null;
   /** Test seam: replace the payment provider. */
   paymentProvider?: PaymentProvider;
   /** Test seam: where the mock provider sends webhooks (default: POST to this API). */
@@ -165,6 +172,7 @@ export class AppModule {
     rateLimitNamespace,
     storage,
     scanner,
+    deliveryPartner,
     paymentProvider,
     webhookSink,
   }: AppModuleOptions): DynamicModule {
@@ -279,6 +287,15 @@ export class AppModule {
             ),
         },
         { provide: MALWARE_SCANNER, useValue: scanner ?? new MockMalwareScanner() },
+        {
+          provide: DELIVERY_PARTNER,
+          useValue:
+            deliveryPartner !== undefined
+              ? deliveryPartner
+              : env.DELIVERY_PARTNER === 'mock'
+                ? new MockDeliveryPartner()
+                : null,
+        },
         sessionStore('user'),
         sessionStore('admin'),
         AuthService,

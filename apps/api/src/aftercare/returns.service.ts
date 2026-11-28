@@ -7,6 +7,7 @@ import type {
 } from '@jays/contracts';
 import type { Database, Db } from '@jays/db';
 import {
+  itemReturnable,
   RETURN_WINDOW_DAYS,
   returnAmount,
   returnTransition,
@@ -60,7 +61,13 @@ export class ReturnsService {
       const mo = await trx
         .selectFrom('merchant_orders as mo')
         .innerJoin('orders as o', 'o.id', 'mo.order_id')
-        .select(['mo.id', 'mo.status', 'mo.delivered_at', 'mo.business_id'])
+        .select([
+          'mo.id',
+          'mo.status',
+          'mo.delivered_at',
+          'mo.business_id',
+          'mo.return_window_days',
+        ])
         .where('mo.id', '=', body.merchantOrderId)
         .where('mo.order_id', '=', orderId)
         .where('o.user_id', '=', userId)
@@ -74,11 +81,13 @@ export class ReturnsService {
           'Returns can be requested once the order is delivered.',
         );
       }
-      if (!withinReturnWindow(mo.delivered_at, now, RETURN_WINDOW_DAYS)) {
+      // The window the order was placed under (ADR-0029); the platform default for older orders.
+      const windowDays = mo.return_window_days ?? RETURN_WINDOW_DAYS;
+      if (!withinReturnWindow(mo.delivered_at, now, windowDays)) {
         throw new ApiError(
           HttpStatus.UNPROCESSABLE_ENTITY,
           'RETURN_WINDOW_CLOSED',
-          `Returns are accepted for ${RETURN_WINDOW_DAYS} days after delivery.`,
+          `Returns are accepted for ${windowDays} days after delivery.`,
         );
       }
       const open = await trx
@@ -96,11 +105,19 @@ export class ReturnsService {
       }
       const items = await trx
         .selectFrom('order_items')
-        .select(['id', 'qty', 'line_total_fils', 'discount_fils'])
+        .select(['id', 'qty', 'line_total_fils', 'discount_fils', 'returnable'])
         .where('merchant_order_id', '=', mo.id)
         .where('id', 'in', ids)
         .execute();
       if (items.length !== ids.length) throw notFound();
+      if (items.some((i) => !itemReturnable([i.returnable], body.faulty))) {
+        throw new ApiError(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          'ITEM_NOT_RETURNABLE',
+          'This item cannot be returned unless it is faulty or not what you ordered.',
+          { items: items.filter((i) => !i.returnable).map((i) => i.id) },
+        );
+      }
       const returned = await trx
         .selectFrom('return_items as ri')
         .innerJoin('return_requests as rr', 'rr.id', 'ri.return_request_id')
@@ -140,6 +157,7 @@ export class ReturnsService {
           business_id: mo.business_id,
           user_id: userId,
           reason: body.reason,
+          faulty: body.faulty,
           amount_fils: total,
         })
         .returning('id')
@@ -335,6 +353,7 @@ export class ReturnsService {
           'rr.business_id',
           'rr.status',
           'rr.reason',
+          'rr.faulty',
           'rr.amount_fils',
           'rr.decision_reason',
           'rr.decided_at',
@@ -369,6 +388,7 @@ export class ReturnsService {
         business: { id: r.business_id, name: (r.live_name ?? r.display_name) as Localized },
         status: r.status,
         reason: r.reason,
+        faulty: r.faulty,
         amountFils: r.amount_fils,
         items: items
           .filter((i) => i.return_request_id === id)

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   escalatedPriority,
+  itemReturnable,
+  nonReturnableCategories,
+  RETURN_WINDOW_DAYS,
+  RETURN_WINDOW_MAX_DAYS,
+  RETURN_WINDOW_MIN_DAYS,
   initialTicketPriority,
   supportOpenAt,
   canReview,
@@ -112,5 +117,26 @@ describe('support hours and priorities (D12)', () => {
     expect(escalatedPriority('security', 'normal')).toBe('urgent');
     expect(escalatedPriority('operations', 'normal')).toBe('high');
     expect(escalatedPriority('operations', 'urgent')).toBe('urgent');
+  });
+});
+
+describe('return policies (ADR-0029)', () => {
+  it('excludes a non-returnable category and everything beneath it', () => {
+    const set = nonReturnableCategories([
+      { id: 'beauty', parentId: null, returnable: true },
+      { id: 'hygiene', parentId: 'beauty', returnable: false },
+      { id: 'razors', parentId: 'hygiene', returnable: true },
+      { id: 'nails', parentId: 'beauty', returnable: true },
+    ]);
+    expect([...set].sort()).toEqual(['hygiene', 'razors']);
+  });
+  it('accepts a faulty item even from a non-returnable category', () => {
+    expect(itemReturnable([true, false], false)).toBe(false);
+    expect(itemReturnable([true, false], true)).toBe(true);
+    expect(itemReturnable([true, true], false)).toBe(true);
+  });
+  it('never lets a business go below the platform window', () => {
+    expect(RETURN_WINDOW_MIN_DAYS).toBe(RETURN_WINDOW_DAYS);
+    expect(RETURN_WINDOW_MAX_DAYS).toBeGreaterThan(RETURN_WINDOW_MIN_DAYS);
   });
 });

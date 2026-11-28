@@ -16,6 +16,7 @@ import { afterCursor, cursorTs, decodeCursor, toPage } from '../common/paginatio
 import type { RequestMeta } from '../common/request-context.js';
 import { DB } from '../common/tokens.js';
 import { OrdersService } from '../commerce/orders.service.js';
+import { DELIVERY_PARTNER, type DeliveryPartner } from '../commerce/delivery-partner.js';
 import { PaymentsService, type RefundJob } from '../payments/payments.service.js';
 
 type Trx = Transaction<Database>;
@@ -38,6 +39,7 @@ export class FulfillmentService {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(PaymentsService) private readonly payments: PaymentsService,
     @Inject(OrdersService) private readonly orders: OrdersService,
+    @Inject(DELIVERY_PARTNER) private readonly partner: DeliveryPartner | null,
   ) {}
 
   async merchantAction(
@@ -51,7 +53,7 @@ export class FulfillmentService {
     const refund = await this.db.transaction().execute(async (trx) => {
       const mo = await trx
         .selectFrom('merchant_orders')
-        .select(['id', 'order_id', 'status', 'total_fils'])
+        .select(['id', 'order_id', 'status', 'total_fils', 'delivery_snapshot'])
         .where('id', '=', merchantOrderId)
         .where('business_id', '=', businessId)
         .forUpdate()
@@ -73,6 +75,32 @@ export class FulfillmentService {
         );
       }
       let job: RefundJob | null = null;
+      // Shipping through the delivery partner (ADR-0029): it supplies the tracking. A real
+      // adapter must be idempotent per suborder, because this transaction can still roll back.
+      let tracking = {
+        carrier: body.carrier ?? null,
+        trackingNumber: body.trackingNumber ?? null,
+        trackingUrl: body.trackingUrl ?? null,
+      };
+      let partnerName: 'mock' | null = null;
+      if (body.action === 'ship' && body.usePartner) {
+        if (!this.partner) {
+          throw new ApiError(
+            HttpStatus.UNPROCESSABLE_ENTITY,
+            'DELIVERY_PARTNER_UNAVAILABLE',
+            'No delivery partner is set up. Enter the carrier and tracking number yourself.',
+          );
+        }
+        const d = mo.delivery_snapshot as { emirate: string; method?: 'standard' | 'express' };
+        const shipment = await this.partner.createShipment({
+          merchantOrderId: mo.id,
+          businessId,
+          emirate: d.emirate,
+          method: d.method ?? 'standard',
+        });
+        tracking = shipment;
+        partnerName = this.partner.name;
+      }
       if (body.action === 'cancel') {
         job = await this.cancel(trx, mo, 'merchant_request', 'business_cancellation', now);
       } else {
@@ -84,9 +112,10 @@ export class FulfillmentService {
             ...(body.action === 'ship'
               ? {
                   shipped_at: now,
-                  carrier: body.carrier ?? null,
-                  tracking_number: body.trackingNumber ?? null,
-                  tracking_url: body.trackingUrl ?? null,
+                  carrier: tracking.carrier,
+                  tracking_number: tracking.trackingNumber,
+                  tracking_url: tracking.trackingUrl,
+                  delivery_partner: partnerName,
                 }
               : {}),
             ...(body.action === 'deliver' ? { delivered_at: now } : {}),
@@ -115,7 +144,11 @@ export class FulfillmentService {
           from: mo.status,
           to: next,
           ...(body.action === 'ship'
-            ? { carrier: body.carrier, trackingNumber: body.trackingNumber }
+            ? {
+                carrier: tracking.carrier,
+                trackingNumber: tracking.trackingNumber,
+                partner: partnerName,
+              }
             : {}),
         },
         requestId: meta.requestId,

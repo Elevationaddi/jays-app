@@ -54,6 +54,20 @@ export async function setCategoryEnabled(formData: FormData) {
   redirect('/admin/content?saved=1');
 }
 
+/** Mark a shop category (and everything beneath it) non-returnable unless faulty (ADR-0029). */
+export async function setCategoryReturnable(formData: FormData) {
+  const id = text(formData, 'id');
+  if (!UUID.test(id)) redirect('/admin/content');
+  try {
+    await (
+      await serverApi()
+    ).updateCategory(id, { returnable: text(formData, 'returnable') === 'on' });
+  } catch (error) {
+    fail(error);
+  }
+  redirect('/admin/content?saved=1');
+}
+
 export async function createBrand(formData: FormData) {
   try {
     await (

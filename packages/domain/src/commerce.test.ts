@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   canApplyProductAction,
+  chooseDeliveryMethod,
   canEditProduct,
   canSubmitProduct,
   cartLineIssues,
@@ -157,5 +158,21 @@ describe('cart line issues', () => {
     expect(cartLineIssues({ ...base, available: 0 })).toEqual(['out_of_stock']);
     expect(cartLineIssues({ ...base, available: 1 })).toEqual(['insufficient_stock']);
     expect(cartLineIssues({ ...base, priceFils: 120 })).toEqual(['price_changed']);
+  });
+});
+
+describe('chooseDeliveryMethod (ADR-0029)', () => {
+  const options = [
+    { method: 'express' as const, feeFils: 3_000 },
+    { method: 'standard' as const, feeFils: 1_500 },
+  ];
+  it('uses the requested method when offered, and refuses one that is not', () => {
+    expect(chooseDeliveryMethod(options, 'express')?.feeFils).toBe(3_000);
+    expect(chooseDeliveryMethod([options[1]!], 'express')).toBeNull();
+  });
+  it('defaults to standard, then the cheapest', () => {
+    expect(chooseDeliveryMethod(options)?.method).toBe('standard');
+    expect(chooseDeliveryMethod([options[0]!])?.method).toBe('express');
+    expect(chooseDeliveryMethod([])).toBeNull();
   });
 });

@@ -99,7 +99,7 @@ export default async function MerchantOrderPage({
             {[a.unit, a.building, a.street, a.area].filter(Boolean).join(', ')}
           </p>
           <p className="muted" style={{ margin: 0 }}>
-            {a.emirate} ·{' '}
+            {a.emirate} · {tr(`delivery.method.${order.delivery.method}`)} ·{' '}
             {tr('orders.deliveryWindow', {
               min: order.delivery.minDays,
               max: order.delivery.maxDays,
@@ -112,6 +112,7 @@ export default async function MerchantOrderPage({
           <h2>{tr('fulfil.title')}</h2>
           {f.carrier ? (
             <p>
+              {f.partner ? <span className="badge">{tr('fulfil.partnerBadge')}</span> : null}{' '}
               {tr('fulfil.shippedWith', { carrier: f.carrier })}{' '}
               <span className="ltr">{f.trackingNumber}</span>
               {f.trackingUrl ? (
@@ -129,6 +130,18 @@ export default async function MerchantOrderPage({
               {hidden}
               <input type="hidden" name="action" value="process" />
               <button className="btn secondary">{tr('fulfil.process')}</button>
+            </form>
+          ) : null}
+          {canShip && order.partnerAvailable ? (
+            <form action={fulfil} className="stack">
+              {hidden}
+              <input type="hidden" name="action" value="ship" />
+              <input type="hidden" name="usePartner" value="1" />
+              <h3>{tr('fulfil.partnerTitle')}</h3>
+              <p className="muted" style={{ margin: 0 }}>
+                {tr('fulfil.partnerHint')}
+              </p>
+              <button className="btn secondary">{tr('fulfil.partnerShip')}</button>
             </form>
           ) : null}
           {canShip ? (

@@ -3,6 +3,8 @@ import type { CreateOrderResponse, QuoteView } from '@jays/contracts';
 import type { Database, Db } from '@jays/db';
 import {
   availableStock,
+  chooseDeliveryMethod,
+  type DeliveryMethod,
   type DeliveryZoneRule,
   type EmirateCode,
   PAYMENT_WINDOW_SECONDS,
@@ -22,6 +24,7 @@ import type { RequestMeta } from '../common/request-context.js';
 import { DB } from '../common/tokens.js';
 import { conflict, notFound, policy } from '../catalog/product-views.js';
 import { purchasableVariants } from '../catalog/public-products.service.js';
+import { nonReturnableCategoryIds } from '../catalog/returnability.js';
 import { PAYMENT_PROVIDER, type PaymentProvider } from '../payments/provider.js';
 
 type Trx = Transaction<Database>;
@@ -42,13 +45,18 @@ interface QuoteGroup {
   businessId: string;
   storeName: Localized;
   lines: QuoteLine[];
-  delivery: DeliveryZoneRule & { emirate: EmirateCode };
+  /** method is absent on quotes made before ADR-0029: standard. */
+  delivery: DeliveryZoneRule & { emirate: EmirateCode; method?: DeliveryMethod };
+  deliveryOptions?: DeliveryOption[];
   subtotalFils: number;
   deliveryFils: number;
   deliveryTaxFils: number;
   discountFils: number;
   taxFils: number;
   totalFils: number;
+}
+interface DeliveryOption extends DeliveryZoneRule {
+  method: DeliveryMethod;
 }
 interface AddressSnapshot {
   emirate: EmirateCode;
@@ -111,25 +119,50 @@ export class CheckoutService {
     return new Set(rows.map((r) => r.id));
   }
 
-  private async zonesFor(conn: Conn, businessIds: string[], emirate: string) {
-    if (businessIds.length === 0) return new Map<string, DeliveryZoneRule>();
+  /**
+   * Each seller's delivery to the emirate: every method it offers, and the one this order uses
+   * (the customer's choice, else standard, else the cheapest; ADR-0029). A seller with no zone is
+   * left out, and pricing refuses it. Asking for a method a seller does not offer is refused.
+   */
+  private async zonesFor(
+    conn: Conn,
+    businessIds: string[],
+    emirate: string,
+    requested: Readonly<Record<string, DeliveryMethod>> = {},
+  ) {
+    const chosen = new Map<string, DeliveryOption>();
+    const options = new Map<string, DeliveryOption[]>();
+    if (businessIds.length === 0) return { chosen, options };
     const rows = await conn
       .selectFrom('delivery_zones')
-      .select(['business_id', 'fee_fils', 'free_over_fils', 'min_days', 'max_days'])
+      .select(['business_id', 'method', 'fee_fils', 'free_over_fils', 'min_days', 'max_days'])
       .where('business_id', 'in', businessIds)
       .where('emirate_code', '=', emirate)
       .execute();
-    return new Map(
-      rows.map((z) => [
-        z.business_id,
-        {
-          feeFils: z.fee_fils,
-          freeOverFils: z.free_over_fils,
-          minDays: z.min_days,
-          maxDays: z.max_days,
-        },
-      ]),
-    );
+    for (const z of rows) {
+      const list = options.get(z.business_id) ?? [];
+      list.push({
+        method: z.method,
+        feeFils: z.fee_fils,
+        freeOverFils: z.free_over_fils,
+        minDays: z.min_days,
+        maxDays: z.max_days,
+      });
+      options.set(z.business_id, list);
+    }
+    const unavailable: string[] = [];
+    for (const [businessId, list] of options) {
+      list.sort((a, b) => (a.method === b.method ? 0 : a.method === 'standard' ? -1 : 1));
+      const pick = chooseDeliveryMethod(list, requested[businessId]);
+      if (pick) chosen.set(businessId, pick);
+      else unavailable.push(businessId);
+    }
+    if (unavailable.length > 0) {
+      throw policy('DELIVERY_METHOD_UNAVAILABLE', 'A seller does not offer that delivery method.', {
+        stores: unavailable,
+      });
+    }
+    return { chosen, options };
   }
 
   private price(
@@ -150,7 +183,11 @@ export class CheckoutService {
     }
   }
 
-  async quote(userId: string, addressId: string): Promise<QuoteView> {
+  async quote(
+    userId: string,
+    addressId: string,
+    deliveryMethods: Readonly<Record<string, DeliveryMethod>> = {},
+  ): Promise<QuoteView> {
     const now = this.clock.now();
     const address = await this.db
       .selectFrom('addresses')
@@ -221,7 +258,7 @@ export class CheckoutService {
     });
     const businessIds = [...new Set(lines.map((l) => l.businessId))];
     const [zones, rates, stores, vatRegistered] = await Promise.all([
-      this.zonesFor(this.db, businessIds, address.emirate_code),
+      this.zonesFor(this.db, businessIds, address.emirate_code, deliveryMethods),
       currentTaxRates(this.db, now),
       this.db
         .selectFrom('storefronts')
@@ -230,7 +267,7 @@ export class CheckoutService {
         .execute(),
       this.vatRegistered(this.db, businessIds),
     ]);
-    const priced = this.price(lines, zones, rates, vatRegistered);
+    const priced = this.price(lines, zones.chosen, rates, vatRegistered);
     const storeName = new Map(stores.map((s) => [s.business_id, s.live_name as Localized]));
     const emirate = address.emirate_code as EmirateCode;
     const groups: QuoteGroup[] = priced.groups.map((g) => ({
@@ -246,7 +283,12 @@ export class CheckoutService {
           imageMediaId: v.live_media_ids[0] ?? null,
         };
       }),
-      delivery: { ...g.delivery, emirate },
+      delivery: {
+        ...g.delivery,
+        emirate,
+        method: (zones.chosen.get(g.businessId) as DeliveryOption).method,
+      },
+      deliveryOptions: zones.options.get(g.businessId) ?? [],
       subtotalFils: g.subtotalFils,
       deliveryFils: g.deliveryFils,
       deliveryTaxFils: g.deliveryTaxFils,
@@ -304,10 +346,17 @@ export class CheckoutService {
         })),
         delivery: {
           emirate: g.delivery.emirate,
+          method: g.delivery.method ?? 'standard',
           feeFils: g.deliveryFils,
           minDays: g.delivery.minDays,
           maxDays: g.delivery.maxDays,
         },
+        deliveryOptions: (g.deliveryOptions ?? []).map((o) => ({
+          method: o.method,
+          feeFils: o.freeOverFils !== null && g.subtotalFils >= o.freeOverFils ? 0 : o.feeFils,
+          minDays: o.minDays,
+          maxDays: o.maxDays,
+        })),
         subtotalFils: g.subtotalFils,
         deliveryFils: g.deliveryFils,
         discountFils: g.discountFils,
@@ -397,11 +446,20 @@ export class CheckoutService {
       // Delivery fees and tax rates must still produce exactly the quoted totals.
       const repriced = this.price(
         lines,
-        await this.zonesFor(
-          trx,
-          groups.map((g) => g.businessId),
-          address.emirate,
-        ),
+        (
+          await this.zonesFor(
+            trx,
+            groups.map((g) => g.businessId),
+            address.emirate,
+            Object.fromEntries(groups.map((g) => [g.businessId, g.delivery.method ?? 'standard'])),
+          ).catch((error: unknown) => {
+            // A method withdrawn since the quote: the customer must review the order again.
+            if (error instanceof ApiError && error.code === 'DELIVERY_METHOD_UNAVAILABLE') {
+              throw conflict('QUOTE_STALE', 'Delivery options changed. Review your order again.');
+            }
+            throw error;
+          })
+        ).chosen,
         await currentTaxRates(trx, now),
         await this.vatRegistered(
           trx,
@@ -430,6 +488,32 @@ export class CheckoutService {
         .returning('id')
         .executeTakeFirst();
       if (!order) return null; // a concurrent request with the same quote won
+      // The return policy in force now is copied onto the order (ADR-0029, T13).
+      const [windows, products, excluded] = await Promise.all([
+        trx
+          .selectFrom('businesses')
+          .select(['id', 'return_window_days'])
+          .where(
+            'id',
+            'in',
+            groups.map((g) => g.businessId),
+          )
+          .execute(),
+        trx
+          .selectFrom('products')
+          .select(['id', 'live_return_eligible', 'live_category_id'])
+          .where('id', 'in', [...new Set(lines.map((l) => l.productId))])
+          .execute(),
+        nonReturnableCategoryIds(trx),
+      ]);
+      const windowOf = new Map(windows.map((w) => [w.id, w.return_window_days]));
+      const returnable = new Map(
+        products.map((p) => [
+          p.id,
+          p.live_return_eligible !== false &&
+            !(p.live_category_id && excluded.has(p.live_category_id)),
+        ]),
+      );
       for (const g of groups) {
         const mo = await trx
           .insertInto('merchant_orders')
@@ -443,8 +527,10 @@ export class CheckoutService {
             total_fils: g.totalFils,
             delivery_snapshot: JSON.stringify({
               ...g.delivery,
+              method: g.delivery.method ?? 'standard',
               deliveryTaxFils: g.deliveryTaxFils,
             }),
+            return_window_days: windowOf.get(g.businessId) ?? null,
           })
           .returning('id')
           .executeTakeFirstOrThrow();
@@ -463,6 +549,7 @@ export class CheckoutService {
               tax_class: l.taxClass,
               tax_rate_bps: l.taxRateBps,
               tax_fils: l.taxFils,
+              returnable: returnable.get(l.productId) ?? true,
               snapshot: JSON.stringify({
                 title: l.title,
                 variantName: l.variantName,

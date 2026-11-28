@@ -24,6 +24,8 @@ export const categorySchema = z.object({
   status: catalogStatus,
   /** Switched off by an admin: hidden from customers with everything in it, but not archived. */
   enabled: z.boolean(),
+  /** Items in it (and beneath it) cannot be returned unless faulty (ADR-0029). */
+  returnable: z.boolean(),
 });
 export type CategoryView = z.infer<typeof categorySchema>;
 export const categoryListSchema = z.object({ items: z.array(categorySchema) });
@@ -43,6 +45,7 @@ export const updateCategoryRequestSchema = z
     sortOrder: z.number().int().min(0).max(10000).optional(),
     status: catalogStatus.optional(),
     enabled: z.boolean().optional(),
+    returnable: z.boolean().optional(),
   })
   .refine((b) => Object.keys(b).length > 0, 'nothing to change');
 

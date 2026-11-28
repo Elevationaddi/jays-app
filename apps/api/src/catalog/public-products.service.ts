@@ -20,6 +20,7 @@ import {
 import { type ExpressionBuilder, sql, type SqlBool, type Transaction } from 'kysely';
 import { z } from 'zod';
 import { API_ENV, type ApiEnv } from '../config.js';
+import { nonReturnableCategoryIds } from './returnability.js';
 import { addSeconds, CLOCK, type Clock } from '../common/clock.js';
 import { ApiError } from '../common/error.filter.js';
 import { DB } from '../common/tokens.js';
@@ -411,11 +412,27 @@ export class PublicProductsService {
       this.db
         .selectFrom('delivery_zones as z')
         .innerJoin('emirates as e', 'e.code', 'z.emirate_code')
-        .select(['z.emirate_code', 'z.fee_fils', 'z.free_over_fils', 'z.min_days', 'z.max_days'])
+        .select([
+          'z.emirate_code',
+          'z.method',
+          'z.fee_fils',
+          'z.free_over_fils',
+          'z.min_days',
+          'z.max_days',
+        ])
         .where('z.business_id', '=', r.business_id)
         .where('e.enabled', '=', true)
         .orderBy('e.sort_order')
+        .orderBy('z.method', 'desc')
         .execute(),
+    ]);
+    const [policy, excluded] = await Promise.all([
+      this.db
+        .selectFrom('businesses')
+        .select(['return_window_days', 'return_policy_note'])
+        .where('id', '=', r.business_id)
+        .executeTakeFirstOrThrow(),
+      nonReturnableCategoryIds(this.db),
     ]);
     return {
       id: r.id,
@@ -442,8 +459,15 @@ export class PublicProductsService {
           lowStock: available > 0 && available <= v.low_stock_threshold,
         };
       }),
+      returns: {
+        windowDays: policy.return_window_days,
+        returnable:
+          (r.live_return_eligible as boolean) && !excluded.has(r.live_category_id as string),
+        note: policy.return_policy_note,
+      },
       delivery: zones.map((z) => ({
         emirate: z.emirate_code as EmirateCode,
+        method: z.method,
         feeFils: z.fee_fils,
         freeOverFils: z.free_over_fils,
         minDays: z.min_days,

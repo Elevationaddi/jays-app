@@ -31,8 +31,10 @@ export const fulfillmentActionRequestSchema = z
       .max(500)
       .optional(),
     reason: reason.optional(),
+    /** Book the shipment with the configured delivery partner, which supplies the tracking. */
+    usePartner: z.boolean().optional(),
   })
-  .refine((b) => b.action !== 'ship' || (b.carrier && b.trackingNumber), {
+  .refine((b) => b.action !== 'ship' || b.usePartner || (b.carrier && b.trackingNumber), {
     message: 'Shipping needs a carrier and a tracking number.',
     path: ['trackingNumber'],
   })
@@ -85,6 +87,8 @@ export const returnRequestInputSchema = z.strictObject({
     .min(1)
     .max(50),
   reason,
+  /** The item is faulty or not what was ordered: accepted even from a non-returnable category. */
+  faulty: z.boolean().default(false),
 });
 export type ReturnRequestInput = z.infer<typeof returnRequestInputSchema>;
 
@@ -105,6 +109,7 @@ export const returnSchema = z.object({
   business: bizRef,
   status: returnStatusSchema,
   reason: z.string(),
+  faulty: z.boolean(),
   amountFils: fils,
   items: z.array(
     z.object({

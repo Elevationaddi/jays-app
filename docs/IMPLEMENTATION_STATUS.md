@@ -13,7 +13,7 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 | 6     | Fulfillment, reviews, support, notifications, dashboards     | Merged (PR #7); D7, D12, D14 assumed  |
 | 7     | RTL/accessibility, hardening, backups, observability, pilot  | Merged (PR #8); pilot not started     |
 
-| 8 | Complete application functionality | 8.1 to 8.7 merged (PRs #9 to #14, #16); 8.8 in progress |
+| 8 | Complete application functionality | 8.1 to 8.8 merged (PRs #9 to #14, #16 to #19) |
 | 9 | Provider integrations in test mode (Stripe, Resend, FCM, Supabase) | Not started |
 | 10 | Vercel deployment architecture (replaces AWS) | Not started; nothing deployed |
 | 11 | Security, QA, app store preparation | Not started |
@@ -30,6 +30,18 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 ## Phase 8: Complete application functionality
 
 Founder decisions: [ADR-0018](adr/0018-founder-decisions-2026-11-28.md). Phase 8 ships as slices. Each slice is its own PR, merged once CI passes.
+
+### 8.8 Policies, refunds and legal drafts (part 3: delivery and returns)
+
+Decision: [ADR-0029](adr/0029-delivery-methods-return-policies-delivery-partner.md). The return rules stay proposed until a lawyer confirms the statutory minimums. No paid delivery provider is used.
+
+- **Delivery methods:** each business sets standard and express fees, free-delivery thresholds and days per emirate. At checkout the customer picks a method per seller and the order keeps it.
+- **Return policies:** each business sets a window of 14 to 90 days and an optional note. Admins can mark a category non-returnable. The product's "returns accepted" flag is now enforced. Every order keeps the policy it was placed under. A non-returnable item can still be returned as faulty.
+- **Delivery partner:** an optional interface. By default businesses enter tracking themselves; a mock partner books test shipments locally and is refused in production. Tracking links are https only and shown to customers.
+- **Screens:** `business-63` (delivery methods), `business-64` (return policy), `business-65` (ship with the partner), `customer-32` (delivery method at checkout), `customer-33` (return window and faulty option), `admin-24` (category returns), in English and Arabic.
+- **Tests:** 4 new API integration tests (189 in total, all passing on a fresh database), domain and configuration tests.
+- **API:** migration 0016. 1 new path (214 in total).
+- **Not built:** pickup, area-level zones inside an emirate, a real courier.
 
 ### 8.8 Policies, refunds and legal drafts (part 2: legal documents)
 
@@ -55,7 +67,7 @@ Decision: [ADR-0027](adr/0027-booking-policies-and-component-amounts.md). The ho
 - **Screens:** `business-59` (amounts and travel), `business-60` (no-show policy), `customer-28` (on the way), in English and Arabic.
 - **Tests:** 4 new API integration tests (182 in total), domain tests for refunds, travel and allocation.
 - **API:** migration 0014. 1 new path.
-- **Still to do in 8.8:** delivery methods and tracking, and return policies (part 3).
+- **8.8 complete** with part 3.
 
 ### 8.7 Service discovery
 

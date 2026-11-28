@@ -89,6 +89,7 @@ export async function startHarness(): Promise<Harness> {
     TRUST_PROXY_HOPS: '1',
     STORAGE_LOCAL_DIR: storageDir,
     MOCK_PAYMENT_OUTCOMES: 'true',
+    DELIVERY_PARTNER: 'mock',
   });
   const notifier = new MockNotifier(false);
   const clock = new TestClock();
