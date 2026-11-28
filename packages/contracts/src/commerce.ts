@@ -461,8 +461,31 @@ export const orderItemSchema = z.object({
   taxFils: fils,
 });
 
+/** Shipment and timeline of one seller's part of an order (phase 6). */
+export const fulfillmentSchema = z.object({
+  carrier: z.string().nullable(),
+  trackingNumber: z.string().nullable(),
+  trackingUrl: z.string().nullable(),
+  processingAt: isoDateTime.nullable(),
+  shippedAt: isoDateTime.nullable(),
+  deliveredAt: isoDateTime.nullable(),
+  canceledAt: isoDateTime.nullable(),
+  timeline: z.array(z.object({ status: z.string(), at: isoDateTime, note: z.string().nullable() })),
+});
+export type FulfillmentView = z.infer<typeof fulfillmentSchema>;
+
 export const orderShipmentGroupSchema = z.object({
   id: z.uuid(),
+  fulfillment: fulfillmentSchema,
+  /** The customer may cancel before the seller starts processing. */
+  canCancel: z.boolean(),
+  /** Delivered and inside the return window, with no return in progress. */
+  canReturn: z.boolean(),
+  returns: z.array(
+    z.object({ id: z.uuid(), status: z.string(), amountFils: fils, createdAt: isoDateTime }),
+  ),
+  /** Order item ids the customer can still review. */
+  reviewableItemIds: z.array(z.uuid()),
   store: storeRef,
   status: merchantOrderStatusSchema,
   cancelReason: z.string().nullable(),
@@ -506,6 +529,7 @@ export const merchantOrderSchema = z.object({
   orderId: z.uuid(),
   status: merchantOrderStatusSchema,
   cancelReason: z.string().nullable(),
+  fulfillment: fulfillmentSchema,
   items: z.array(orderItemSchema),
   delivery: deliveryInfoSchema,
   address: addressSnapshotSchema,

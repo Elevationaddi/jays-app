@@ -3,7 +3,12 @@ import type { Locale } from '@jays/i18n';
 import { maskContact } from './crypto.js';
 
 export type MessageTemplate =
-  'otp.verify_contact' | 'otp.password_reset' | 'account.exists' | 'admin.invite';
+  | 'otp.verify_contact'
+  | 'otp.password_reset'
+  | 'account.exists'
+  | 'admin.invite'
+  /** A rendered platform notification: params carry `title` and `body` (ADR-0016). */
+  | 'notification';
 
 export interface OutboundMessage {
   channel: 'email' | 'sms';
@@ -26,10 +31,20 @@ export interface Notifier {
 export class MockNotifier implements Notifier {
   private readonly logger = new Logger('MockNotifier');
   readonly sent: OutboundMessage[] = [];
+  private failures = 0;
 
   constructor(private readonly logToConsole: boolean) {}
 
+  /** Test seam (T12): the next `count` sends throw, as a provider outage would. */
+  failNext(count: number) {
+    this.failures = count;
+  }
+
   async send(message: OutboundMessage): Promise<void> {
+    if (this.failures > 0) {
+      this.failures -= 1;
+      throw new Error('mock provider unavailable');
+    }
     this.sent.push(message);
     if (this.sent.length > 500) this.sent.shift();
     if (this.logToConsole) {

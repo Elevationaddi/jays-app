@@ -100,6 +100,9 @@ describe('admin sign-in requires MFA (T03)', () => {
         'bookings.view',
         'finance.view',
         'finance.refund',
+        'orders.view',
+        'reviews.moderate',
+        'support.handle',
       ],
     });
     await h.http().get('/v1/admin/me').set('Authorization', bearer(session)).expect(200);

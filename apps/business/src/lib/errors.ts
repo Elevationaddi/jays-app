@@ -103,6 +103,10 @@ export function errorMessageKey(code: string | undefined): MessageKey | null {
       return 'error.memberAlreadyStaff';
     case 'CANCEL_TOO_LATE':
       return 'error.cancelTooLate';
+    case 'NOT_REFUNDABLE':
+      return 'error.notRefundable';
+    case 'ALREADY_REPORTED':
+      return 'error.alreadyReported';
     default:
       return 'common.error';
   }

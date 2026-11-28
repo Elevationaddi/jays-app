@@ -1,9 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { MerchantOrderListQuery, MerchantOrderView, OrderView } from '@jays/contracts';
 import type { Db } from '@jays/db';
-import type { EmirateCode } from '@jays/domain';
+import {
+  customerCanCancel,
+  type EmirateCode,
+  RETURN_WINDOW_DAYS,
+  withinReturnWindow,
+} from '@jays/domain';
 import { type Expression, type SqlBool } from 'kysely';
 import { afterCursor, cursorTs, decodeCursor, toPage } from '../common/pagination.js';
+import { CLOCK, type Clock } from '../common/clock.js';
 import { DB } from '../common/tokens.js';
 import { notFound } from '../catalog/product-views.js';
 
@@ -68,6 +74,42 @@ const addressOf = (a: unknown) => {
   return { emirate: s.emirate, area: s.area, street: s.street, building: s.building, unit: s.unit };
 };
 
+interface FulfillmentRow {
+  id: string;
+  status: string;
+  carrier: string | null;
+  tracking_number: string | null;
+  tracking_url: string | null;
+  processing_at: Date | null;
+  shipped_at: Date | null;
+  delivered_at: Date | null;
+  canceled_at: Date | null;
+}
+
+const iso = (d: Date | null) => d?.toISOString() ?? null;
+
+/** Shipment details and the suborder's timeline, starting with the payment. */
+function fulfillmentOf(
+  m: FulfillmentRow,
+  paidAt: Date | null,
+  events: { merchant_order_id: string; status: string; note: string | null; created_at: Date }[],
+) {
+  const own = events.filter((e) => e.merchant_order_id === m.id);
+  return {
+    carrier: m.carrier,
+    trackingNumber: m.tracking_number,
+    trackingUrl: m.tracking_url,
+    processingAt: iso(m.processing_at),
+    shippedAt: iso(m.shipped_at),
+    deliveredAt: iso(m.delivered_at),
+    canceledAt: iso(m.canceled_at),
+    timeline: [
+      ...(paidAt ? [{ status: 'paid', at: paidAt.toISOString(), note: null }] : []),
+      ...own.map((e) => ({ status: e.status, at: e.created_at.toISOString(), note: e.note })),
+    ],
+  };
+}
+
 /**
  * Order reads. Customers see only their own orders (T03); merchants see only their own suborders
  * and the minimum customer data needed to deliver. Everything comes from the order snapshot, so
@@ -75,7 +117,21 @@ const addressOf = (a: unknown) => {
  */
 @Injectable()
 export class OrdersService {
-  constructor(@Inject(DB) private readonly db: Db) {}
+  constructor(
+    @Inject(DB) private readonly db: Db,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
+
+  private events(merchantOrderIds: string[]) {
+    if (merchantOrderIds.length === 0) return Promise.resolve([]);
+    return this.db
+      .selectFrom('merchant_order_events')
+      .select(['merchant_order_id', 'status', 'note', 'created_at'])
+      .where('merchant_order_id', 'in', merchantOrderIds)
+      .orderBy('created_at')
+      .orderBy('id')
+      .execute();
+  }
 
   async listForUser(userId: string, query: { cursor?: string | undefined; limit: number }) {
     const cursor = decodeCursor(query.cursor);
@@ -141,6 +197,34 @@ export class OrdersService {
         .orderBy('oi.variant_id')
         .execute(),
     ]);
+    const ids = merchants.map((m) => m.id);
+    const [events, returns, reviewed, returnedQty] = await Promise.all([
+      this.events(ids),
+      ids.length === 0
+        ? []
+        : this.db
+            .selectFrom('return_requests')
+            .select(['id', 'merchant_order_id', 'status', 'amount_fils', 'created_at'])
+            .where('merchant_order_id', 'in', ids)
+            .orderBy('created_at')
+            .execute(),
+      this.db
+        .selectFrom('reviews')
+        .select('order_item_id')
+        .where('order_item_id', 'in', items.length ? items.map((i) => i.id) : [o.id])
+        .execute(),
+      this.db
+        .selectFrom('return_items as ri')
+        .innerJoin('return_requests as rr', 'rr.id', 'ri.return_request_id')
+        .select(['ri.order_item_id', (eb) => eb.fn.sum<string>('ri.qty').as('qty')])
+        .where('rr.order_id', '=', orderId)
+        .where('rr.status', '<>', 'rejected')
+        .groupBy('ri.order_item_id')
+        .execute(),
+    ]);
+    const now = this.clock.now();
+    const reviewedIds = new Set(reviewed.map((r) => r.order_item_id));
+    const returned = new Map(returnedQty.map((r) => [r.order_item_id, Number(r.qty)]));
     const open = o.status === 'pending_payment';
     return {
       id: o.id,
@@ -158,12 +242,35 @@ export class OrdersService {
       address: addressOf(o.address_snapshot),
       merchants: merchants.map((m) => {
         const d = m.delivery_snapshot as DeliverySnapshot;
+        const own = items.filter((i) => i.merchant_order_id === m.id);
+        const mine = returns.filter((r) => r.merchant_order_id === m.id);
+        const returnOpen = mine.some((r) =>
+          ['requested', 'approved', 'received', 'refund_pending'].includes(r.status),
+        );
         return {
           id: m.id,
+          fulfillment: fulfillmentOf(m, o.paid_at, events),
+          canCancel: customerCanCancel(m.status),
+          canReturn:
+            m.status === 'delivered' &&
+            !!m.delivered_at &&
+            withinReturnWindow(m.delivered_at, now, RETURN_WINDOW_DAYS) &&
+            !returnOpen &&
+            own.some((i) => (returned.get(i.id) ?? 0) < i.qty),
+          returns: mine.map((r) => ({
+            id: r.id,
+            status: r.status,
+            amountFils: r.amount_fils,
+            createdAt: r.created_at.toISOString(),
+          })),
+          reviewableItemIds:
+            m.status === 'delivered'
+              ? own.filter((i) => !reviewedIds.has(i.id)).map((i) => i.id)
+              : [],
           store: { id: m.business_id, name: (m.live_name ?? m.display_name) as Localized },
           status: m.status,
           cancelReason: m.cancel_reason,
-          items: items.filter((i) => i.merchant_order_id === m.id).map(toItem),
+          items: own.map(toItem),
           delivery: {
             emirate: d.emirate,
             feeFils: m.delivery_fils,
@@ -221,7 +328,7 @@ export class OrdersService {
       .innerJoin('orders as o', 'o.id', 'mo.order_id')
       .innerJoin('users as u', 'u.id', 'o.user_id')
       .selectAll('mo')
-      .select(['o.address_snapshot', 'u.display_name'])
+      .select(['o.address_snapshot', 'u.display_name', 'o.paid_at'])
       .where('mo.id', '=', merchantOrderId)
       .where('mo.business_id', '=', businessId)
       .executeTakeFirst();
@@ -233,11 +340,13 @@ export class OrdersService {
       .orderBy('oi.variant_id')
       .execute();
     const d = m.delivery_snapshot as DeliverySnapshot;
+    const events = await this.events([m.id]);
     return {
       id: m.id,
       orderId: m.order_id,
       status: m.status,
       cancelReason: m.cancel_reason,
+      fulfillment: fulfillmentOf(m, m.paid_at, events),
       items: items.map(toItem),
       delivery: {
         emirate: d.emirate,

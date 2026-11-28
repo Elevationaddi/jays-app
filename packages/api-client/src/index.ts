@@ -1,3 +1,28 @@
+import {
+  adminDashboardSchema,
+  adminOrderSchema,
+  adminReviewSchema,
+  adminTicketListItemSchema,
+  adminTicketSchema,
+  businessDashboardSchema,
+  merchantReviewSchema,
+  myReviewSchema,
+  notificationPageSchema,
+  notificationTemplateSchema,
+  outboxHealthSchema,
+  returnSchema,
+  reviewSummarySchema,
+  ticketListItemSchema,
+  ticketSchema,
+  type customerCancelRequestSchema,
+  type fulfillmentActionRequestSchema,
+  type notificationTemplateInputSchema,
+  type returnActionRequestSchema,
+  type returnRequestInputSchema,
+  type reviewInputSchema,
+  type reviewModerationSchema,
+  type ticketInputSchema,
+} from '@jays/contracts';
 import type {
   createProductRequestSchema,
   updateProductRequestSchema,
@@ -235,6 +260,30 @@ export function createApiClient(options: ApiClientOptions) {
       );
     }
     return schema.parse(json);
+  }
+
+  /** A CSV download: the body as text and the file name the server suggests. */
+  async function download(path: string): Promise<{ filename: string; text: string }> {
+    const headers: Record<string, string> = { accept: 'text/csv', ...options.headers?.() };
+    const token = options.accessToken?.();
+    if (token) headers['authorization'] = `Bearer ${token}`;
+    let response: Response;
+    try {
+      response = await doFetch(`${base}${path}`, { method: 'GET', headers, cache: 'no-store' });
+    } catch {
+      throw new ApiClientError(0, 'NETWORK_ERROR', 'Could not reach the server.');
+    }
+    if (!response.ok) {
+      const parsed = errorEnvelopeSchema.safeParse(await response.json().catch(() => null));
+      if (parsed.success) {
+        const { code, message, fieldErrors, requestId } = parsed.data.error;
+        throw new ApiClientError(response.status, code, message, fieldErrors, requestId);
+      }
+      throw new ApiClientError(response.status, 'UNEXPECTED_RESPONSE', 'Unexpected response.');
+    }
+    const disposition = response.headers.get('content-disposition') ?? '';
+    const filename = /filename="([^"]+)"/.exec(disposition)?.[1] ?? 'export.csv';
+    return { filename, text: await response.text() };
   }
 
   const q = (params: { cursor?: string | undefined; limit?: number | undefined } = {}) => {
@@ -781,6 +830,120 @@ export function createApiClient(options: ApiClientOptions) {
         reconciliationRunSchema,
         { note },
       ),
+
+    // After-sales (phase 6): customer
+    cancelSuborder: (orderId: string, body: z.input<typeof customerCancelRequestSchema>) =>
+      call('POST', `/orders/${encodeURIComponent(orderId)}/cancel`, orderSchema, body),
+    requestReturn: (orderId: string, body: z.input<typeof returnRequestInputSchema>) =>
+      call('POST', `/orders/${encodeURIComponent(orderId)}/returns`, returnSchema, body),
+    myReturns: (params: Page = {}) =>
+      call('GET', `/me/returns${query(params)}`, pageSchema(returnSchema)),
+    createReview: (body: z.input<typeof reviewInputSchema>) =>
+      call('POST', '/reviews', myReviewSchema, body),
+    myReviews: (params: Page = {}) =>
+      call('GET', `/me/reviews${query(params)}`, pageSchema(myReviewSchema)),
+    productReviews: (productId: string, params: Page = {}) =>
+      call(
+        'GET',
+        `/products/${encodeURIComponent(productId)}/reviews${query(params)}`,
+        reviewSummarySchema,
+      ),
+    venueReviews: (businessId: string, params: Page = {}) =>
+      call(
+        'GET',
+        `/venues/${encodeURIComponent(businessId)}/reviews${query(params)}`,
+        reviewSummarySchema,
+      ),
+    openTicket: (body: z.input<typeof ticketInputSchema>) =>
+      call('POST', '/support/tickets', ticketSchema, body),
+    myTickets: (params: Page = {}) =>
+      call('GET', `/support/tickets${query(params)}`, pageSchema(ticketListItemSchema)),
+    myTicket: (id: string) =>
+      call('GET', `/support/tickets/${encodeURIComponent(id)}`, ticketSchema),
+    replyToTicket: (id: string, body: string) =>
+      call('POST', `/support/tickets/${encodeURIComponent(id)}/messages`, ticketSchema, { body }),
+    notifications: (params: Page = {}) =>
+      call('GET', `/me/notifications${query(params)}`, notificationPageSchema),
+    markNotificationsRead: (ids?: string[]) =>
+      call('POST', '/me/notifications/read', notificationPageSchema, ids ? { ids } : {}),
+
+    // After-sales: business
+    fulfil: (id: string, moId: string, body: z.input<typeof fulfillmentActionRequestSchema>) =>
+      call(
+        'POST',
+        `${biz(id)}/orders/${encodeURIComponent(moId)}/fulfillment`,
+        merchantOrderSchema,
+        body,
+      ),
+    businessReturns: (id: string, params: Page & { status?: string } = {}) =>
+      call('GET', `${biz(id)}/returns${query(params)}`, pageSchema(returnSchema)),
+    businessReturn: (id: string, returnId: string) =>
+      call('GET', `${biz(id)}/returns/${encodeURIComponent(returnId)}`, returnSchema),
+    returnAction: (id: string, returnId: string, body: z.input<typeof returnActionRequestSchema>) =>
+      call(
+        'POST',
+        `${biz(id)}/returns/${encodeURIComponent(returnId)}/actions`,
+        returnSchema,
+        body,
+      ),
+    businessReviews: (id: string, params: Page = {}) =>
+      call('GET', `${biz(id)}/reviews${query(params)}`, pageSchema(merchantReviewSchema)),
+    replyToReview: (id: string, reviewId: string, body: string) =>
+      call(
+        'POST',
+        `${biz(id)}/reviews/${encodeURIComponent(reviewId)}/replies`,
+        merchantReviewSchema,
+        { body },
+      ),
+    reportReview: (id: string, reviewId: string, reason: string) =>
+      call(
+        'POST',
+        `${biz(id)}/reviews/${encodeURIComponent(reviewId)}/report`,
+        merchantReviewSchema,
+        { reason },
+      ),
+    businessDashboard: (
+      id: string,
+      params: {
+        from?: string | undefined;
+        to?: string | undefined;
+        branchId?: string | undefined;
+      } = {},
+    ) => call('GET', `${biz(id)}/dashboard${query(params)}`, businessDashboardSchema),
+    businessStatement: (id: string, params: { from: string; to: string }) =>
+      download(`${biz(id)}/finance/statement${query(params)}`),
+
+    // After-sales: admin
+    adminDashboard: (params: { from?: string | undefined; to?: string | undefined } = {}) =>
+      call('GET', `/admin/dashboard${query(params)}`, adminDashboardSchema),
+    adminOrders: (params: Page & { status?: string; stuck?: boolean } = {}) =>
+      call('GET', `/admin/orders${query(params)}`, pageSchema(adminOrderSchema)),
+    adminReviews: (params: Page & { filter?: string } = {}) =>
+      call('GET', `/admin/reviews${query(params)}`, pageSchema(adminReviewSchema)),
+    adminModerateReview: (id: string, body: z.input<typeof reviewModerationSchema>) =>
+      call('POST', `/admin/reviews/${encodeURIComponent(id)}/moderation`, adminReviewSchema, body),
+    adminTickets: (params: Page & { queue?: string } = {}) =>
+      call('GET', `/admin/support/tickets${query(params)}`, pageSchema(adminTicketListItemSchema)),
+    adminTicket: (id: string) =>
+      call('GET', `/admin/support/tickets/${encodeURIComponent(id)}`, adminTicketSchema),
+    adminTicketMessage: (id: string, body: { body: string; internal?: boolean }) =>
+      call(
+        'POST',
+        `/admin/support/tickets/${encodeURIComponent(id)}/messages`,
+        adminTicketSchema,
+        body,
+      ),
+    adminTicketAction: (id: string, action: 'assign_to_me' | 'unassign' | 'resolve') =>
+      call('POST', `/admin/support/tickets/${encodeURIComponent(id)}/actions`, adminTicketSchema, {
+        action,
+      }),
+    adminNotificationTemplates: () =>
+      call('GET', '/admin/notifications/templates', z.array(notificationTemplateSchema)),
+    adminCreateNotificationTemplate: (body: z.input<typeof notificationTemplateInputSchema>) =>
+      call('POST', '/admin/notifications/templates', z.array(notificationTemplateSchema), body),
+    adminOutboxHealth: () => call('GET', '/admin/notifications/health', outboxHealthSchema),
+    adminExport: (kind: string, params: { from: string; to: string }) =>
+      download(`/admin/exports/${encodeURIComponent(kind)}${query(params)}`),
   };
 }
 

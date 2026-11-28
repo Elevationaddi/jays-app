@@ -30,6 +30,9 @@ export const BUSINESS_CAPABILITIES = [
   'storefront.manage',
   // Phase 4. Branches, services, staff profiles, shifts and schedule blocks.
   'services.manage',
+  'returns.manage',
+  'reviews.respond',
+  'dashboard.view',
 ] as const;
 export type BusinessCapability = (typeof BUSINESS_CAPABILITIES)[number];
 
@@ -46,14 +49,17 @@ const MANAGER: readonly BusinessCapability[] = [
   'appointments.view_own',
   'storefront.manage',
   'services.manage',
+  'returns.manage',
+  'reviews.respond',
+  'dashboard.view',
 ];
 
 export const BUSINESS_GRANTS: Record<BusinessPermission, readonly BusinessCapability[]> = {
   owner: BUSINESS_CAPABILITIES,
   manager: MANAGER,
-  fulfillment: ['business.view', 'inventory.adjust', 'orders.fulfill'],
+  fulfillment: ['business.view', 'inventory.adjust', 'orders.fulfill', 'returns.manage'],
   scheduler: ['business.view', 'bookings.schedule', 'appointments.view_all'],
-  finance: ['business.view', 'finance.view'],
+  finance: ['business.view', 'finance.view', 'dashboard.view'],
   // Staff see their own appointments unless granted a manager permission (docs/03-business.md).
   professional: ['business.view', 'appointments.view_own'],
 };
@@ -136,6 +142,11 @@ export const PLATFORM_CAPABILITIES = [
   'finance.view',
   'finance.refund',
   'finance.manage',
+  'orders.view',
+  'reviews.moderate',
+  'support.handle',
+  'notifications.manage',
+  'exports.run',
 ] as const;
 export type PlatformCapability = (typeof PLATFORM_CAPABILITIES)[number];
 
@@ -153,6 +164,9 @@ export const PLATFORM_GRANTS: Record<PlatformRole, readonly PlatformCapability[]
     'bookings.view',
     'services.takedown',
     'finance.view',
+    'orders.view',
+    'reviews.moderate',
+    'exports.run',
   ],
   catalog: [
     'businesses.view',
@@ -162,6 +176,7 @@ export const PLATFORM_GRANTS: Record<PlatformRole, readonly PlatformCapability[]
     'products.review',
     'products.takedown',
     'services.takedown',
+    'reviews.moderate',
   ],
   operations: [
     'businesses.view',
@@ -169,11 +184,31 @@ export const PLATFORM_GRANTS: Record<PlatformRole, readonly PlatformCapability[]
     'products.view',
     'bookings.view',
     'services.takedown',
+    'orders.view',
+    'support.handle',
+    'notifications.manage',
   ],
-  finance: ['businesses.view', 'bookings.view', 'finance.view', 'finance.refund', 'finance.manage'],
+  finance: [
+    'businesses.view',
+    'bookings.view',
+    'finance.view',
+    'finance.refund',
+    'finance.manage',
+    'orders.view',
+    'exports.run',
+  ],
   // Support can request refunds; above the threshold a second admin must approve (T16).
-  support: ['businesses.view', 'products.view', 'bookings.view', 'finance.view', 'finance.refund'],
-  analyst: ['finance.view'],
+  support: [
+    'businesses.view',
+    'products.view',
+    'bookings.view',
+    'finance.view',
+    'finance.refund',
+    'orders.view',
+    'reviews.moderate',
+    'support.handle',
+  ],
+  analyst: ['finance.view', 'orders.view', 'exports.run'],
 };
 
 export function isPlatformRole(value: unknown): value is PlatformRole {

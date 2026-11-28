@@ -205,7 +205,7 @@ describe('tenant isolation and permissions (T03)', () => {
       .get(`/v1/businesses/${business.id}`)
       .set('Authorization', bearer(finance))
       .expect(200);
-    expect(view.body.myCapabilities).toEqual(['business.view', 'finance.view']);
+    expect(view.body.myCapabilities).toEqual(['business.view', 'finance.view', 'dashboard.view']);
     expect(view.body.myCapabilities).not.toContain('payouts.manage');
     await h
       .http()

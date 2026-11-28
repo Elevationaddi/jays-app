@@ -20,6 +20,10 @@ export function Shell({
     | 'services'
     | 'bookings'
     | 'finance'
+    | 'orders'
+    | 'reviews'
+    | 'support'
+    | 'notifications'
     | 'content'
     | 'security';
   children: ReactNode;
@@ -54,6 +58,30 @@ export function Shell({
       href: '/admin/bookings',
       label: t(locale, 'admin.nav.bookings'),
       show: admin.capabilities.includes('bookings.view'),
+    },
+    {
+      key: 'orders',
+      href: '/admin/orders',
+      label: t(locale, 'admin.nav.orders'),
+      show: admin.capabilities.includes('orders.view'),
+    },
+    {
+      key: 'support',
+      href: '/admin/support',
+      label: t(locale, 'admin.nav.support'),
+      show: admin.capabilities.includes('support.handle'),
+    },
+    {
+      key: 'reviews',
+      href: '/admin/reviews',
+      label: t(locale, 'admin.nav.reviews'),
+      show: admin.capabilities.includes('reviews.moderate'),
+    },
+    {
+      key: 'notifications',
+      href: '/admin/notifications',
+      label: t(locale, 'admin.nav.notifications'),
+      show: admin.capabilities.includes('notifications.manage'),
     },
     {
       key: 'finance',
