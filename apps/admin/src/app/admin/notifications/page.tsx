@@ -2,7 +2,7 @@ import { ErrorAlert } from '../../../components/ErrorAlert';
 import { Shell } from '../../../components/Shell';
 import { requireAdmin } from '../../../lib/admin';
 import { translator } from '../../../lib/i18n';
-import { saveTemplate } from '../aftercare-actions';
+import { retryNotification, saveTemplate } from '../aftercare-actions';
 
 type Search = Promise<Record<string, string | undefined>>;
 
@@ -18,12 +18,18 @@ export default async function NotificationsPage({ searchParams }: { searchParams
       </Shell>
     );
   }
-  const [templates, health] = await Promise.all([
+  const [templates, health, failed] = await Promise.all([
     api.adminNotificationTemplates(),
     api.adminOutboxHealth(),
+    api.adminFailedNotifications(),
   ]);
   const date = new Intl.DateTimeFormat(locale === 'ar' ? 'ar-AE' : 'en-AE', {
     dateStyle: 'medium',
+    timeZone: 'Asia/Dubai',
+  });
+  const when = new Intl.DateTimeFormat(locale === 'ar' ? 'ar-AE' : 'en-AE', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
     timeZone: 'Asia/Dubai',
   });
   return (
@@ -34,6 +40,11 @@ export default async function NotificationsPage({ searchParams }: { searchParams
       {params['saved'] ? (
         <div className="alert info" role="status">
           {tr('admin.notifications.saved')}
+        </div>
+      ) : null}
+      {params['retried'] ? (
+        <div className="alert info" role="status">
+          {tr('admin.notifications.retried')}
         </div>
       ) : null}
       <div className="stats">
@@ -58,6 +69,42 @@ export default async function NotificationsPage({ searchParams }: { searchParams
           </strong>
         </div>
       </div>
+      {failed.length ? (
+        <section className="card" style={{ margin: '16px 0' }}>
+          <h2>{tr('admin.notifications.failedTitle')}</h2>
+          <p className="muted">{tr('admin.notifications.failedHint')}</p>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">{tr('admin.notifications.event')}</th>
+                  <th scope="col">{tr('admin.notifications.lastError')}</th>
+                  <th scope="col">{tr('admin.notifications.failedAt')}</th>
+                  <th scope="col">
+                    <span className="sr-only">{tr('admin.notifications.retry')}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {failed.map((e) => (
+                  <tr key={e.id}>
+                    <td className="ltr">{e.eventType}</td>
+                    <td className="muted ltr">{e.lastError ?? '—'}</td>
+                    <td>{when.format(new Date(e.updatedAt))}</td>
+                    <td>
+                      <form action={retryNotification}>
+                        <input type="hidden" name="outboxId" value={e.id} />
+                        <button className="btn secondary">{tr('admin.notifications.retry')}</button>
+                      </form>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+      <h2>{tr('admin.notifications.templates')}</h2>
       <div className="stack">
         {templates.map((t) => (
           <details key={`${t.eventType}-${t.locale}`} className="card">

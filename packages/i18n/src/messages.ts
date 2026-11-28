@@ -1221,6 +1221,16 @@ const en = {
   'admin.notifications.intro':
     'Messages customers and businesses receive in the app and by email. Publishing creates a new version; earlier versions are kept.',
   'admin.notifications.saved': 'A new version was published.',
+  'admin.notifications.retried':
+    'The event is queued again. Messages already delivered will not be sent twice.',
+  'admin.notifications.failedTitle': 'Failed events',
+  'admin.notifications.failedHint':
+    'These events used every attempt. Fix the cause, then queue them again.',
+  'admin.notifications.event': 'Event',
+  'admin.notifications.lastError': 'Last error',
+  'admin.notifications.failedAt': 'Failed at',
+  'admin.notifications.retry': 'Retry',
+  'admin.notifications.templates': 'Templates',
   'admin.notifications.pending': 'Waiting to send',
   'admin.notifications.retrying': 'Retrying',
   'admin.notifications.failed': 'Failed',
@@ -1233,6 +1243,7 @@ const en = {
   'error.alreadyReported': 'This review is already waiting for moderation.',
   'error.unknownPlaceholder': 'The text uses a placeholder this notification does not offer.',
   'error.noOpenReport': 'There is no open report on this review.',
+  'error.notFailed': 'This event is no longer failed. Refresh to see its current state.',
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -2425,6 +2436,16 @@ const ar: Record<MessageKey, string> = {
   'admin.notifications.intro':
     'الرسائل التي يتلقاها العملاء والأنشطة في التطبيق وبالبريد الإلكتروني. النشر ينشئ نسخة جديدة مع الاحتفاظ بالنسخ السابقة.',
   'admin.notifications.saved': 'تم نشر نسخة جديدة.',
+  'admin.notifications.retried':
+    'أُعيد الحدث إلى قائمة الإرسال. لن تُرسل الرسائل التي وصلت مرة ثانية.',
+  'admin.notifications.failedTitle': 'أحداث فشل إرسالها',
+  'admin.notifications.failedHint':
+    'استنفدت هذه الأحداث كل المحاولات. عالج السبب ثم أعدها إلى قائمة الإرسال.',
+  'admin.notifications.event': 'الحدث',
+  'admin.notifications.lastError': 'آخر خطأ',
+  'admin.notifications.failedAt': 'وقت الفشل',
+  'admin.notifications.retry': 'أعد المحاولة',
+  'admin.notifications.templates': 'القوالب',
   'admin.notifications.pending': 'بانتظار الإرسال',
   'admin.notifications.retrying': 'إعادة المحاولة',
   'admin.notifications.failed': 'فشلت',
@@ -2437,6 +2458,7 @@ const ar: Record<MessageKey, string> = {
   'error.alreadyReported': 'هذا التقييم بانتظار الإشراف بالفعل.',
   'error.unknownPlaceholder': 'يستخدم النص متغيرًا غير متاح لهذا الإشعار.',
   'error.noOpenReport': 'لا يوجد بلاغ مفتوح على هذا التقييم.',
+  'error.notFailed': 'لم يعد هذا الحدث فاشلًا. حدّث الصفحة لرؤية حالته الحالية.',
 };
 
 export const catalogs: Record<Locale, Record<MessageKey, string>> = { en, ar };

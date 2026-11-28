@@ -24,8 +24,9 @@
     "db:seed": "pnpm --filter @jays/api build && pnpm --filter @jays/api seed"
   },
   "devDependencies": {
-    "@types/node": "^22.19.0",
     "@eslint/js": "^10.0.1",
+    "@types/node": "^22.19.0",
+    "axe-core": "4.11.0",
     "eslint": "^10.16.0",
     "globals": "^17.14.0",
     "prettier": "^3.10.1",

@@ -98,6 +98,8 @@ import { DEPENDENCY_PROBES, type DependencyProbe } from './health/dependencies.j
 import { HealthController } from './health/health.controller.js';
 import { Infrastructure } from './health/infrastructure.js';
 import { MeController } from './me/me.controller.js';
+import { HttpMetrics } from './observability/http-metrics.js';
+import { MetricsController } from './observability/metrics.controller.js';
 import { MeService } from './me/me.service.js';
 import { ReferenceController } from './reference/reference.controller.js';
 
@@ -169,6 +171,7 @@ export class AppModule {
       imports: [LoggerModule.forRoot(loggerParams(env))],
       controllers: [
         HealthController,
+        MetricsController,
         ReferenceController,
         AuthController,
         MeController,
@@ -199,6 +202,7 @@ export class AppModule {
       ],
       providers: [
         { provide: API_ENV, useValue: env },
+        { provide: HttpMetrics, useValue: new HttpMetrics() },
         Infrastructure,
         {
           provide: DEPENDENCY_PROBES,

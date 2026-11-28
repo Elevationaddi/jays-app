@@ -74,6 +74,72 @@ jobs:
       - run: pnpm test:integration
       - name: Seed data applies and is idempotent
         run: pnpm db:seed && pnpm db:seed
+      - name: Encrypted backup restores into an empty database (restore drill)
+        env:
+          PG_DUMP: docker run --rm -i --network host postgres:17-alpine pg_dump
+          PG_RESTORE: docker run --rm -i --network host postgres:17-alpine pg_restore
+          PSQL: docker run --rm -i --network host postgres:17-alpine psql
+        run: infra/backup/drill.sh
+
+  images:
+    name: Container images build and start (staging)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: jays
+          POSTGRES_PASSWORD: jays
+          POSTGRES_DB: jays
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U jays -d jays"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build every target
+        run: |
+          for target in api worker business admin; do
+            docker build --target "$target" -t "jays-$target:ci" .
+          done
+      - name: Migrate and start the API image, then check readiness
+        run: |
+          cat > ci.env <<'ENV'
+          APP_ENV=staging
+          DATABASE_URL=postgresql://jays:jays@127.0.0.1:5432/jays
+          REDIS_URL=redis://127.0.0.1:6379
+          CORS_ORIGINS=http://localhost:3001
+          JWT_KEYS=ci:local-dev-only-ci-jwt-0000000000000000000
+          OTP_SECRET=local-dev-only-ci-otp-0000000000000000000
+          MFA_ENCRYPTION_KEY=local-dev-only-ci-mfa-0000000000000000000
+          STORAGE_BUCKET=jays-ci
+          STORAGE_SIGNING_SECRET=local-dev-only-ci-storage-00000000000000
+          PSP_WEBHOOK_SECRET=local-dev-only-ci-webhook
+          METRICS_TOKEN=local-dev-only-ci-metrics-000000000000000
+          API_URL=http://127.0.0.1:3000/v1
+          ENV
+          docker run --rm --network host --env-file ci.env -w /app/packages/db jays-api:ci node dist/cli.js
+          docker run -d --name api --network host --env-file ci.env jays-api:ci
+          docker run -d --name worker --network host --env-file ci.env jays-worker:ci
+          docker run -d --name business --network host --env-file ci.env jays-business:ci
+          for i in $(seq 1 30); do
+            curl -fs http://127.0.0.1:3000/v1/health/ready && break
+            sleep 2
+          done
+          curl -fs http://127.0.0.1:3000/v1/health/ready
+          curl -fs -H 'authorization: Bearer local-dev-only-ci-metrics-000000000000000' \
+            http://127.0.0.1:3000/v1/metrics | grep -q '^jays_outbox_pending '
+          curl -fs -o /dev/null http://127.0.0.1:3001/sign-in
+          test "$(docker inspect -f '{{.State.Running}}' worker)" = true
+      - name: Container logs
+        if: always()
+        run: for c in api worker business; do docker logs "$c" 2>&1 | tail -40 || true; done
 
   security:
     name: Secret scan and dependency audit

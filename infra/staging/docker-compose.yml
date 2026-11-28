@@ -1,0 +1,74 @@
+# Staging stack on one host (ADR-0017): every app from the repository Dockerfile, with mock
+# payment, email and storage adapters, which APP_ENV=staging allows and production refuses.
+#   cp infra/staging/staging.env.example infra/staging/staging.env   # fill in real staging secrets
+#   docker compose -f infra/staging/docker-compose.yml up -d --build
+# Put a TLS reverse proxy in front; only the proxy should be reachable from the internet.
+name: jays-staging
+
+x-app: &app
+  env_file: staging.env
+  restart: unless-stopped
+  depends_on:
+    migrate: { condition: service_completed_successfully }
+    redis: { condition: service_healthy }
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: jays
+      POSTGRES_DB: jays
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets: [postgres_password]
+    volumes: [postgres-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U jays -d jays']
+      interval: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      retries: 20
+
+  # Applies pending migrations, then exits. Apps start only after it succeeds.
+  migrate:
+    build: { context: ../.., target: api }
+    env_file: staging.env
+    working_dir: /app/packages/db
+    command: ['node', 'dist/cli.js']
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api:
+    <<: *app
+    build: { context: ../.., target: api }
+    ports: ['127.0.0.1:3000:3000']
+    volumes: [storage:/app/apps/api/.local-storage]
+
+  worker:
+    <<: *app
+    build: { context: ../.., target: worker }
+
+  business:
+    <<: *app
+    build: { context: ../.., target: business }
+    ports: ['127.0.0.1:3001:3001']
+
+  admin:
+    <<: *app
+    build: { context: ../.., target: admin }
+    ports: ['127.0.0.1:3002:3002']
+
+secrets:
+  postgres_password:
+    file: postgres_password.txt
+
+volumes:
+  postgres-data:
+  redis-data:
+  storage:

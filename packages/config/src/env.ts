@@ -119,6 +119,8 @@ const apiShape = {
   MAPS_KEY: z.string().min(1).optional(),
   EMAIL_KEY: z.string().min(1).optional(),
   MOCK_PAYMENT_OUTCOMES: booleanFlag,
+  /** Bearer token for GET /v1/metrics (Prometheus). Unset disables the endpoint; required in production. */
+  METRICS_TOKEN: z.string().min(32, 'must be at least 32 characters').optional(),
 };
 
 type Issue = { path: string; message: string };
@@ -160,7 +162,7 @@ function productionIssues(env: Record<string, unknown>, shape: z.ZodRawShape): I
       message: 'development switch is not allowed in production',
     });
   }
-  for (const key of ['MAPS_KEY', 'EMAIL_KEY'] as const) {
+  for (const key of ['MAPS_KEY', 'EMAIL_KEY', 'METRICS_TOKEN'] as const) {
     if (key in shape && env[key] === undefined) {
       issues.push({ path: key, message: 'is required in production' });
     }

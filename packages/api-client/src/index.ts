@@ -10,6 +10,7 @@ import {
   notificationPageSchema,
   notificationTemplateSchema,
   outboxHealthSchema,
+  failedOutboxEventSchema,
   returnSchema,
   reviewSummarySchema,
   ticketListItemSchema,
@@ -942,6 +943,14 @@ export function createApiClient(options: ApiClientOptions) {
     adminCreateNotificationTemplate: (body: z.input<typeof notificationTemplateInputSchema>) =>
       call('POST', '/admin/notifications/templates', z.array(notificationTemplateSchema), body),
     adminOutboxHealth: () => call('GET', '/admin/notifications/health', outboxHealthSchema),
+    adminFailedNotifications: () =>
+      call('GET', '/admin/notifications/failed', z.array(failedOutboxEventSchema)),
+    adminRetryNotification: (id: string) =>
+      call(
+        'POST',
+        `/admin/notifications/failed/${encodeURIComponent(id)}/retry`,
+        outboxHealthSchema,
+      ),
     adminExport: (kind: string, params: { from: string; to: string }) =>
       download(`/admin/exports/${encodeURIComponent(kind)}${query(params)}`),
   };

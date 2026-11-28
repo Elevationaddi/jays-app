@@ -14,6 +14,7 @@ import {
   dashboardRangeSchema,
   exportKindSchema,
   exportQuerySchema,
+  failedOutboxEventSchema,
   notificationTemplateInputSchema,
   notificationTemplateSchema,
   outboxHealthSchema,
@@ -217,6 +218,32 @@ export class AdminAftercareController {
   @ApiErrors(401, 403)
   health() {
     return this.notifications.outboxHealth();
+  }
+
+  @Get('notifications/failed')
+  @RequirePlatformCapability('notifications.manage')
+  @ApiOperation({ summary: 'Events that used every attempt, newest first (no payloads)' })
+  @ApiZodResponse(200, z.array(failedOutboxEventSchema), 'Failed events.')
+  @ApiErrors(401, 403)
+  failed() {
+    return this.notifications.failedEvents();
+  }
+
+  @Post('notifications/failed/:outboxId/retry')
+  @RequirePlatformCapability('notifications.manage')
+  @idParam('outboxId')
+  @ApiOperation({
+    summary: 'Queue a failed event again with fresh attempts (audited)',
+    description: 'Messages already delivered are not sent again. 409 NOT_FAILED.',
+  })
+  @ApiZodResponse(201, outboxHealthSchema, 'Outbox health after the retry.')
+  @ApiErrors(401, 403, 404, 409)
+  retry(
+    @CurrentAdmin() admin: AdminPrincipal,
+    @UuidParam('outboxId') outboxId: string,
+    @Req() req: Request,
+  ) {
+    return this.notifications.retryFailed(admin.adminId, outboxId, requestMeta(req));
   }
 
   @Get('exports/:kind')

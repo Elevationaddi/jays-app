@@ -79,3 +79,14 @@ export async function saveTemplate(f: FormData) {
   }
   redirect(`${path}?saved=1`);
 }
+
+export async function retryNotification(f: FormData) {
+  const path = '/admin/notifications';
+  const outboxId = id(f, 'outboxId', path);
+  try {
+    await (await serverApi()).adminRetryNotification(outboxId);
+  } catch (error) {
+    fail(path, error);
+  }
+  redirect(`${path}?retried=1`);
+}

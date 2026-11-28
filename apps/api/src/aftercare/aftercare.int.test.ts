@@ -771,6 +771,43 @@ describe('notifications (T12)', () => {
       ).body,
     );
     expect(health.failed).toBeGreaterThan(0);
+
+    // Operations can see the failed event and queue it again; the retry is audited.
+    const ops = await as('operations');
+    const failed = (
+      await h.http().get('/v1/admin/notifications/failed').set('Authorization', ops).expect(200)
+    ).body as { id: string; eventType: string; lastError: string | null }[];
+    expect(failed.find((e) => e.id === id)).toMatchObject({ eventType: 'order.shipped' });
+    expect(JSON.stringify(failed)).not.toContain('FX-FAIL');
+    await h
+      .http()
+      .post(`/v1/admin/notifications/failed/${id}/retry`)
+      .set('Authorization', await as('finance'))
+      .expect(403);
+    await h
+      .http()
+      .post(`/v1/admin/notifications/failed/${id}/retry`)
+      .set('Authorization', ops)
+      .expect(201);
+    const again = await h
+      .http()
+      .post(`/v1/admin/notifications/failed/${id}/retry`)
+      .set('Authorization', ops)
+      .expect(409);
+    expect(again.body.error.code).toBe('NOT_FAILED');
+    await dispatcher().dispatch(10, [id!]);
+    const retried = await h.db
+      .selectFrom('outbox')
+      .select(['status'])
+      .where('id', '=', id!)
+      .executeTakeFirstOrThrow();
+    expect(retried.status).toBe('sent');
+    const audit = await h.db
+      .selectFrom('audit_logs')
+      .select('action')
+      .where('target_id', '=', id!)
+      .execute();
+    expect(audit.map((a) => a.action)).toEqual(['notification.retried']);
   });
 
   it('versions templates and refuses placeholders the event does not provide', async () => {
@@ -888,5 +925,114 @@ describe('dashboards and exports', () => {
       .where('actor_id', 'in', [admins.finance!.id, o.shop.owner.user.id])
       .execute();
     expect(audits.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// Parallel requests against real PostgreSQL row locks (docs/09-security-testing.md: concurrency).
+describe('concurrency', () => {
+  const statuses = (results: { status: number }[]) => results.map((r) => r.status).sort();
+
+  it('lets only one of a parallel ship and customer cancel win, and keeps stock and money consistent', async () => {
+    const o = await paidOrder(2);
+    const before = await stockOf(h, o.variantId);
+    const [ship, cancel] = await Promise.all([
+      act(o.shop, o.mo.id, {
+        action: 'ship',
+        expectedStatus: 'paid',
+        carrier: 'Fictional Express',
+        trackingNumber: 'FX-RACE',
+      }),
+      h
+        .http()
+        .post(`/v1/orders/${o.orderId}/cancel`)
+        .set('Authorization', bearer(o.customer))
+        .send({ merchantOrderId: o.mo.id, reason: 'Race' }),
+    ]);
+    const shipped = ship.status === 201;
+    expect([ship.status, cancel.status].filter((s) => s < 300)).toHaveLength(1);
+    expect(shipped ? cancel.status : ship.status).toBe(409);
+    await h.deliverWebhooks();
+    const mo = await h.db
+      .selectFrom('merchant_orders')
+      .select('status')
+      .where('id', '=', o.mo.id)
+      .executeTakeFirstOrThrow();
+    const refunds = await h.db
+      .selectFrom('refunds')
+      .select('id')
+      .where('merchant_order_id', '=', o.mo.id)
+      .execute();
+    const after = await stockOf(h, o.variantId);
+    if (shipped) {
+      expect(mo.status).toBe('shipped');
+      expect(refunds).toHaveLength(0);
+      expect(after.stock_on_hand).toBe(before.stock_on_hand);
+    } else {
+      expect(mo.status).toBe('canceled');
+      expect(refunds).toHaveLength(1);
+      expect(after.stock_on_hand).toBe(before.stock_on_hand + 2);
+    }
+  });
+
+  it('applies the same fulfillment step once when a merchant double-submits', async () => {
+    const o = await paidOrder(1);
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        act(o.shop, o.mo.id, { action: 'process', expectedStatus: 'paid' }),
+      ),
+    );
+    expect(statuses(results)).toEqual([201, 409, 409, 409, 409]);
+    const events = await h.db
+      .selectFrom('merchant_order_events')
+      .select('status')
+      .where('merchant_order_id', '=', o.mo.id)
+      .execute();
+    expect(events.filter((e) => e.status === 'processing')).toHaveLength(1);
+  });
+
+  it('creates one return when the same request is sent in parallel', async () => {
+    const o = await delivered(2);
+    const itemId = o.mo.items[0]!.id;
+    const results = await Promise.all(
+      Array.from({ length: 4 }, () =>
+        h
+          .http()
+          .post(`/v1/orders/${o.orderId}/returns`)
+          .set('Authorization', bearer(o.customer))
+          .send({
+            merchantOrderId: o.mo.id,
+            items: [{ orderItemId: itemId, qty: 1 }],
+            reason: 'Race',
+          }),
+      ),
+    );
+    expect(statuses(results)).toEqual([201, 409, 409, 409]);
+    const rows = await h.db
+      .selectFrom('return_requests')
+      .select('id')
+      .where('merchant_order_id', '=', o.mo.id)
+      .execute();
+    expect(rows).toHaveLength(1);
+  });
+
+  it('records one review when the same item is reviewed in parallel', async () => {
+    const o = await delivered(1);
+    const itemId = o.mo.items[0]!.id;
+    const results = await Promise.all(
+      Array.from({ length: 4 }, (_, i) =>
+        h
+          .http()
+          .post('/v1/reviews')
+          .set('Authorization', bearer(o.customer))
+          .send({ orderItemId: itemId, rating: 1 + i }),
+      ),
+    );
+    expect(statuses(results)).toEqual([201, 409, 409, 409]);
+    const rows = await h.db
+      .selectFrom('reviews')
+      .select('id')
+      .where('order_item_id', '=', itemId)
+      .execute();
+    expect(rows).toHaveLength(1);
   });
 });
