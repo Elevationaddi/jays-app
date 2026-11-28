@@ -3,7 +3,9 @@
 import { randomUUID } from 'node:crypto';
 import { ApiClientError } from '@jays/api-client';
 import {
+  DELIVERY_METHODS,
   EMIRATE_CODES,
+  RETURN_WINDOW_MIN_DAYS,
   IMAGE_CONTENT_TYPES,
   PRODUCT_IMAGES_MAX,
   STOCK_ADJUST_REASONS,
@@ -228,25 +230,29 @@ export async function adjustStock(f: FormData) {
   redirect(`${path}?saved=1`);
 }
 
-/** Replaces the delivery zones with the ticked emirates. */
+/** Replaces the delivery zones with the ticked emirates and methods (ADR-0029). */
 export async function saveDeliveryZones(f: FormData) {
   const id = uuid(f, 'businessId');
   const path = `/business/${id}/delivery`;
   const zones = [];
   for (const emirate of EMIRATE_CODES) {
-    if (f.get(`on-${emirate}`) !== 'on') continue;
-    const feeFils = parseAed(f.get(`fee-${emirate}`));
-    const free = text(f, `free-${emirate}`);
-    const freeOverFils = free ? parseAed(free) : null;
-    if (feeFils === null || (free && freeOverFils === null))
-      redirect(`${path}?error=VALIDATION_FAILED`);
-    zones.push({
-      emirate,
-      feeFils,
-      freeOverFils,
-      minDays: intOr(f, `min-${emirate}`, 1) ?? 1,
-      maxDays: intOr(f, `max-${emirate}`, 3) ?? 3,
-    });
+    for (const method of DELIVERY_METHODS) {
+      const k = method === 'standard' ? emirate : `${emirate}-${method}`;
+      if (f.get(`on-${k}`) !== 'on') continue;
+      const feeFils = parseAed(f.get(`fee-${k}`));
+      const free = text(f, `free-${k}`);
+      const freeOverFils = free ? parseAed(free) : null;
+      if (feeFils === null || (free && freeOverFils === null))
+        redirect(`${path}?error=VALIDATION_FAILED`);
+      zones.push({
+        emirate,
+        method,
+        feeFils,
+        freeOverFils,
+        minDays: intOr(f, `min-${k}`, 1) ?? 1,
+        maxDays: intOr(f, `max-${k}`, 3) ?? 3,
+      });
+    }
   }
   try {
     await (await serverApi()).putDeliveryZones(id, { zones });
@@ -254,4 +260,21 @@ export async function saveDeliveryZones(f: FormData) {
     fail(path, error);
   }
   redirect(`${path}?saved=1`);
+}
+
+/** The return window and note (ADR-0029). Orders keep the policy they were placed under. */
+export async function saveReturnPolicy(f: FormData) {
+  const id = uuid(f, 'businessId');
+  const path = `/business/${id}/delivery`;
+  const windowDays = intOr(f, 'windowDays', RETURN_WINDOW_MIN_DAYS) ?? RETURN_WINDOW_MIN_DAYS;
+  const en = text(f, 'noteEn');
+  const ar = text(f, 'noteAr');
+  try {
+    await (
+      await serverApi()
+    ).putReturnPolicy(id, { windowDays, note: en || ar ? { en, ar } : null });
+  } catch (error) {
+    fail(path, error);
+  }
+  redirect(`${path}?saved=1#returns`);
 }

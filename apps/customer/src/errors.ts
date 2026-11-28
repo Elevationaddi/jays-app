@@ -35,6 +35,8 @@ export function errorKey(error: unknown): { key: MessageKey; seconds: number } {
     NOT_REFUNDABLE: 'error.notRefundable',
     RETURN_OPEN: 'error.returnOpen',
     RETURN_WINDOW_CLOSED: 'error.returnWindowClosed',
+    ITEM_NOT_RETURNABLE: 'returns.itemFaultyOnly',
+    DELIVERY_METHOD_UNAVAILABLE: 'error.deliveryMethodUnavailable',
     RETURN_EXCEEDS_PURCHASE: 'error.returnExceedsPurchase',
     ALREADY_REVIEWED: 'error.alreadyReviewed',
     NOT_REVIEWABLE: 'error.notReviewable',

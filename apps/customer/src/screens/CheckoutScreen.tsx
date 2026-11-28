@@ -2,6 +2,7 @@ import type { Address, CreateOrderResponse, Emirate, QuoteView } from '@jays/con
 import { colors, minTouchTarget, radius, spacing } from '@jays/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Chips } from '../components/Picker';
 import { Tabs } from '../components/Tabs';
 import { Totals } from '../components/Totals';
 import { Banner, Body, Button, Field, Screen, Title } from '../components/ui';
@@ -78,6 +79,15 @@ export function CheckoutScreen() {
     run(async () => {
       if (!addressId) return;
       setStep({ name: 'review', quote: await api.quote(addressId) });
+    });
+
+  /** Re-quotes with another delivery method for one seller (ADR-0029). */
+  const chooseMethod = (quote: QuoteView, storeId: string, method: 'standard' | 'express') =>
+    run(async () => {
+      if (!addressId) return;
+      const methods = Object.fromEntries(quote.groups.map((g) => [g.store.id, g.delivery.method]));
+      methods[storeId] = method;
+      setStep({ name: 'review', quote: await api.quote(addressId, methods) });
     });
 
   const place = (quote: QuoteView) =>
@@ -232,6 +242,21 @@ export function CheckoutScreen() {
                 {g.deliveryFils ? money(g.deliveryFils, state.locale) : tr('money.free')} ·{' '}
                 {tr('orders.deliveryWindow', { min: g.delivery.minDays, max: g.delivery.maxDays })}
               </Text>
+              {g.deliveryOptions.length > 1 ? (
+                <Chips
+                  label={tr('checkout.deliveryMethod')}
+                  value={g.delivery.method}
+                  onChange={(m) => {
+                    if (m !== g.delivery.method) void chooseMethod(step.quote, g.store.id, m);
+                  }}
+                  options={g.deliveryOptions.map((o) => ({
+                    value: o.method,
+                    label: `${tr(`delivery.method.${o.method}`)} · ${
+                      o.feeFils ? money(o.feeFils, state.locale) : tr('money.free')
+                    } · ${tr('orders.deliveryWindow', { min: o.minDays, max: o.maxDays })}`,
+                  }))}
+                />
+              ) : null}
             </View>
           ))}
           <Totals t={step.quote} />

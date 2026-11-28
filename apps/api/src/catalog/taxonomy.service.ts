@@ -19,6 +19,7 @@ interface CategoryRow {
   sort_order: number;
   status: 'active' | 'archived';
   enabled: boolean;
+  returnable: boolean;
 }
 
 const toCategory = (r: CategoryRow): CategoryView => ({
@@ -31,6 +32,7 @@ const toCategory = (r: CategoryRow): CategoryView => ({
   sortOrder: r.sort_order,
   status: r.status,
   enabled: r.enabled,
+  returnable: r.returnable,
 });
 
 const CATEGORY_COLUMNS = [
@@ -43,6 +45,7 @@ const CATEGORY_COLUMNS = [
   'sort_order',
   'status',
   'enabled',
+  'returnable',
 ] as const;
 
 function isPgError(error: unknown, code: string): boolean {
@@ -157,6 +160,7 @@ export class TaxonomyService {
       sortOrder?: number | undefined;
       status?: 'active' | 'archived' | undefined;
       enabled?: boolean | undefined;
+      returnable?: boolean | undefined;
     },
     meta: RequestMeta,
   ): Promise<CategoryView> {
@@ -204,6 +208,7 @@ export class TaxonomyService {
           ...(body.sortOrder !== undefined ? { sort_order: body.sortOrder } : {}),
           ...(body.status ? { status: body.status } : {}),
           ...(body.enabled !== undefined ? { enabled: body.enabled } : {}),
+          ...(body.returnable !== undefined ? { returnable: body.returnable } : {}),
         })
         .where('id', '=', id)
         .returning(CATEGORY_COLUMNS)
@@ -227,12 +232,14 @@ export class TaxonomyService {
             sortOrder: before.sort_order,
             status: before.status,
             enabled: before.enabled,
+            returnable: before.returnable,
           },
           after: {
             name: row.name,
             sortOrder: row.sort_order,
             status: row.status,
             enabled: row.enabled,
+            returnable: row.returnable,
           },
         },
         requestId: meta.requestId,

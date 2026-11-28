@@ -38,6 +38,7 @@ export async function fulfil(f: FormData) {
       trackingNumber: optional(f, 'trackingNumber'),
       trackingUrl: optional(f, 'trackingUrl'),
       reason: optional(f, 'reason'),
+      ...(f.get('usePartner') === '1' ? { usePartner: true } : {}),
     });
   } catch (error) {
     fail(path, error);

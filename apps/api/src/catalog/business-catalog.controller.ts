@@ -15,6 +15,9 @@ import { ApiBearerAuth, ApiHeader, ApiOperation, ApiParam, ApiTags } from '@nest
 import {
   createProductRequestSchema,
   deliveryZoneListSchema,
+  putReturnPolicyRequestSchema,
+  type PutReturnPolicyRequest,
+  returnPolicySchema,
   inventoryItemSchema,
   inventoryListQuerySchema,
   mediaSchema,
@@ -345,7 +348,8 @@ export class BusinessCatalogController {
   @businessParam
   @ApiOperation({
     summary: 'Replace the delivery zones (owner, manager)',
-    description: 'One zone per emirate. Checkout refuses addresses in emirates without a zone.',
+    description:
+      'One zone per emirate and delivery method (standard, express). Checkout refuses addresses in emirates without a zone.',
   })
   @ApiZodBody(putDeliveryZonesRequestSchema)
   @ApiZodResponse(200, deliveryZoneListSchema, 'Zones.')
@@ -357,6 +361,36 @@ export class BusinessCatalogController {
     @Req() req: Request,
   ) {
     return this.inventory.putZones(ctx, user.userId, body, requestMeta(req));
+  }
+
+  @Get('return-policy')
+  @RequireBusinessCapability('storefront.manage')
+  @businessParam
+  @ApiOperation({ summary: 'Return policy (owner, manager)' })
+  @ApiZodResponse(200, returnPolicySchema, 'Policy.')
+  @ApiErrors(401, 403, 404)
+  returnPolicy(@CurrentBusiness() ctx: BusinessContext) {
+    return this.inventory.returnPolicy(ctx.businessId);
+  }
+
+  @Put('return-policy')
+  @RequireBusinessCapability('storefront.manage')
+  @businessParam
+  @ApiOperation({
+    summary: 'Set the return policy (owner, manager)',
+    description:
+      'Window of 14 to 90 days after delivery and an optional note. Orders keep the policy they were placed under (ADR-0029).',
+  })
+  @ApiZodBody(putReturnPolicyRequestSchema)
+  @ApiZodResponse(200, returnPolicySchema, 'Policy.')
+  @ApiErrors(400, 401, 403, 404)
+  putReturnPolicy(
+    @CurrentBusiness() ctx: BusinessContext,
+    @CurrentUser() user: UserPrincipal,
+    @ZodBody(putReturnPolicyRequestSchema) body: PutReturnPolicyRequest,
+    @Req() req: Request,
+  ) {
+    return this.inventory.putReturnPolicy(ctx, user.userId, body, requestMeta(req));
   }
 
   @Get('orders')

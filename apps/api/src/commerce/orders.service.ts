@@ -3,6 +3,7 @@ import type { MerchantOrderListQuery, MerchantOrderView, OrderView } from '@jays
 import type { Db } from '@jays/db';
 import {
   customerCanCancel,
+  type DeliveryMethod,
   type EmirateCode,
   RETURN_WINDOW_DAYS,
   withinReturnWindow,
@@ -12,6 +13,7 @@ import { afterCursor, cursorTs, decodeCursor, toPage } from '../common/paginatio
 import { CLOCK, type Clock } from '../common/clock.js';
 import { DB } from '../common/tokens.js';
 import { notFound } from '../catalog/product-views.js';
+import { DELIVERY_PARTNER, type DeliveryPartner } from './delivery-partner.js';
 
 type Localized = { en: string; ar: string };
 interface Snapshot {
@@ -21,6 +23,8 @@ interface Snapshot {
 }
 interface DeliverySnapshot {
   emirate: EmirateCode;
+  /** Absent on orders placed before ADR-0029: standard. */
+  method?: DeliveryMethod;
   minDays: number;
   maxDays: number;
 }
@@ -41,6 +45,7 @@ const itemColumns = [
   'oi.unit_price_fils',
   'oi.line_total_fils',
   'oi.tax_fils',
+  'oi.returnable',
   'oi.snapshot',
 ] as const;
 
@@ -52,6 +57,7 @@ function toItem(i: {
   unit_price_fils: number;
   line_total_fils: number;
   tax_fils: number;
+  returnable: boolean;
   snapshot: unknown;
 }) {
   const s = i.snapshot as Snapshot;
@@ -66,6 +72,7 @@ function toItem(i: {
     unitPriceFils: i.unit_price_fils,
     lineTotalFils: i.line_total_fils,
     taxFils: i.tax_fils,
+    returnable: i.returnable,
   };
 }
 
@@ -80,6 +87,7 @@ interface FulfillmentRow {
   carrier: string | null;
   tracking_number: string | null;
   tracking_url: string | null;
+  delivery_partner: 'mock' | null;
   processing_at: Date | null;
   shipped_at: Date | null;
   delivered_at: Date | null;
@@ -99,6 +107,7 @@ function fulfillmentOf(
     carrier: m.carrier,
     trackingNumber: m.tracking_number,
     trackingUrl: m.tracking_url,
+    partner: m.delivery_partner,
     processingAt: iso(m.processing_at),
     shippedAt: iso(m.shipped_at),
     deliveredAt: iso(m.delivered_at),
@@ -120,6 +129,7 @@ export class OrdersService {
   constructor(
     @Inject(DB) private readonly db: Db,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(DELIVERY_PARTNER) private readonly partner: DeliveryPartner | null,
   ) {}
 
   private events(merchantOrderIds: string[]) {
@@ -254,9 +264,18 @@ export class OrdersService {
           canReturn:
             m.status === 'delivered' &&
             !!m.delivered_at &&
-            withinReturnWindow(m.delivered_at, now, RETURN_WINDOW_DAYS) &&
+            withinReturnWindow(m.delivered_at, now, m.return_window_days ?? RETURN_WINDOW_DAYS) &&
             !returnOpen &&
             own.some((i) => (returned.get(i.id) ?? 0) < i.qty),
+          returnPolicy: {
+            windowDays: m.return_window_days ?? RETURN_WINDOW_DAYS,
+            returnUntil: m.delivered_at
+              ? new Date(
+                  m.delivered_at.getTime() +
+                    (m.return_window_days ?? RETURN_WINDOW_DAYS) * 86_400_000,
+                ).toISOString()
+              : null,
+          },
           returns: mine.map((r) => ({
             id: r.id,
             status: r.status,
@@ -273,6 +292,7 @@ export class OrdersService {
           items: own.map(toItem),
           delivery: {
             emirate: d.emirate,
+            method: d.method ?? 'standard',
             feeFils: m.delivery_fils,
             minDays: d.minDays,
             maxDays: d.maxDays,
@@ -347,9 +367,11 @@ export class OrdersService {
       status: m.status,
       cancelReason: m.cancel_reason,
       fulfillment: fulfillmentOf(m, m.paid_at, events),
+      partnerAvailable: this.partner !== null,
       items: items.map(toItem),
       delivery: {
         emirate: d.emirate,
+        method: d.method ?? 'standard',
         feeFils: m.delivery_fils,
         minDays: d.minDays,
         maxDays: d.maxDays,

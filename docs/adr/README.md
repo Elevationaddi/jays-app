@@ -34,3 +34,4 @@ Status values: **Accepted** (engineering decision, in force), **Proposed** (need
 | [0026](0026-service-discovery.md)                                 | Service discovery: add-ons, search, ratings, waitlists, reminders, rebooking and portfolios                  | Accepted                                |
 | [0027](0027-booking-policies-and-component-amounts.md)            | No-show refunds, home-visit travel status, travel-fee refunds without commission, per-component amounts      | Accepted (home-visit rule proposed)     |
 | [0028](0028-legal-documents-and-acceptance-records.md)            | Legal documents: drafts, versions, frozen published text, acceptance records; no approval recorded           | Accepted (all texts are drafts)         |
+| [0029](0029-delivery-methods-return-policies-delivery-partner.md) | Delivery methods, return policies per business and category, optional delivery-partner interface             | Accepted (return rules proposed)        |

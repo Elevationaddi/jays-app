@@ -37,6 +37,41 @@ export function customerCanCancel(status: SuborderStatus): boolean {
 /** Proposed default (ADR-0007 D7, ADR-0016): returns accepted for 14 days after delivery. */
 export const RETURN_WINDOW_DAYS = 14;
 
+/**
+ * A business may offer a longer window, never a shorter one, until a lawyer confirms the
+ * statutory minimum (ADR-0029; legal review checklist 4.4).
+ */
+export const RETURN_WINDOW_MIN_DAYS = RETURN_WINDOW_DAYS;
+export const RETURN_WINDOW_MAX_DAYS = 90;
+
+/**
+ * Whether an item can be returned: the categories it sits in (its own and every parent) must all
+ * be returnable, unless the customer reports it faulty or wrong, which is always accepted for
+ * review by the business.
+ */
+export function itemReturnable(categoryChainReturnable: readonly boolean[], faulty: boolean) {
+  return faulty || categoryChainReturnable.every(Boolean);
+}
+
+/** The categories marked non-returnable, with every category beneath them. */
+export function nonReturnableCategories(
+  categories: readonly { id: string; parentId: string | null; returnable: boolean }[],
+): Set<string> {
+  const byId = new Map(categories.map((c) => [c.id, c]));
+  const out = new Set<string>();
+  for (const c of categories) {
+    let cur: (typeof categories)[number] | undefined = c;
+    for (let depth = 0; cur && depth < 10; depth++) {
+      if (!cur.returnable) {
+        out.add(c.id);
+        break;
+      }
+      cur = cur.parentId ? byId.get(cur.parentId) : undefined;
+    }
+  }
+  return out;
+}
+
 export function withinReturnWindow(deliveredAt: Date, now: Date, days = RETURN_WINDOW_DAYS) {
   return now.getTime() <= deliveredAt.getTime() + days * 86_400_000;
 }

@@ -30,6 +30,12 @@ export const STORAGE_PROVIDERS = ['local'] as const;
 /** Malware scanners. The mock flags the EICAR test file; production refuses it (ADR-0012). */
 export const MALWARE_SCANNERS = ['mock'] as const;
 
+/**
+ * Delivery-partner adapters (ADR-0029). `none`: businesses enter tracking themselves. `mock`
+ * books fictional shipments for local testing; production refuses it. No paid provider is wired.
+ */
+export const DELIVERY_PARTNERS = ['none', 'mock'] as const;
+
 /** Marker that every committed example secret carries, so production can reject copied examples. */
 export const LOCAL_SECRET_MARKER = 'local-dev-only';
 
@@ -113,6 +119,7 @@ const apiShape = {
   /** Public base URL of this API (with /v1), used to build signed storage URLs. */
   API_PUBLIC_URL: z.url().default('http://localhost:3000/v1'),
   MALWARE_SCANNER: z.enum(MALWARE_SCANNERS).default('mock'),
+  DELIVERY_PARTNER: z.enum(DELIVERY_PARTNERS).default('none'),
   PSP_PROVIDER: z.enum(PSP_PROVIDERS).default('mock'),
   PSP_API_KEY: z.string().min(1).optional(),
   PSP_WEBHOOK_SECRET: z.string().min(16, 'must be at least 16 characters'),
@@ -150,6 +157,12 @@ function productionIssues(env: Record<string, unknown>, shape: z.ZodRawShape): I
     issues.push({
       path: 'MALWARE_SCANNER',
       message: 'mock malware scanner is not allowed in production',
+    });
+  }
+  if (env['DELIVERY_PARTNER'] === 'mock') {
+    issues.push({
+      path: 'DELIVERY_PARTNER',
+      message: 'mock delivery partner is not allowed in production',
     });
   }
   const publicUrl = env['API_PUBLIC_URL'];

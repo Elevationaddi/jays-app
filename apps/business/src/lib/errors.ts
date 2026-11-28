@@ -92,6 +92,8 @@ export function errorMessageKey(code: string | undefined): MessageKey | null {
       return 'error.quoteStale';
     case 'QUOTE_EXPIRED':
       return 'error.quoteExpired';
+    case 'DELIVERY_PARTNER_UNAVAILABLE':
+      return 'error.deliveryPartnerUnavailable';
     case 'DELIVERY_UNAVAILABLE':
     case 'NO_DELIVERY_ZONE':
       return 'error.deliveryUnavailable';

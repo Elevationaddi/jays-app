@@ -185,6 +185,28 @@ export interface PricingLine {
   taxClass: TaxClass;
 }
 
+/** Delivery methods a business can offer per emirate (ADR-0029). */
+export const DELIVERY_METHODS = ['standard', 'express'] as const;
+export type DeliveryMethod = (typeof DELIVERY_METHODS)[number];
+
+/**
+ * The method used for one seller: the one the customer asked for when that seller offers it,
+ * otherwise standard, otherwise the cheapest offered. Null when the requested method is not
+ * offered, so the caller can refuse rather than silently change the customer's choice.
+ */
+export function chooseDeliveryMethod<T extends { method: DeliveryMethod; feeFils: number }>(
+  options: readonly T[],
+  requested?: DeliveryMethod,
+): T | null {
+  if (options.length === 0) return null;
+  if (requested) return options.find((o) => o.method === requested) ?? null;
+  return (
+    options.find((o) => o.method === 'standard') ??
+    [...options].sort((a, b) => a.feeFils - b.feeFils)[0] ??
+    null
+  );
+}
+
 export interface DeliveryZoneRule {
   feeFils: number;
   freeOverFils: number | null;

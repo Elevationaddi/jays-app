@@ -17293,6 +17293,9 @@
                           },
                           "enabled": {
                             "type": "boolean"
+                          },
+                          "returnable": {
+                            "type": "boolean"
                           }
                         },
                         "required": [
@@ -17304,7 +17307,8 @@
                           "depth",
                           "sortOrder",
                           "status",
-                          "enabled"
+                          "enabled",
+                          "returnable"
                         ],
                         "additionalProperties": false
                       }
@@ -17499,6 +17503,9 @@
                     },
                     "enabled": {
                       "type": "boolean"
+                    },
+                    "returnable": {
+                      "type": "boolean"
                     }
                   },
                   "required": [
@@ -17510,7 +17517,8 @@
                     "depth",
                     "sortOrder",
                     "status",
-                    "enabled"
+                    "enabled",
+                    "returnable"
                   ],
                   "additionalProperties": false
                 }
@@ -17634,6 +17642,9 @@
                   },
                   "enabled": {
                     "type": "boolean"
+                  },
+                  "returnable": {
+                    "type": "boolean"
                   }
                 },
                 "additionalProperties": false
@@ -17711,6 +17722,9 @@
                     },
                     "enabled": {
                       "type": "boolean"
+                    },
+                    "returnable": {
+                      "type": "boolean"
                     }
                   },
                   "required": [
@@ -17722,7 +17736,8 @@
                     "depth",
                     "sortOrder",
                     "status",
-                    "enabled"
+                    "enabled",
+                    "returnable"
                   ],
                   "additionalProperties": false
                 }
@@ -19314,6 +19329,13 @@
                               "FUJ"
                             ]
                           },
+                          "method": {
+                            "type": "string",
+                            "enum": [
+                              "standard",
+                              "express"
+                            ]
+                          },
                           "feeFils": {
                             "type": "integer",
                             "minimum": 0,
@@ -19344,6 +19366,7 @@
                         },
                         "required": [
                           "emirate",
+                          "method",
                           "feeFils",
                           "freeOverFils",
                           "minDays",
@@ -19351,6 +19374,48 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "returns": {
+                      "type": "object",
+                      "properties": {
+                        "windowDays": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "returnable": {
+                          "type": "boolean"
+                        },
+                        "note": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "ar": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "en",
+                                "ar"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "windowDays",
+                        "returnable",
+                        "note"
+                      ],
+                      "additionalProperties": false
                     },
                     "rating": {
                       "anyOf": [
@@ -19401,6 +19466,7 @@
                     "currency",
                     "variants",
                     "delivery",
+                    "returns",
                     "rating",
                     "inStock",
                     "publishedAt"
@@ -19519,6 +19585,9 @@
                           },
                           "enabled": {
                             "type": "boolean"
+                          },
+                          "returnable": {
+                            "type": "boolean"
                           }
                         },
                         "required": [
@@ -19530,7 +19599,8 @@
                           "depth",
                           "sortOrder",
                           "status",
-                          "enabled"
+                          "enabled",
+                          "returnable"
                         ],
                         "additionalProperties": false
                       }
@@ -26120,6 +26190,13 @@
                               "FUJ"
                             ]
                           },
+                          "method": {
+                            "type": "string",
+                            "enum": [
+                              "standard",
+                              "express"
+                            ]
+                          },
                           "feeFils": {
                             "type": "integer",
                             "minimum": 0,
@@ -26150,6 +26227,7 @@
                         },
                         "required": [
                           "emirate",
+                          "method",
                           "feeFils",
                           "freeOverFils",
                           "minDays",
@@ -26209,7 +26287,7 @@
         ]
       },
       "put": {
-        "description": "One zone per emirate. Checkout refuses addresses in emirates without a zone.",
+        "description": "One zone per emirate and delivery method (standard, express). Checkout refuses addresses in emirates without a zone.",
         "operationId": "BusinessCatalogController_putZones",
         "parameters": [
           {
@@ -26229,7 +26307,7 @@
                 "type": "object",
                 "properties": {
                   "zones": {
-                    "maxItems": 7,
+                    "maxItems": 14,
                     "type": "array",
                     "items": {
                       "type": "object",
@@ -26244,6 +26322,14 @@
                             "UAQ",
                             "RAK",
                             "FUJ"
+                          ]
+                        },
+                        "method": {
+                          "default": "standard",
+                          "type": "string",
+                          "enum": [
+                            "standard",
+                            "express"
                           ]
                         },
                         "feeFils": {
@@ -26317,6 +26403,13 @@
                               "FUJ"
                             ]
                           },
+                          "method": {
+                            "type": "string",
+                            "enum": [
+                              "standard",
+                              "express"
+                            ]
+                          },
                           "feeFils": {
                             "type": "integer",
                             "minimum": 0,
@@ -26347,6 +26440,7 @@
                         },
                         "required": [
                           "emirate",
+                          "method",
                           "feeFils",
                           "freeOverFils",
                           "minDays",
@@ -26411,6 +26505,263 @@
           }
         ],
         "summary": "Replace the delivery zones (owner, manager)",
+        "tags": [
+          "business-catalog"
+        ]
+      }
+    },
+    "/v1/businesses/{businessId}/return-policy": {
+      "get": {
+        "operationId": "BusinessCatalogController_returnPolicy",
+        "parameters": [
+          {
+            "name": "businessId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Policy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "windowDays": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "note": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "en": {
+                              "type": "string"
+                            },
+                            "ar": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "en",
+                            "ar"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "windowDays",
+                    "note"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Absent, or hidden from this caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Return policy (owner, manager)",
+        "tags": [
+          "business-catalog"
+        ]
+      },
+      "put": {
+        "description": "Window of 14 to 90 days after delivery and an optional note. Orders keep the policy they were placed under (ADR-0029).",
+        "operationId": "BusinessCatalogController_putReturnPolicy",
+        "parameters": [
+          {
+            "name": "businessId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "windowDays": {
+                    "type": "integer",
+                    "minimum": 14,
+                    "maximum": 90
+                  },
+                  "note": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          "ar": {
+                            "type": "string",
+                            "maxLength": 500
+                          }
+                        },
+                        "required": [
+                          "en",
+                          "ar"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "windowDays"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Policy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "windowDays": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "note": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "en": {
+                              "type": "string"
+                            },
+                            "ar": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "en",
+                            "ar"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "windowDays",
+                    "note"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed (VALIDATION_FAILED) or a code is invalid or expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated, or credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Absent, or hidden from this caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set the return policy (owner, manager)",
         "tags": [
           "business-catalog"
         ]
@@ -26678,6 +27029,19 @@
                             "null"
                           ]
                         },
+                        "partner": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "mock"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
                         "processingAt": {
                           "anyOf": [
                             {
@@ -26759,6 +27123,7 @@
                         "carrier",
                         "trackingNumber",
                         "trackingUrl",
+                        "partner",
                         "processingAt",
                         "shippedAt",
                         "deliveredAt",
@@ -26766,6 +27131,9 @@
                         "timeline"
                       ],
                       "additionalProperties": false
+                    },
+                    "partnerAvailable": {
+                      "type": "boolean"
                     },
                     "items": {
                       "type": "array",
@@ -26841,6 +27209,9 @@
                             "type": "integer",
                             "minimum": 0,
                             "maximum": 9007199254740991
+                          },
+                          "returnable": {
+                            "type": "boolean"
                           }
                         },
                         "required": [
@@ -26853,7 +27224,8 @@
                           "qty",
                           "unitPriceFils",
                           "lineTotalFils",
-                          "taxFils"
+                          "taxFils",
+                          "returnable"
                         ],
                         "additionalProperties": false
                       }
@@ -26871,6 +27243,13 @@
                             "UAQ",
                             "RAK",
                             "FUJ"
+                          ]
+                        },
+                        "method": {
+                          "type": "string",
+                          "enum": [
+                            "standard",
+                            "express"
                           ]
                         },
                         "feeFils": {
@@ -26891,6 +27270,7 @@
                       },
                       "required": [
                         "emirate",
+                        "method",
                         "feeFils",
                         "minDays",
                         "maxDays"
@@ -26984,6 +27364,7 @@
                     "status",
                     "cancelReason",
                     "fulfillment",
+                    "partnerAvailable",
                     "items",
                     "delivery",
                     "address",
@@ -29605,6 +29986,21 @@
                     "type": "string",
                     "format": "uuid",
                     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "deliveryMethods": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "additionalProperties": {
+                      "type": "string",
+                      "enum": [
+                        "standard",
+                        "express"
+                      ]
+                    }
                   }
                 },
                 "required": [
@@ -29798,6 +30194,13 @@
                                   "FUJ"
                                 ]
                               },
+                              "method": {
+                                "type": "string",
+                                "enum": [
+                                  "standard",
+                                  "express"
+                                ]
+                              },
                               "feeFils": {
                                 "type": "integer",
                                 "minimum": 0,
@@ -29816,11 +30219,49 @@
                             },
                             "required": [
                               "emirate",
+                              "method",
                               "feeFils",
                               "minDays",
                               "maxDays"
                             ],
                             "additionalProperties": false
+                          },
+                          "deliveryOptions": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "method": {
+                                  "type": "string",
+                                  "enum": [
+                                    "standard",
+                                    "express"
+                                  ]
+                                },
+                                "feeFils": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "minDays": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "maxDays": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "method",
+                                "feeFils",
+                                "minDays",
+                                "maxDays"
+                              ],
+                              "additionalProperties": false
+                            }
                           },
                           "subtotalFils": {
                             "type": "integer",
@@ -29852,6 +30293,7 @@
                           "store",
                           "lines",
                           "delivery",
+                          "deliveryOptions",
                           "subtotalFils",
                           "deliveryFils",
                           "discountFils",
@@ -30402,6 +30844,19 @@
                                   "null"
                                 ]
                               },
+                              "partner": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "mock"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
                               "processingAt": {
                                 "anyOf": [
                                   {
@@ -30483,6 +30938,7 @@
                               "carrier",
                               "trackingNumber",
                               "trackingUrl",
+                              "partner",
                               "processingAt",
                               "shippedAt",
                               "deliveredAt",
@@ -30496,6 +30952,33 @@
                           },
                           "canReturn": {
                             "type": "boolean"
+                          },
+                          "returnPolicy": {
+                            "type": "object",
+                            "properties": {
+                              "windowDays": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "returnUntil": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "windowDays",
+                              "returnUntil"
+                            ],
+                            "additionalProperties": false
                           },
                           "returns": {
                             "type": "array",
@@ -30660,6 +31143,9 @@
                                   "type": "integer",
                                   "minimum": 0,
                                   "maximum": 9007199254740991
+                                },
+                                "returnable": {
+                                  "type": "boolean"
                                 }
                               },
                               "required": [
@@ -30672,7 +31158,8 @@
                                 "qty",
                                 "unitPriceFils",
                                 "lineTotalFils",
-                                "taxFils"
+                                "taxFils",
+                                "returnable"
                               ],
                               "additionalProperties": false
                             }
@@ -30690,6 +31177,13 @@
                                   "UAQ",
                                   "RAK",
                                   "FUJ"
+                                ]
+                              },
+                              "method": {
+                                "type": "string",
+                                "enum": [
+                                  "standard",
+                                  "express"
                                 ]
                               },
                               "feeFils": {
@@ -30710,6 +31204,7 @@
                             },
                             "required": [
                               "emirate",
+                              "method",
                               "feeFils",
                               "minDays",
                               "maxDays"
@@ -30747,6 +31242,7 @@
                           "fulfillment",
                           "canCancel",
                           "canReturn",
+                          "returnPolicy",
                           "returns",
                           "reviewableItemIds",
                           "store",
@@ -60856,6 +61352,19 @@
                                   "null"
                                 ]
                               },
+                              "partner": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "mock"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
                               "processingAt": {
                                 "anyOf": [
                                   {
@@ -60937,6 +61446,7 @@
                               "carrier",
                               "trackingNumber",
                               "trackingUrl",
+                              "partner",
                               "processingAt",
                               "shippedAt",
                               "deliveredAt",
@@ -60950,6 +61460,33 @@
                           },
                           "canReturn": {
                             "type": "boolean"
+                          },
+                          "returnPolicy": {
+                            "type": "object",
+                            "properties": {
+                              "windowDays": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "returnUntil": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "windowDays",
+                              "returnUntil"
+                            ],
+                            "additionalProperties": false
                           },
                           "returns": {
                             "type": "array",
@@ -61114,6 +61651,9 @@
                                   "type": "integer",
                                   "minimum": 0,
                                   "maximum": 9007199254740991
+                                },
+                                "returnable": {
+                                  "type": "boolean"
                                 }
                               },
                               "required": [
@@ -61126,7 +61666,8 @@
                                 "qty",
                                 "unitPriceFils",
                                 "lineTotalFils",
-                                "taxFils"
+                                "taxFils",
+                                "returnable"
                               ],
                               "additionalProperties": false
                             }
@@ -61144,6 +61685,13 @@
                                   "UAQ",
                                   "RAK",
                                   "FUJ"
+                                ]
+                              },
+                              "method": {
+                                "type": "string",
+                                "enum": [
+                                  "standard",
+                                  "express"
                                 ]
                               },
                               "feeFils": {
@@ -61164,6 +61712,7 @@
                             },
                             "required": [
                               "emirate",
+                              "method",
                               "feeFils",
                               "minDays",
                               "maxDays"
@@ -61201,6 +61750,7 @@
                           "fulfillment",
                           "canCancel",
                           "canReturn",
+                          "returnPolicy",
                           "returns",
                           "reviewableItemIds",
                           "store",
@@ -61376,6 +61926,10 @@
                     "type": "string",
                     "minLength": 3,
                     "maxLength": 1000
+                  },
+                  "faulty": {
+                    "default": false,
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -61456,6 +62010,9 @@
                     },
                     "reason": {
                       "type": "string"
+                    },
+                    "faulty": {
+                      "type": "boolean"
                     },
                     "amountFils": {
                       "type": "integer",
@@ -61568,6 +62125,7 @@
                     "business",
                     "status",
                     "reason",
+                    "faulty",
                     "amountFils",
                     "items",
                     "decisionReason",
@@ -61759,6 +62317,9 @@
                           "reason": {
                             "type": "string"
                           },
+                          "faulty": {
+                            "type": "boolean"
+                          },
                           "amountFils": {
                             "type": "integer",
                             "minimum": -9007199254740991,
@@ -61870,6 +62431,7 @@
                           "business",
                           "status",
                           "reason",
+                          "faulty",
                           "amountFils",
                           "items",
                           "decisionReason",
@@ -64222,6 +64784,9 @@
                     "type": "string",
                     "minLength": 3,
                     "maxLength": 1000
+                  },
+                  "usePartner": {
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -64287,6 +64852,19 @@
                           "type": [
                             "string",
                             "null"
+                          ]
+                        },
+                        "partner": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "mock"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
                           ]
                         },
                         "processingAt": {
@@ -64370,6 +64948,7 @@
                         "carrier",
                         "trackingNumber",
                         "trackingUrl",
+                        "partner",
                         "processingAt",
                         "shippedAt",
                         "deliveredAt",
@@ -64377,6 +64956,9 @@
                         "timeline"
                       ],
                       "additionalProperties": false
+                    },
+                    "partnerAvailable": {
+                      "type": "boolean"
                     },
                     "items": {
                       "type": "array",
@@ -64452,6 +65034,9 @@
                             "type": "integer",
                             "minimum": 0,
                             "maximum": 9007199254740991
+                          },
+                          "returnable": {
+                            "type": "boolean"
                           }
                         },
                         "required": [
@@ -64464,7 +65049,8 @@
                           "qty",
                           "unitPriceFils",
                           "lineTotalFils",
-                          "taxFils"
+                          "taxFils",
+                          "returnable"
                         ],
                         "additionalProperties": false
                       }
@@ -64482,6 +65068,13 @@
                             "UAQ",
                             "RAK",
                             "FUJ"
+                          ]
+                        },
+                        "method": {
+                          "type": "string",
+                          "enum": [
+                            "standard",
+                            "express"
                           ]
                         },
                         "feeFils": {
@@ -64502,6 +65095,7 @@
                       },
                       "required": [
                         "emirate",
+                        "method",
                         "feeFils",
                         "minDays",
                         "maxDays"
@@ -64595,6 +65189,7 @@
                     "status",
                     "cancelReason",
                     "fulfillment",
+                    "partnerAvailable",
                     "items",
                     "delivery",
                     "address",
@@ -64809,6 +65404,9 @@
                           "reason": {
                             "type": "string"
                           },
+                          "faulty": {
+                            "type": "boolean"
+                          },
                           "amountFils": {
                             "type": "integer",
                             "minimum": -9007199254740991,
@@ -64920,6 +65518,7 @@
                           "business",
                           "status",
                           "reason",
+                          "faulty",
                           "amountFils",
                           "items",
                           "decisionReason",
@@ -65089,6 +65688,9 @@
                     "reason": {
                       "type": "string"
                     },
+                    "faulty": {
+                      "type": "boolean"
+                    },
                     "amountFils": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -65200,6 +65802,7 @@
                     "business",
                     "status",
                     "reason",
+                    "faulty",
                     "amountFils",
                     "items",
                     "decisionReason",
@@ -65375,6 +65978,9 @@
                     "reason": {
                       "type": "string"
                     },
+                    "faulty": {
+                      "type": "boolean"
+                    },
                     "amountFils": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -65486,6 +66092,7 @@
                     "business",
                     "status",
                     "reason",
+                    "faulty",
                     "amountFils",
                     "items",
                     "decisionReason",

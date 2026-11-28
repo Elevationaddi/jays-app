@@ -1,4 +1,5 @@
 import {
+  returnPolicySchema,
   adminLegalDocumentSchema,
   adminLegalListSchema,
   legalDocumentListSchema,
@@ -53,6 +54,7 @@ import {
   type ticketInputSchema,
 } from '@jays/contracts';
 import type {
+  putReturnPolicyRequestSchema,
   createProductRequestSchema,
   updateProductRequestSchema,
   variantInputSchema,
@@ -571,7 +573,11 @@ export function createApiClient(options: ApiClientOptions) {
         cartHeaders(cartToken),
       ),
     mergeCart: (cartToken: string) => call('POST', '/cart/merge', cartSchema, { cartToken }),
-    quote: (addressId: string) => call('POST', '/checkout/quote', quoteSchema, { addressId }),
+    quote: (addressId: string, deliveryMethods?: Record<string, 'standard' | 'express'>) =>
+      call('POST', '/checkout/quote', quoteSchema, {
+        addressId,
+        ...(deliveryMethods ? { deliveryMethods } : {}),
+      }),
     /** Send the same idempotency key when retrying, so a lost response never creates two orders. */
     createOrder: (quoteId: string, idempotencyKey: string) =>
       call('POST', '/orders', createOrderResponseSchema, { quoteId }, idem(idempotencyKey)),
@@ -736,6 +742,9 @@ export function createApiClient(options: ApiClientOptions) {
         pageSchema(stockMovementSchema),
       ),
     deliveryZones: (id: string) => call('GET', `${biz(id)}/delivery-zones`, deliveryZoneListSchema),
+    returnPolicy: (id: string) => call('GET', `${biz(id)}/return-policy`, returnPolicySchema),
+    putReturnPolicy: (id: string, body: z.input<typeof putReturnPolicyRequestSchema>) =>
+      call('PUT', `${biz(id)}/return-policy`, returnPolicySchema, body),
     putDeliveryZones: (id: string, body: z.input<typeof putDeliveryZonesRequestSchema>) =>
       call('PUT', `${biz(id)}/delivery-zones`, deliveryZoneListSchema, body),
     merchantOrders: (

@@ -4,6 +4,8 @@ import type {
   InventoryItem,
   InventoryListQuery,
   PutDeliveryZonesRequest,
+  PutReturnPolicyRequest,
+  ReturnPolicyView,
   StockAdjustRequest,
 } from '@jays/contracts';
 import type { Db } from '@jays/db';
@@ -229,13 +231,22 @@ export class InventoryService {
     const rows = await this.db
       .selectFrom('delivery_zones as z')
       .innerJoin('emirates as e', 'e.code', 'z.emirate_code')
-      .select(['z.emirate_code', 'z.fee_fils', 'z.free_over_fils', 'z.min_days', 'z.max_days'])
+      .select([
+        'z.emirate_code',
+        'z.method',
+        'z.fee_fils',
+        'z.free_over_fils',
+        'z.min_days',
+        'z.max_days',
+      ])
       .where('z.business_id', '=', businessId)
       .orderBy('e.sort_order')
+      .orderBy('z.method', 'desc')
       .execute();
     return {
       items: rows.map((z) => ({
         emirate: z.emirate_code as EmirateCode,
+        method: z.method,
         feeFils: z.fee_fils,
         freeOverFils: z.free_over_fils,
         minDays: z.min_days,
@@ -266,6 +277,7 @@ export class InventoryService {
             body.zones.map((z) => ({
               business_id: ctx.businessId,
               emirate_code: z.emirate,
+              method: z.method,
               fee_fils: z.feeFils,
               free_over_fils: z.freeOverFils ?? null,
               min_days: z.minDays,
@@ -281,10 +293,57 @@ export class InventoryService {
         targetType: 'business',
         targetId: ctx.businessId,
         businessId: ctx.businessId,
-        diff: { zones: body.zones.map((z) => ({ emirate: z.emirate, feeFils: z.feeFils })) },
+        diff: {
+          zones: body.zones.map((z) => ({
+            emirate: z.emirate,
+            method: z.method,
+            feeFils: z.feeFils,
+          })),
+        },
         requestId: meta.requestId,
       });
     });
     return this.zones(ctx.businessId);
+  }
+
+  /** The business's return policy (ADR-0029). */
+  async returnPolicy(businessId: string): Promise<ReturnPolicyView> {
+    const b = await this.db
+      .selectFrom('businesses')
+      .select(['return_window_days', 'return_policy_note'])
+      .where('id', '=', businessId)
+      .executeTakeFirstOrThrow();
+    return { windowDays: b.return_window_days, note: b.return_policy_note };
+  }
+
+  /** Changes the return policy. Orders already placed keep the policy they were placed under. */
+  async putReturnPolicy(
+    ctx: BusinessContext,
+    userId: string,
+    body: PutReturnPolicyRequest,
+    meta: RequestMeta,
+  ): Promise<ReturnPolicyView> {
+    const note = body.note && (body.note.en || body.note.ar) ? body.note : null;
+    await this.db.transaction().execute(async (trx) => {
+      await trx
+        .updateTable('businesses')
+        .set({
+          return_window_days: body.windowDays,
+          return_policy_note: note ? JSON.stringify(note) : null,
+        })
+        .where('id', '=', ctx.businessId)
+        .execute();
+      await writeAudit(trx, {
+        actorType: 'user',
+        actorId: userId,
+        action: 'return_policy.updated',
+        targetType: 'business',
+        targetId: ctx.businessId,
+        businessId: ctx.businessId,
+        diff: { windowDays: body.windowDays, note: note !== null },
+        requestId: meta.requestId,
+      });
+    });
+    return this.returnPolicy(ctx.businessId);
   }
 }

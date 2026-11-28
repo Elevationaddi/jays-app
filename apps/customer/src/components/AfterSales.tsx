@@ -6,7 +6,7 @@ import { useApp } from '../context';
 import { errorKey } from '../errors';
 import { money } from '../format';
 import { Chips, cardStyles as s } from './Picker';
-import { Banner, Button, Field } from './ui';
+import { Banner, Button, Checkbox, Field } from './ui';
 
 type Shipment = OrderView['merchants'][number];
 
@@ -80,6 +80,7 @@ export function ShipmentCare({
   const [panel, setPanel] = useState<'cancel' | 'return' | null>(null);
   const [reason, setReason] = useState('');
   const [qty, setQty] = useState<Record<string, number>>({});
+  const [faulty, setFaulty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const f = shipment.fulfillment;
@@ -112,9 +113,11 @@ export function ShipmentCare({
         merchantOrderId: shipment.id,
         items,
         reason: reason.trim(),
+        faulty,
       });
       setPanel(null);
       setQty({});
+      setFaulty(false);
       onChanged(null, tr('care.returnRequested'));
     });
 
@@ -169,6 +172,16 @@ export function ShipmentCare({
       {panel === 'return' ? (
         <View style={{ gap: 8 }}>
           <Text style={s.muted}>{tr('care.returnHint')}</Text>
+          {shipment.returnPolicy.returnUntil ? (
+            <Text style={s.muted}>
+              {tr('returns.until', {
+                date: new Date(shipment.returnPolicy.returnUntil).toLocaleDateString(
+                  L === 'ar' ? 'ar-AE' : 'en-AE',
+                  { dateStyle: 'medium', timeZone: 'Asia/Dubai' },
+                ),
+              })}
+            </Text>
+          ) : null}
           {shipment.items.map((i) => {
             const n = qty[i.id] ?? 0;
             const set = (v: number) => setQty({ ...qty, [i.id]: Math.max(0, Math.min(i.qty, v)) });
@@ -176,6 +189,7 @@ export function ShipmentCare({
               <View key={i.id} style={s.row}>
                 <Text style={[s.muted, { flex: 1 }]}>
                   {tr('care.returnQty', { title: i.title[L], qty: n, max: i.qty })}
+                  {i.returnable ? '' : `\n${tr('returns.itemFaultyOnly')}`}
                 </Text>
                 <Button
                   variant="secondary"
@@ -194,6 +208,7 @@ export function ShipmentCare({
               </View>
             );
           })}
+          <Checkbox label={tr('returns.faulty')} value={faulty} onChange={setFaulty} />
           <Field
             label={tr('care.returnReason')}
             value={reason}
@@ -203,7 +218,14 @@ export function ShipmentCare({
           <Button
             label={tr('care.returnSubmit')}
             busy={busy}
-            disabled={items.length === 0 || reason.trim().length < 3}
+            disabled={
+              items.length === 0 ||
+              reason.trim().length < 3 ||
+              (!faulty &&
+                items.some(
+                  (it) => !shipment.items.find((i) => i.id === it.orderItemId)?.returnable,
+                ))
+            }
             onPress={requestReturn}
           />
           <Button variant="ghost" label={tr('common.cancel')} onPress={() => setPanel(null)} />
