@@ -12,6 +12,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:providers": "vitest run --config vitest.provider.config.ts",
     "openapi": "tsc -p tsconfig.build.json && node dist/scripts/openapi.js",
     "seed": "node --env-file-if-exists=../../.env dist/scripts/seed.js",
     "totp": "node --env-file-if-exists=../../.env dist/scripts/totp.js",

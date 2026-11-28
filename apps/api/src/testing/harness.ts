@@ -18,6 +18,8 @@ import { MockNotifier } from '../auth/notifier.js';
 import { generateTotpSecret, totpAt } from '../auth/totp.js';
 import type { Clock } from '../common/clock.js';
 import { MockPaymentProvider, type WebhookDelivery } from '../payments/mock-provider.js';
+import type { PaymentProvider } from '../payments/provider.js';
+import type { ApiEnv } from '../config.js';
 import { testEnv } from './test-env.js';
 
 /** Clock that tests can move forward. Starts at real time so database defaults line up. */
@@ -81,7 +83,14 @@ export function uniquePhone(): string {
 }
 
 /** Full app on real PostgreSQL and Redis (DATABASE_URL, REDIS_URL), with a capturing notifier. */
-export async function startHarness(): Promise<Harness> {
+export interface HarnessOptions {
+  /** Replaces the mock payment provider (for example Stripe with a fake HTTP layer). */
+  paymentProvider?: (env: ApiEnv, clock: TestClock) => PaymentProvider;
+  /** Extra environment variables. */
+  env?: Record<string, string>;
+}
+
+export async function startHarness(options: HarnessOptions = {}): Promise<Harness> {
   const storageDir = await mkdtemp(join(tmpdir(), 'jays-storage-'));
   const env = testEnv({
     DATABASE_URL: process.env['DATABASE_URL'],
@@ -90,6 +99,7 @@ export async function startHarness(): Promise<Harness> {
     STORAGE_LOCAL_DIR: storageDir,
     MOCK_PAYMENT_OUTCOMES: 'true',
     DELIVERY_PARTNER: 'mock',
+    ...options.env,
   });
   const notifier = new MockNotifier(false);
   const clock = new TestClock();
@@ -99,7 +109,7 @@ export async function startHarness(): Promise<Harness> {
     env,
     notifier,
     clock,
-    paymentProvider: psp,
+    paymentProvider: options.paymentProvider?.(env, clock) ?? psp,
     rateLimitNamespace: `it-${process.pid}-${Date.now()}`,
   });
   await app.init();

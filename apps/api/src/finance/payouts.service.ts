@@ -89,11 +89,21 @@ export class PayoutsService {
     return this.db.transaction().execute(async (trx) => {
       const business = await trx
         .selectFrom('businesses')
-        .select(['id', 'status'])
+        .select(['id', 'status', 'psp_account_id', 'psp_account_provider', 'psp_payouts_enabled'])
         .where('id', '=', businessId)
         .forUpdate()
         .executeTakeFirstOrThrow();
       if (business.status === 'suspended') return { skip: 'suspended' as const };
+      // A real provider pays only an onboarded connected account (ADR-0030). The earnings stay
+      // eligible, so the next run pays them once the account is ready.
+      if (
+        this.provider.requiresPayoutAccount &&
+        (!business.psp_account_id ||
+          business.psp_account_provider !== this.provider.name ||
+          !business.psp_payouts_enabled)
+      ) {
+        return { skip: 'no_payout_account' as const };
+      }
       const hold = await trx
         .selectFrom('payout_holds')
         .select('id')
@@ -225,9 +235,16 @@ export class PayoutsService {
   /** Asks the provider to pay, outside the transaction. A refusal fails the payout visibly. */
   private async send(payoutId: string, businessId: string, amount: number) {
     try {
+      const account = await this.db
+        .selectFrom('businesses')
+        .select(['psp_account_id', 'psp_account_provider'])
+        .where('id', '=', businessId)
+        .executeTakeFirstOrThrow();
       const { payoutId: ref } = await this.provider.createPayout({
         reference: payoutId,
         businessId,
+        destinationAccount:
+          account.psp_account_provider === this.provider.name ? account.psp_account_id : null,
         amountFils: amount,
         currency: 'AED',
         idempotencyKey: `payout-${payoutId}`,

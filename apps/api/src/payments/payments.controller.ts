@@ -1,6 +1,6 @@
 import {
   Controller,
-  Headers,
+  Get,
   HttpCode,
   HttpStatus,
   Inject,
@@ -12,6 +12,7 @@ import { ApiHeader, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import {
   mockConfirmRequestSchema,
   mockConfirmResponseSchema,
+  paymentConfigSchema,
   webhookAckSchema,
 } from '@jays/contracts';
 import type { Request } from 'express';
@@ -21,20 +22,29 @@ import { ApiError } from '../common/error.filter.js';
 import { ApiErrors, ApiZodBody, ApiZodResponse, ZodBody } from '../common/zod.js';
 import { MockIntentError, type MockPaymentProvider } from './mock-provider.js';
 import { PaymentsService } from './payments.service.js';
-import { PAYMENT_PROVIDER, WEBHOOK_SIGNATURE_HEADER } from './provider.js';
+import { PAYMENT_PROVIDER, type PaymentProvider, WEBHOOK_SIGNATURE_HEADER } from './provider.js';
+import { STRIPE_SIGNATURE_HEADER } from './stripe-provider.js';
 
 /** Provider webhooks: verified over the raw body, recorded once per event id. */
 @ApiTags('payments')
 @Controller('webhooks')
 export class WebhooksController {
-  constructor(@Inject(PaymentsService) private readonly payments: PaymentsService) {}
+  constructor(
+    @Inject(PaymentsService) private readonly payments: PaymentsService,
+    @Inject(PAYMENT_PROVIDER) private readonly provider: PaymentProvider,
+  ) {}
 
   @Post('payments')
   @HttpCode(HttpStatus.OK)
   @ApiHeader({
     name: WEBHOOK_SIGNATURE_HEADER,
-    required: true,
-    description: 't=<unix>,v1=<hex HMAC-SHA256 of "t.body">',
+    required: false,
+    description: 'Mock provider: t=<unix>,v1=<hex HMAC-SHA256 of "t.body">',
+  })
+  @ApiHeader({
+    name: STRIPE_SIGNATURE_HEADER,
+    required: false,
+    description: 'Stripe (test mode): the Stripe-Signature header',
   })
   @ApiOperation({
     summary: 'Payment provider webhook (signature over the raw body; replays are no-ops)',
@@ -43,11 +53,36 @@ export class WebhooksController {
   })
   @ApiZodResponse(200, webhookAckSchema, 'Accepted (or already processed).')
   @ApiErrors(401)
-  receive(
-    @Req() req: RawBodyRequest<Request>,
-    @Headers(WEBHOOK_SIGNATURE_HEADER) signature: string | undefined,
-  ) {
-    return this.payments.handleWebhook(req.rawBody, signature);
+  receive(@Req() req: RawBodyRequest<Request>) {
+    // Only the configured provider's header is read, so one provider's signature never
+    // authenticates as the other's.
+    const header = req.headers[this.provider.signatureHeader];
+    return this.payments.handleWebhook(
+      req.rawBody,
+      typeof header === 'string' ? header : undefined,
+    );
+  }
+}
+
+/** What a client needs to show the payment step. The publishable key is public by design. */
+@ApiTags('payments')
+@Controller('payments')
+export class PaymentConfigController {
+  constructor(
+    @Inject(PAYMENT_PROVIDER) private readonly provider: PaymentProvider,
+    @Inject(API_ENV) private readonly env: ApiEnv,
+  ) {}
+
+  @Get('config')
+  @ApiOperation({ summary: 'Payment provider and publishable key for the client payment step' })
+  @ApiZodResponse(200, paymentConfigSchema, 'Payment configuration.')
+  config(): z.infer<typeof paymentConfigSchema> {
+    return {
+      provider: this.provider.name,
+      testMode: true,
+      publishableKey:
+        this.provider.name === 'stripe' ? (this.env.PSP_PUBLISHABLE_KEY ?? null) : null,
+    };
   }
 }
 

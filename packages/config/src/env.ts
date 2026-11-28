@@ -14,8 +14,15 @@ export type AppEnv = (typeof APP_ENVS)[number];
 
 export const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace'] as const;
 
-/** Payment providers with an adapter in this codebase. A real provider is added in phase 5. */
-export const PSP_PROVIDERS = ['mock'] as const;
+/**
+ * Payment providers with an adapter. `stripe` is Stripe Connect in **test mode only** (ADR-0030):
+ * live keys are refused in every environment until the founder approves live payments.
+ */
+export const PSP_PROVIDERS = ['mock', 'stripe'] as const;
+
+/** Stripe test-mode key prefixes. A live key (`sk_live_`, `rk_live_`, `pk_live_`) is refused. */
+export const STRIPE_TEST_SECRET_KEY = /^(sk|rk)_test_[A-Za-z0-9]{10,}$/;
+export const STRIPE_TEST_PUBLISHABLE_KEY = /^pk_test_[A-Za-z0-9]{10,}$/;
 
 /** Email/SMS providers with an adapter. Only the mock exists until a provider is chosen (ADR-0007). */
 export const NOTIFY_PROVIDERS = ['mock'] as const;
@@ -122,7 +129,13 @@ const apiShape = {
   DELIVERY_PARTNER: z.enum(DELIVERY_PARTNERS).default('none'),
   PSP_PROVIDER: z.enum(PSP_PROVIDERS).default('mock'),
   PSP_API_KEY: z.string().min(1).optional(),
+  /** Stripe publishable key for the customer payment step (test mode only). */
+  PSP_PUBLISHABLE_KEY: z.string().min(1).optional(),
+  /** Base URL of the business portal, used for payout-account onboarding return links. */
+  BUSINESS_WEB_URL: z.url().default('http://localhost:3001'),
   PSP_WEBHOOK_SECRET: z.string().min(16, 'must be at least 16 characters'),
+  /** Signing secret of Stripe's separate Connect webhook endpoint (connected-account events). */
+  PSP_CONNECT_WEBHOOK_SECRET: z.string().min(16, 'must be at least 16 characters').optional(),
   MAPS_KEY: z.string().min(1).optional(),
   EMAIL_KEY: z.string().min(1).optional(),
   MOCK_PAYMENT_OUTCOMES: booleanFlag,
@@ -186,9 +199,11 @@ function productionIssues(env: Record<string, unknown>, shape: z.ZodRawShape): I
       issues.push({ path: key, message: 'contains a committed example value' });
     }
   }
-  const adminUrl = env['ADMIN_WEB_URL'];
-  if (typeof adminUrl === 'string' && !adminUrl.startsWith('https://')) {
-    issues.push({ path: 'ADMIN_WEB_URL', message: 'must be https:// in production' });
+  for (const key of ['ADMIN_WEB_URL', 'BUSINESS_WEB_URL'] as const) {
+    const url = env[key];
+    if (key in shape && typeof url === 'string' && !url.startsWith('https://')) {
+      issues.push({ path: key, message: 'must be https:// in production' });
+    }
   }
   const origins = env['CORS_ORIGINS'];
   if (Array.isArray(origins) && origins.some((origin) => !String(origin).startsWith('https://'))) {
@@ -212,6 +227,25 @@ function withProductionGuards<T extends z.ZodRawShape>(shape: T) {
         path: ['PSP_API_KEY'],
         message: 'is required for a real payment provider',
       });
+    }
+    // Live payments are not approved (founder decision D5): only Stripe test-mode keys start.
+    if (record['PSP_PROVIDER'] === 'stripe') {
+      const key = record['PSP_API_KEY'];
+      if (typeof key === 'string' && !STRIPE_TEST_SECRET_KEY.test(key)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['PSP_API_KEY'],
+          message: 'must be a Stripe test-mode key (sk_test_ or rk_test_); live keys are refused',
+        });
+      }
+      const publishable = record['PSP_PUBLISHABLE_KEY'];
+      if (typeof publishable === 'string' && !STRIPE_TEST_PUBLISHABLE_KEY.test(publishable)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['PSP_PUBLISHABLE_KEY'],
+          message: 'must be a Stripe test-mode key (pk_test_); live keys are refused',
+        });
+      }
     }
   });
 }

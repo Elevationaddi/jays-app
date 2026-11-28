@@ -56,9 +56,14 @@ import {
   MockPaymentProvider,
   type WebhookSink,
 } from './payments/mock-provider.js';
-import { MockPspController, WebhooksController } from './payments/payments.controller.js';
+import {
+  MockPspController,
+  PaymentConfigController,
+  WebhooksController,
+} from './payments/payments.controller.js';
 import { PaymentsService } from './payments/payments.service.js';
 import { PAYMENT_PROVIDER, type PaymentProvider } from './payments/provider.js';
+import { StripePaymentProvider } from './payments/stripe-provider.js';
 import { AdminFinanceController } from './finance/admin-finance.controller.js';
 import { AdminFinanceService } from './finance/admin-finance.service.js';
 import { BusinessFinanceController } from './finance/business-finance.controller.js';
@@ -70,6 +75,7 @@ import {
   CustomerDocumentsController,
 } from './finance/tax.controller.js';
 import { TaxService } from './finance/tax.service.js';
+import { PayoutAccountsService } from './finance/payout-accounts.js';
 import { PayoutsService } from './finance/payouts.service.js';
 import { ReconciliationService } from './finance/reconciliation.service.js';
 import { CatalogController } from './catalog/catalog.controller.js';
@@ -179,6 +185,14 @@ export class AppModule {
     const theClock = clock ?? systemClock;
     const provider =
       paymentProvider ??
+      (env.PSP_PROVIDER === 'stripe'
+        ? new StripePaymentProvider(
+            env.PSP_API_KEY as string,
+            [env.PSP_WEBHOOK_SECRET, env.PSP_CONNECT_WEBHOOK_SECRET].filter(
+              (secret): secret is string => !!secret,
+            ),
+          )
+        : null) ??
       new MockPaymentProvider(
         env.PSP_WEBHOOK_SECRET,
         webhookSink ??
@@ -247,6 +261,7 @@ export class AppModule {
         BusinessAftercareController,
         AdminAftercareController,
         WebhooksController,
+        PaymentConfigController,
         // The mock provider's hosted payment step. Production cannot run the mock (ADR-0006).
         ...(env.PSP_PROVIDER === 'mock' ? [MockPspController] : []),
         // Signed URLs of the local storage adapter are served by the API itself.
@@ -327,6 +342,7 @@ export class AppModule {
         AdminFinanceService,
         TaxService,
         PayoutsService,
+        PayoutAccountsService,
         ReconciliationService,
         FinanceScheduler,
         FulfillmentService,

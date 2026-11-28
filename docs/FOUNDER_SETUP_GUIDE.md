@@ -65,13 +65,18 @@ You will create **two** projects: one for staging and one for production. Supaba
    - Choose the **platform/marketplace** option.
    - Where Stripe asks who handles pricing, choose **"Stripe handles pricing for your users"**. This option has no platform fees; the other option adds AED 7.50 per active merchant each month plus a fee per payout.
    - If Stripe says a UAE marketplace configuration is not available, stop and tell the team.
-4. **Copy the test keys:** go to **Developers → API keys** and copy the **Secret key**, which starts with `sk_test_`. It becomes `PSP_API_KEY`.
-5. **Add the webhook:** this is done after the first staging deployment, because it needs the staging address.
+4. **Copy the test keys:** go to **Developers → API keys**.
+   - The **Secret key** starts with `sk_test_`. It becomes `PSP_API_KEY`.
+   - The **Publishable key** starts with `pk_test_`. It becomes `PSP_PUBLISHABLE_KEY`.
+   - JAYS refuses to start with a live key (`sk_live_` or `pk_live_`), so a mistake here cannot take a real payment.
+5. **Add the webhooks:** this is done after the first staging deployment, because it needs the staging address. Use API version `2024-06-20` for both, so the events match what JAYS reads.
    - Go to **Developers → Webhooks → Add endpoint**.
    - **URL:** `https://<staging API address>/v1/webhooks/payments`.
-   - **Events:** select the events the team lists.
+   - **Events:** `payment_intent.succeeded`, `payment_intent.payment_failed`, `payment_intent.canceled`, `refund.created`, `refund.updated`, `refund.failed`, `transfer.created` and `transfer.reversed`.
    - Copy the **Signing secret** (`whsec_…`). It becomes `PSP_WEBHOOK_SECRET`.
+   - Add a **second endpoint** with the same URL, and choose **Events on Connected accounts**. Select `account.updated`. Its signing secret becomes `PSP_CONNECT_WEBHOOK_SECRET`.
 6. Set `PSP_PROVIDER=stripe`. Production stays switched off for payments until you approve going live.
+7. **Check it with the team:** businesses open **Finance → Set up payouts with Stripe** in the business portal. In test mode Stripe accepts its documented test details, so no real identity or bank account is needed.
 
 ## 5. Firebase: push notifications (Spark, no cost)
 
@@ -119,6 +124,9 @@ When the team asks, after the projects exist:
 | `EMAIL_KEY`, `EMAIL_FROM`                                                                 | API              | Resend (step 3)                                                               |
 | `PSP_API_KEY`                                                                             | API              | Stripe test secret key (step 4.4)                                             |
 | `PSP_WEBHOOK_SECRET`                                                                      | API              | Stripe webhook signing secret (step 4.5)                                      |
+| `PSP_CONNECT_WEBHOOK_SECRET`                                                              | API              | Stripe Connect webhook signing secret (step 4.5)                              |
+| `PSP_PUBLISHABLE_KEY`                                                                     | API              | Stripe test publishable key (step 4.4)                                        |
+| `BUSINESS_WEB_URL`                                                                        | API              | The business portal's address, for Stripe's return links                      |
 | `FCM_SERVICE_ACCOUNT_JSON`                                                                | API              | Firebase service account (step 5.4)                                           |
 | `CRON_SECRET`                                                                             | API              | A random value you generate (Vercel sends it with each cron call)             |
 | `JWT_KEYS`, `OTP_SECRET`, `MFA_ENCRYPTION_KEY`, `STORAGE_SIGNING_SECRET`, `METRICS_TOKEN` | API              | Random values the team's script generates for you. Never reuse the local ones |

@@ -14,7 +14,7 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 | 7     | RTL/accessibility, hardening, backups, observability, pilot  | Merged (PR #8); pilot not started     |
 
 | 8 | Complete application functionality | 8.1 to 8.8 merged (PRs #9 to #14, #16 to #19) |
-| 9 | Provider integrations in test mode (Stripe, Resend, FCM, Supabase) | Not started |
+| 9 | Provider integrations in test mode (Stripe, Resend, FCM, Supabase) | 9.1 Stripe Connect in progress |
 | 10 | Vercel deployment architecture (replaces AWS) | Not started; nothing deployed |
 | 11 | Security, QA, app store preparation | Not started |
 | 12 | Pilot preparation (Abu Dhabi) | Not started; pilot needs approval |
@@ -26,6 +26,19 @@ Plan: [implementation-plan.md](implementation-plan.md). Decisions: [adr/](adr/RE
 - **Travel fees:** no longer carry commission ([ADR-0025](adr/0025-travel-fees-home-cancellations-pilot-promotion.md)). The booking ledger line leaves the travel fee out of the commission base, and a test checks it.
 - **Home-visit cancellations:** built in 8.8 ([ADR-0027](adr/0027-booking-policies-and-component-amounts.md)); the rule is still proposed until a consumer-protection review.
 - **Still to build:** the pilot promotion (12).
+
+## Phase 9: Provider integrations in test mode
+
+Each part is its own PR. Tests that use a fake of a provider are **mock tests**; tests against a provider's real test mode are in `*.provider.test.ts`, run with `pnpm --filter @jays/api test:providers`, and are skipped without credentials. No real-provider result is claimed without them.
+
+### 9.1 Stripe Connect (test mode)
+
+Decision: [ADR-0030](adr/0030-stripe-connect-test-mode.md). The funds flow is proposed until Stripe and a lawyer confirm it for the UAE.
+
+- **Adapter:** Stripe payment intents, refunds, transfers to connected accounts, reconciliation records and signed webhooks, over Stripe's REST API with no SDK. Live keys and live events are refused everywhere.
+- **Payout accounts:** owners set up payouts with Stripe's hosted onboarding from Finance. JAYS keeps only the account id and status. Payout runs skip businesses without a ready account and keep their earnings for the next run.
+- **Tests:** 9 unit and 4 integration mock tests. 2 real test-mode tests were not run, because no Stripe test key is available.
+- **Not done:** the customer payment step with Stripe.js or the React Native SDK, which needs a test key to check, and dispute events.
 
 ## Phase 8: Complete application functionality
 

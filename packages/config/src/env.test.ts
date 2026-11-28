@@ -62,6 +62,26 @@ describe('apiEnvSchema', () => {
     expect(env.CORS_ORIGINS).toEqual(['http://localhost:3001', 'http://localhost:3002']);
   });
 
+  it('accepts Stripe only with test-mode keys, in every environment', () => {
+    const stripe = { ...local, PSP_PROVIDER: 'stripe' };
+    expect(issuesOf(() => parseEnv(apiEnvSchema, stripe))).toEqual(['PSP_API_KEY']);
+    const env = parseEnv(apiEnvSchema, {
+      ...stripe,
+      PSP_API_KEY: 'sk_test_FICTIONAL0000000000',
+      PSP_PUBLISHABLE_KEY: 'pk_test_FICTIONAL0000000000',
+    });
+    expect(env.PSP_PROVIDER).toBe('stripe');
+    expect(
+      issuesOf(() =>
+        parseEnv(apiEnvSchema, {
+          ...stripe,
+          PSP_API_KEY: 'sk_live_FICTIONAL0000000000',
+          PSP_PUBLISHABLE_KEY: 'pk_live_FICTIONAL0000000000',
+        }),
+      ),
+    ).toEqual(['PSP_API_KEY', 'PSP_PUBLISHABLE_KEY']);
+  });
+
   it('refuses mock payments, dev switches and example secrets in production', () => {
     const paths = issuesOf(() =>
       parseEnv(apiEnvSchema, {
@@ -85,6 +105,7 @@ describe('apiEnvSchema', () => {
         'MFA_ENCRYPTION_KEY',
         'NOTIFY_PROVIDER',
         'ADMIN_WEB_URL',
+        'BUSINESS_WEB_URL',
         'CORS_ORIGINS',
         'STORAGE_PROVIDER',
         'STORAGE_SIGNING_SECRET',

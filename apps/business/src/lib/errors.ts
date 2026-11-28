@@ -129,6 +129,8 @@ export function errorMessageKey(code: string | undefined): MessageKey | null {
       return 'legal.error.versionNotCurrent';
     case 'ALREADY_REPORTED':
       return 'error.alreadyReported';
+    case 'BUSINESS_NOT_APPROVED':
+      return 'error.businessNotApproved';
     default:
       return 'common.error';
   }
